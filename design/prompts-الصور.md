@@ -69,7 +69,7 @@ time, in the order listed below. Do not merge them. Do not label them.
 3. a brown whole-wheat bread roll (samoon), seeded crust
 4. a thick chocolate-chunk cookie, gooey centre, chunks visible
 5. a round butter cookie in a clear cellophane wrapper
-6. kaab el ghazal, crescent-shaped almond pastry dusted with powdered sugar
+6. two or three Iraqi coconut macaroons piled together, piped rounds with craggy ridged peaks, deep caramelised golden-brown crust, visible shredded coconut texture, crisp outside and soft inside
 7. a small crunchy fruit biscotti with candied fruit pieces
 8. a chocolate muffin in a paper cup, domed cracked top
 9. a single slice of layered vanilla sponge cake with cream

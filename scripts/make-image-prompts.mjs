@@ -18,7 +18,8 @@ const EN = {
   "صمون اسمر": "a brown whole-wheat bread roll (samoon), seeded crust",
   "كوكيز قطعة شوكولاتة": "a thick chocolate-chunk cookie, gooey centre, chunks visible",
   "كوكيز مغلف": "a round butter cookie in a clear cellophane wrapper",
-  "كعب غزال": "kaab el ghazal, crescent-shaped almond pastry dusted with powdered sugar",
+  // NOT the Moroccan crescent — the Iraqi kaab el ghazal is a coconut macaroon.
+  "كعب غزال": "two or three Iraqi coconut macaroons piled together, piped rounds with craggy ridged peaks, deep caramelised golden-brown crust, visible shredded coconut texture, crisp outside and soft inside",
   "بقصم فواكه": "a small crunchy fruit biscotti with candied fruit pieces",
   "مافن شوكولاتة مغلف": "a chocolate muffin in a paper cup, domed cracked top",
   "كيك شريحة مغلف": "a single slice of layered vanilla sponge cake with cream",
