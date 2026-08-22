@@ -1,3 +1,8 @@
+# تصحيح صورة: بقصم فواكه
+
+الصق هذا كاملاً — صورة واحدة فقط.
+==========================================================
+
 HAIL Bakery & Cafe — product photography set.
 
 STYLE (identical in every image, this is one coherent set):
@@ -24,10 +29,10 @@ STRICT RULES:
   sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
   picture, always.
 
-OUTPUT: give me ONE picture only. Do not make a grid, do not add numbers.
+
+OUTPUT: give me ONE picture only, of the single item below.
+No grid, no numbers, no text.
 
 The item:
 
-two or three Iraqi coconut macaroons piled together, piped rounds with craggy
-ridged peaks, deep caramelised golden-brown crust, visible shredded coconut
-texture, crisp outside and soft inside
+Iraqi baqsam fruit rusks — small twice-baked golden ring biscuits, dry and crunchy, studded with dried fruit and raisins, a few pieces piled together

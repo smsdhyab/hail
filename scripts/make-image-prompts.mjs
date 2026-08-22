@@ -20,7 +20,8 @@ const EN = {
   "كوكيز مغلف": "a round butter cookie in a clear cellophane wrapper",
   // NOT the Moroccan crescent — the Iraqi kaab el ghazal is a coconut macaroon.
   "كعب غزال": "two or three Iraqi coconut macaroons piled together, piped rounds with craggy ridged peaks, deep caramelised golden-brown crust, visible shredded coconut texture, crisp outside and soft inside",
-  "بقصم فواكه": "a small crunchy fruit biscotti with candied fruit pieces",
+  // Iraqi baqsam is a twice-baked rusk ring, not an Italian biscotti slab.
+  "بقصم فواكه": "Iraqi baqsam fruit rusks — small twice-baked golden ring biscuits, dry and crunchy, studded with dried fruit and raisins, a few pieces piled together",
   "مافن شوكولاتة مغلف": "a chocolate muffin in a paper cup, domed cracked top",
   "كيك شريحة مغلف": "a single slice of layered vanilla sponge cake with cream",
   "دنش": "a Danish pastry with a fruit-and-cream centre, flaky glazed layers",
@@ -121,8 +122,12 @@ STRICT RULES:
   sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
   picture, always.
 
-OUTPUT: give me 10 SEPARATE pictures — one picture per item, generated one at a
-time, in the order listed below. Do not merge them. Do not label them.`;
+HOW WE WILL WORK:
+I will send you the items ONE AT A TIME, each in its own message.
+For every message you output EXACTLY ONE picture of that one item, following
+the style above to the letter, and nothing else — no text, no grid, no extras.
+Do not generate anything until I send the first item.
+Reply to this message with only: "جاهز"`;
 
 const active = HAIL_MENU.flatMap((c) => c.items.filter((i) => i.active !== false).map((i) => ({ ...i, cat: c.name_ar })));
 const missing = active.filter((i) => !EN[i.name_ar]);
@@ -142,12 +147,25 @@ const out = [
   "",
   "## كيف تستخدمها",
   "",
+  "**استخدم ملفات `design/prompts/pN.txt` — واحد لكل برومبت، جاهز للّصق.**",
+  "",
+  "١. الصق **بلوك الهوية** (الخطوة ١ في الملف) وانتظر رد «جاهز».",
+  "٢. ثم الصق **سطر الصنف الأول فقط** ← صورة واحدة. احفظها 1.png.",
+  "٣. الصق سطر الصنف الثاني ← 2.png … وهكذا حتى العاشر.",
+  "",
+  "هذه الطريقة أبطأ لكنها **لا تُنتج شبكة مجمّعة أبداً** — وهي ما فشل مرتين",
+  "حين طلبنا العشرة في رسالة واحدة.",
+  "",
+  "<details><summary>الطريقة القديمة (١٠ في رسالة) — لا يُنصح بها</summary>",
+  "",
   "١. افتح ChatGPT واطلب توليد الصور بلصق البرومبت كاملاً كما هو.",
   "٢. **بلوك الهوية في أعلى كل برومبت ثابت لا يتغيّر** — هو ما يجعل الصور تبدو طقماً واحداً.",
   "   لا تحذفه ولا تختصره عند التكرار على حساب آخر.",
   "٣. احفظ الصور **بترتيب توليدها** باسم 1.png، 2.png … 10.png داخل مجلد باسم البرومبت.",
   "   الترتيب هو الرابط الوحيد بين الصورة وصنفها — لا تبدّله.",
   "٤. أرسل لي المجلدات وأنا أربط كل صورة بصنفها وأرفعها للنظام.",
+  "",
+  "</details>",
   "",
   "### إذا جمعها في صورة واحدة (شبكة مرقّمة)",
   "",
@@ -184,7 +202,27 @@ groups.forEach((g, gi) => {
   out.push("```", "", `<sub>الأصناف: ${g.map((i) => i.name_ar).join(" · ")}</sub>`, "", "---", "");
 });
 
-mkdirSync(join(root, "design"), { recursive: true });
+mkdirSync(join(root, "design", "prompts"), { recursive: true });
+
+// One file per prompt, in the order it gets pasted: the identity block first,
+// then the items one line at a time. Ten items in a single message keeps
+// collapsing into a grid; one message per item never does.
+const RULE = "".padEnd(58, "=");
+groups.forEach((g, gi) => {
+  const lines = [
+    `# برومبت ${gi + 1}`,
+    `${[...new Set(g.map((i) => i.cat))].join(" | ")}`,
+    "",
+    "STEP 1 — الصق هذا كاملاً وانتظر رد «جاهز»",
+    RULE, "", IDENTITY, "", RULE, "",
+    `STEP 2 — الصق كل سطر وحده (${g.length} صور)، واحفظ كل صورة برقم سطرها`,
+    RULE, "",
+  ];
+  g.forEach((item, i) => lines.push(`--- ${i + 1}. ${item.name_ar}  (${i + 1}.png) ---`, EN[item.name_ar], ""));
+  writeFileSync(join(root, "design", "prompts", `p${gi + 1}.txt`), lines.join("\n"), "utf8");
+});
+
 const file = join(root, "design", "prompts-الصور.md");
 writeFileSync(file, out.join("\n"), "utf8");
-console.log(`✓ ${file}\n  ${groups.length} prompts · ${active.length} items`);
+console.log(`OK ${file}`);
+console.log(`OK design/prompts/p1..p${groups.length}.txt  (${active.length} items)`);

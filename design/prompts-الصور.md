@@ -4,12 +4,25 @@
 
 ## كيف تستخدمها
 
+**استخدم ملفات `design/prompts/pN.txt` — واحد لكل برومبت، جاهز للّصق.**
+
+١. الصق **بلوك الهوية** (الخطوة ١ في الملف) وانتظر رد «جاهز».
+٢. ثم الصق **سطر الصنف الأول فقط** ← صورة واحدة. احفظها 1.png.
+٣. الصق سطر الصنف الثاني ← 2.png … وهكذا حتى العاشر.
+
+هذه الطريقة أبطأ لكنها **لا تُنتج شبكة مجمّعة أبداً** — وهي ما فشل مرتين
+حين طلبنا العشرة في رسالة واحدة.
+
+<details><summary>الطريقة القديمة (١٠ في رسالة) — لا يُنصح بها</summary>
+
 ١. افتح ChatGPT واطلب توليد الصور بلصق البرومبت كاملاً كما هو.
 ٢. **بلوك الهوية في أعلى كل برومبت ثابت لا يتغيّر** — هو ما يجعل الصور تبدو طقماً واحداً.
    لا تحذفه ولا تختصره عند التكرار على حساب آخر.
 ٣. احفظ الصور **بترتيب توليدها** باسم 1.png، 2.png … 10.png داخل مجلد باسم البرومبت.
    الترتيب هو الرابط الوحيد بين الصورة وصنفها — لا تبدّله.
 ٤. أرسل لي المجلدات وأنا أربط كل صورة بصنفها وأرفعها للنظام.
+
+</details>
 
 ### إذا جمعها في صورة واحدة (شبكة مرقّمة)
 
@@ -61,8 +74,12 @@ STRICT RULES:
   sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
   picture, always.
 
-OUTPUT: give me 10 SEPARATE pictures — one picture per item, generated one at a
-time, in the order listed below. Do not merge them. Do not label them.
+HOW WE WILL WORK:
+I will send you the items ONE AT A TIME, each in its own message.
+For every message you output EXACTLY ONE picture of that one item, following
+the style above to the letter, and nothing else — no text, no grid, no extras.
+Do not generate anything until I send the first item.
+Reply to this message with only: "جاهز"
 
 1. an almond bread loaf, sliced almonds on top, dusted with powdered sugar
 2. a golden corn bread roll (samoon), soft crumb, rustic crust
@@ -70,7 +87,7 @@ time, in the order listed below. Do not merge them. Do not label them.
 4. a thick chocolate-chunk cookie, gooey centre, chunks visible
 5. a round butter cookie in a clear cellophane wrapper
 6. two or three Iraqi coconut macaroons piled together, piped rounds with craggy ridged peaks, deep caramelised golden-brown crust, visible shredded coconut texture, crisp outside and soft inside
-7. a small crunchy fruit biscotti with candied fruit pieces
+7. Iraqi baqsam fruit rusks — small twice-baked golden ring biscuits, dry and crunchy, studded with dried fruit and raisins, a few pieces piled together
 8. a chocolate muffin in a paper cup, domed cracked top
 9. a single slice of layered vanilla sponge cake with cream
 10. a Danish pastry with a fruit-and-cream centre, flaky glazed layers
@@ -109,8 +126,12 @@ STRICT RULES:
   sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
   picture, always.
 
-OUTPUT: give me 10 SEPARATE pictures — one picture per item, generated one at a
-time, in the order listed below. Do not merge them. Do not label them.
+HOW WE WILL WORK:
+I will send you the items ONE AT A TIME, each in its own message.
+For every message you output EXACTLY ONE picture of that one item, following
+the style above to the letter, and nothing else — no text, no grid, no extras.
+Do not generate anything until I send the first item.
+Reply to this message with only: "جاهز"
 
 1. a white Belgian chocolate praline, glossy dome
 2. a hazelnut Belgian chocolate praline, whole hazelnut on top
@@ -157,8 +178,12 @@ STRICT RULES:
   sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
   picture, always.
 
-OUTPUT: give me 10 SEPARATE pictures — one picture per item, generated one at a
-time, in the order listed below. Do not merge them. Do not label them.
+HOW WE WILL WORK:
+I will send you the items ONE AT A TIME, each in its own message.
+For every message you output EXACTLY ONE picture of that one item, following
+the style above to the letter, and nothing else — no text, no grid, no extras.
+Do not generate anything until I send the first item.
+Reply to this message with only: "جاهز"
 
 1. a glazed doughnut with chocolate drizzle and chopped nuts
 2. a cinnamon roll with cream-cheese icing, warm and spiralled
@@ -205,8 +230,12 @@ STRICT RULES:
   sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
   picture, always.
 
-OUTPUT: give me 10 SEPARATE pictures — one picture per item, generated one at a
-time, in the order listed below. Do not merge them. Do not label them.
+HOW WE WILL WORK:
+I will send you the items ONE AT A TIME, each in its own message.
+For every message you output EXACTLY ONE picture of that one item, following
+the style above to the letter, and nothing else — no text, no grid, no extras.
+Do not generate anything until I send the first item.
+Reply to this message with only: "جاهز"
 
 1. a double espresso in a wide demitasse, deep crema
 2. a flat white in a small ceramic cup, velvety thin foam
@@ -253,8 +282,12 @@ STRICT RULES:
   sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
   picture, always.
 
-OUTPUT: give me 10 SEPARATE pictures — one picture per item, generated one at a
-time, in the order listed below. Do not merge them. Do not label them.
+HOW WE WILL WORK:
+I will send you the items ONE AT A TIME, each in its own message.
+For every message you output EXACTLY ONE picture of that one item, following
+the style above to the letter, and nothing else — no text, no grid, no extras.
+Do not generate anything until I send the first item.
+Reply to this message with only: "جاهز"
 
 1. a hot dark mocha, chocolate and espresso layers, cream on top
 2. a hot white mocha, pale cream layers, white chocolate curls
@@ -301,8 +334,12 @@ STRICT RULES:
   sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
   picture, always.
 
-OUTPUT: give me 10 SEPARATE pictures — one picture per item, generated one at a
-time, in the order listed below. Do not merge them. Do not label them.
+HOW WE WILL WORK:
+I will send you the items ONE AT A TIME, each in its own message.
+For every message you output EXACTLY ONE picture of that one item, following
+the style above to the letter, and nothing else — no text, no grid, no extras.
+Do not generate anything until I send the first item.
+Reply to this message with only: "جاهز"
 
 1. an iced americano, clear dark coffee over large ice cubes
 2. an iced caramel macchiato, distinct layers and caramel crosshatch
@@ -349,8 +386,12 @@ STRICT RULES:
   sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
   picture, always.
 
-OUTPUT: give me 10 SEPARATE pictures — one picture per item, generated one at a
-time, in the order listed below. Do not merge them. Do not label them.
+HOW WE WILL WORK:
+I will send you the items ONE AT A TIME, each in its own message.
+For every message you output EXACTLY ONE picture of that one item, following
+the style above to the letter, and nothing else — no text, no grid, no extras.
+Do not generate anything until I send the first item.
+Reply to this message with only: "جاهز"
 
 1. a pomegranate mojito, deep red, mint leaves and pomegranate seeds
 2. a strawberry mojito, pink, fresh strawberry and mint
@@ -397,8 +438,12 @@ STRICT RULES:
   sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
   picture, always.
 
-OUTPUT: give me 10 SEPARATE pictures — one picture per item, generated one at a
-time, in the order listed below. Do not merge them. Do not label them.
+HOW WE WILL WORK:
+I will send you the items ONE AT A TIME, each in its own message.
+For every message you output EXACTLY ONE picture of that one item, following
+the style above to the letter, and nothing else — no text, no grid, no extras.
+Do not generate anything until I send the first item.
+Reply to this message with only: "جاهز"
 
 1. a thick mango smoothie in a tall glass, fresh mango cheek beside
 2. a thick pineapple smoothie, pineapple wedge on the rim
