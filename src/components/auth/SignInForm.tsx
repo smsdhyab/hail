@@ -9,7 +9,7 @@ import { StationIcon } from "@/components/cafe/StationIcon";
 import { STATIONS, type StationSlug } from "@/lib/cafe/hail-menu";
 import { SYSTEM } from "@/lib/cafe/branding";
 import { signInLocal } from "@/lib/cafe/local-auth";
-import { openTill } from "@/lib/cafe/till-actions";
+import { hasStaffSession, openTill } from "@/lib/cafe/till-actions";
 
 /**
  * Two registers, one screen: pick which counter you are opening, then sign in.
@@ -29,13 +29,21 @@ export function SignInForm({ redirectTo, localMode }: { redirectTo: string; loca
   // If the visitor landed here only because their access token expired, the
   // browser client can silently refresh it from the refresh token — then send
   // them straight back in instead of asking for the password again.
+  //
+  // Crucially it then ASKS THE SERVER before navigating. A cookie the browser
+  // still likes but the server rejects would otherwise send us to a staff page
+  // that immediately redirects back here — the two bounce forever and the
+  // screen flickers between the login form and the dashboard.
   useEffect(() => {
     if (localMode) return;
     let cancelled = false;
     (async () => {
       try {
         const { data } = await createSupabaseBrowserClient().auth.getSession();
-        if (!cancelled && data.session) router.replace(redirectTo);
+        if (cancelled || !data.session) return;
+        if (await hasStaffSession()) {
+          if (!cancelled) router.replace(redirectTo);
+        }
       } catch {
         /* demo mode or no session — stay on the form */
       }

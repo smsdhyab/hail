@@ -1,7 +1,7 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { requireStaff } from "./auth";
+import { getStaff, requireStaff } from "./auth";
 import { stationName, type StationSlug } from "./hail-menu";
 import { TILL_COOKIE } from "./till";
 
@@ -43,4 +43,21 @@ export async function openTill(
 
 export async function closeTill(): Promise<void> {
   (await cookies()).delete(TILL_COOKIE);
+}
+
+/**
+ * Does the SERVER accept the current cookie as a staff session?
+ *
+ * The browser can hold a session the server rejects — an expired token, a
+ * deactivated employee, a signed-out tab that kept its cookie. The sign-in
+ * screen must ask before it navigates: sending the user to a staff page on the
+ * browser's word alone gets them bounced straight back, and the two redirects
+ * chase each other forever (the screen visibly flickers between the two).
+ */
+export async function hasStaffSession(): Promise<boolean> {
+  try {
+    return (await getStaff()) !== null;
+  } catch {
+    return false;
+  }
 }
