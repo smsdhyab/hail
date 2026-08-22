@@ -9,6 +9,7 @@ import { StationIcon } from "@/components/cafe/StationIcon";
 import { STATIONS, type StationSlug } from "@/lib/cafe/hail-menu";
 import { SYSTEM } from "@/lib/cafe/branding";
 import { signInLocal } from "@/lib/cafe/local-auth";
+import { openTill } from "@/lib/cafe/till-actions";
 
 /**
  * Two registers, one screen: pick which counter you are opening, then sign in.
@@ -72,7 +73,19 @@ export function SignInForm({ redirectTo, localMode }: { redirectTo: string; loca
         setError(t("auth.error"));
         return;
       }
+
+      // Signing in only proves WHO you are. Opening a register is a separate
+      // server-side check: a cashier may open only their own. A refusal signs
+      // them straight back out, so a wrong choice leaves no usable session.
+      const till = await openTill(station);
+      if (!till.ok) {
+        await supabase.auth.signOut();
+        setError(till.error);
+        return;
+      }
+
       router.replace(redirectTo);
+      router.refresh();
     } catch {
       setError(t("auth.error"));
     } finally {

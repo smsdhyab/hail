@@ -34,6 +34,7 @@ import { savePushSubscription, removePushSubscription } from "@/lib/cafe/push-ac
 import { HailMark } from "./Logo";
 import { SYSTEM } from "@/lib/cafe/branding";
 import { signOutLocal } from "@/lib/cafe/local-auth";
+import { closeTill } from "@/lib/cafe/till-actions";
 
 function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
@@ -164,11 +165,15 @@ export function StaffShell({
         }
         knownIds.current = new Set(orders.map((o) => o.id));
       } catch {
-        /* demo mode or transient error */
+        // Signed out (the shell can outlive the session for a moment) — stop
+        // rather than retry every 10s and fill the server log with auth errors.
+        stopped = true;
       }
     }
     tick();
-    const t = setInterval(tick, 10000);
+    const t = setInterval(() => {
+      if (!stopped) tick();
+    }, 10000);
     return () => {
       stopped = true;
       clearInterval(t);
@@ -216,7 +221,10 @@ export function StaffShell({
   async function signOut() {
     try {
       if (localMode) await signOutLocal();
-      else await createSupabaseBrowserClient().auth.signOut();
+      else {
+        await closeTill();
+        await createSupabaseBrowserClient().auth.signOut();
+      }
     } catch {
       /* already signed out */
     } finally {

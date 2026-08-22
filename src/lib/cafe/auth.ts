@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { getServerUser, createSupabaseServiceClient } from "@/lib/supabase/server";
 import type { StationSlug } from "./hail-menu";
 import { employeeById, isLocalDb, LOCAL_STAFF_COOKIE } from "./local-db";
+import { TILL_COOKIE } from "./till";
 
 /** Resolved staff identity. Server-only. */
 export type StaffRole = "admin" | "cashier";
@@ -42,7 +43,12 @@ export const getStaff = cache(async function getStaff(): Promise<Staff | null> {
   const one = <T,>(v: T[] | T | null): T | null => (Array.isArray(v) ? (v[0] ?? null) : v);
   const roleName = one(emp.roles)?.name_en;
   const role: StaffRole | null = roleName === "admin" ? "admin" : roleName === "cashier" ? "cashier" : null;
-  const station = (one(emp.stations)?.slug as StationSlug | undefined) ?? null;
+
+  // A cashier IS their register — the till cookie can never move them. Only a
+  // manager (who owns no register) works whichever till they opened.
+  const own = (one(emp.stations)?.slug as StationSlug | undefined) ?? null;
+  const till = ((await cookies()).get(TILL_COOKIE)?.value as StationSlug | undefined) ?? null;
+  const station = own ?? (till === "pastry" || till === "cafe" ? till : null);
 
   return { userId: user.id, employeeId: emp.id, name: emp.name_ar, email: user.email ?? null, role, station };
 });
