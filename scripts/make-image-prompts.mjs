@@ -115,10 +115,13 @@ STRICT RULES:
 • NO logos, NO watermarks, NO brand marks.
 • NO hands, NO people, NO faces.
 • NO borders or frames around the image.
-• Each image must show ONE item only.
+• NO numbers drawn anywhere on the picture.
+• NEVER put more than one item in a picture. No grids, no collages, no contact
+  sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
+  picture, always.
 
-Generate ONE image for EACH of the 10 items below, in this exact order, and
-number them 1 to 10 so I can match them:`;
+OUTPUT: give me 10 SEPARATE pictures — one picture per item, generated one at a
+time, in the order listed below. Do not merge them. Do not label them.`;
 
 const active = HAIL_MENU.flatMap((c) => c.items.filter((i) => i.active !== false).map((i) => ({ ...i, cat: c.name_ar })));
 const missing = active.filter((i) => !EN[i.name_ar]);
@@ -141,8 +144,22 @@ const out = [
   "١. افتح ChatGPT واطلب توليد الصور بلصق البرومبت كاملاً كما هو.",
   "٢. **بلوك الهوية في أعلى كل برومبت ثابت لا يتغيّر** — هو ما يجعل الصور تبدو طقماً واحداً.",
   "   لا تحذفه ولا تختصره عند التكرار على حساب آخر.",
-  "٣. احفظ الصور بأرقامها كما ولّدها (1، 2، 3…) داخل مجلد باسم البرومبت.",
+  "٣. احفظ الصور **بترتيب توليدها** باسم 1.png، 2.png … 10.png داخل مجلد باسم البرومبت.",
+  "   الترتيب هو الرابط الوحيد بين الصورة وصنفها — لا تبدّله.",
   "٤. أرسل لي المجلدات وأنا أربط كل صورة بصنفها وأرفعها للنظام.",
+  "",
+  "### إذا جمعها في صورة واحدة (شبكة مرقّمة)",
+  "",
+  "أحياناً يجمع ChatGPT الأصناف العشرة في لوحة واحدة بأرقام مرسومة. لا تقبلها —",
+  "الأرقام تُحرق داخل الصورة والدقة تنخفض. أرسل له:",
+  "",
+  "```",
+  "لا. أعد التوليد: صورة منفصلة لكل صنف، واحدة تلو الأخرى، بنفس الستايل تماماً.",
+  "ممنوع تجميعها في شبكة أو لوحة واحدة، وممنوع رسم أي رقم أو كتابة على الصورة.",
+  "ابدأ بالصنف الأول فقط وانتظرني أقول «التالي».",
+  "```",
+  "",
+  "ثم اكتب «التالي» بعد كل صورة. هذه الطريقة أبطأ لكنها لا تفشل أبداً.",
   "",
   "**التوزيع على ٣ حسابات:** " +
     groups.map((_, i) => `برومبت ${i + 1}`).reduce((acc, n, i) => {

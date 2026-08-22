@@ -28,3 +28,5 @@ Thumbs.db
 # Cloudflare build output
 /.open-next/
 /.wrangler/
+# صور المنيو الخام من ChatGPT — تُرفع إلى تخزين Supabase وليست جزءاً من الكود
+/p/

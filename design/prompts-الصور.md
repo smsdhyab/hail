@@ -7,8 +7,22 @@
 ١. افتح ChatGPT واطلب توليد الصور بلصق البرومبت كاملاً كما هو.
 ٢. **بلوك الهوية في أعلى كل برومبت ثابت لا يتغيّر** — هو ما يجعل الصور تبدو طقماً واحداً.
    لا تحذفه ولا تختصره عند التكرار على حساب آخر.
-٣. احفظ الصور بأرقامها كما ولّدها (1، 2، 3…) داخل مجلد باسم البرومبت.
+٣. احفظ الصور **بترتيب توليدها** باسم 1.png، 2.png … 10.png داخل مجلد باسم البرومبت.
+   الترتيب هو الرابط الوحيد بين الصورة وصنفها — لا تبدّله.
 ٤. أرسل لي المجلدات وأنا أربط كل صورة بصنفها وأرفعها للنظام.
+
+### إذا جمعها في صورة واحدة (شبكة مرقّمة)
+
+أحياناً يجمع ChatGPT الأصناف العشرة في لوحة واحدة بأرقام مرسومة. لا تقبلها —
+الأرقام تُحرق داخل الصورة والدقة تنخفض. أرسل له:
+
+```
+لا. أعد التوليد: صورة منفصلة لكل صنف، واحدة تلو الأخرى، بنفس الستايل تماماً.
+ممنوع تجميعها في شبكة أو لوحة واحدة، وممنوع رسم أي رقم أو كتابة على الصورة.
+ابدأ بالصنف الأول فقط وانتظرني أقول «التالي».
+```
+
+ثم اكتب «التالي» بعد كل صورة. هذه الطريقة أبطأ لكنها لا تفشل أبداً.
 
 **التوزيع على ٣ حسابات:** الحساب 1 → برومبت 1، برومبت 4، برومبت 7 · الحساب 2 → برومبت 2، برومبت 5، برومبت 8 · الحساب 3 → برومبت 3، برومبت 6
 
@@ -42,10 +56,13 @@ STRICT RULES:
 • NO logos, NO watermarks, NO brand marks.
 • NO hands, NO people, NO faces.
 • NO borders or frames around the image.
-• Each image must show ONE item only.
+• NO numbers drawn anywhere on the picture.
+• NEVER put more than one item in a picture. No grids, no collages, no contact
+  sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
+  picture, always.
 
-Generate ONE image for EACH of the 10 items below, in this exact order, and
-number them 1 to 10 so I can match them:
+OUTPUT: give me 10 SEPARATE pictures — one picture per item, generated one at a
+time, in the order listed below. Do not merge them. Do not label them.
 
 1. an almond bread loaf, sliced almonds on top, dusted with powdered sugar
 2. a golden corn bread roll (samoon), soft crumb, rustic crust
@@ -87,10 +104,13 @@ STRICT RULES:
 • NO logos, NO watermarks, NO brand marks.
 • NO hands, NO people, NO faces.
 • NO borders or frames around the image.
-• Each image must show ONE item only.
+• NO numbers drawn anywhere on the picture.
+• NEVER put more than one item in a picture. No grids, no collages, no contact
+  sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
+  picture, always.
 
-Generate ONE image for EACH of the 10 items below, in this exact order, and
-number them 1 to 10 so I can match them:
+OUTPUT: give me 10 SEPARATE pictures — one picture per item, generated one at a
+time, in the order listed below. Do not merge them. Do not label them.
 
 1. a white Belgian chocolate praline, glossy dome
 2. a hazelnut Belgian chocolate praline, whole hazelnut on top
@@ -132,10 +152,13 @@ STRICT RULES:
 • NO logos, NO watermarks, NO brand marks.
 • NO hands, NO people, NO faces.
 • NO borders or frames around the image.
-• Each image must show ONE item only.
+• NO numbers drawn anywhere on the picture.
+• NEVER put more than one item in a picture. No grids, no collages, no contact
+  sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
+  picture, always.
 
-Generate ONE image for EACH of the 10 items below, in this exact order, and
-number them 1 to 10 so I can match them:
+OUTPUT: give me 10 SEPARATE pictures — one picture per item, generated one at a
+time, in the order listed below. Do not merge them. Do not label them.
 
 1. a glazed doughnut with chocolate drizzle and chopped nuts
 2. a cinnamon roll with cream-cheese icing, warm and spiralled
@@ -177,10 +200,13 @@ STRICT RULES:
 • NO logos, NO watermarks, NO brand marks.
 • NO hands, NO people, NO faces.
 • NO borders or frames around the image.
-• Each image must show ONE item only.
+• NO numbers drawn anywhere on the picture.
+• NEVER put more than one item in a picture. No grids, no collages, no contact
+  sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
+  picture, always.
 
-Generate ONE image for EACH of the 10 items below, in this exact order, and
-number them 1 to 10 so I can match them:
+OUTPUT: give me 10 SEPARATE pictures — one picture per item, generated one at a
+time, in the order listed below. Do not merge them. Do not label them.
 
 1. a double espresso in a wide demitasse, deep crema
 2. a flat white in a small ceramic cup, velvety thin foam
@@ -222,10 +248,13 @@ STRICT RULES:
 • NO logos, NO watermarks, NO brand marks.
 • NO hands, NO people, NO faces.
 • NO borders or frames around the image.
-• Each image must show ONE item only.
+• NO numbers drawn anywhere on the picture.
+• NEVER put more than one item in a picture. No grids, no collages, no contact
+  sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
+  picture, always.
 
-Generate ONE image for EACH of the 10 items below, in this exact order, and
-number them 1 to 10 so I can match them:
+OUTPUT: give me 10 SEPARATE pictures — one picture per item, generated one at a
+time, in the order listed below. Do not merge them. Do not label them.
 
 1. a hot dark mocha, chocolate and espresso layers, cream on top
 2. a hot white mocha, pale cream layers, white chocolate curls
@@ -267,10 +296,13 @@ STRICT RULES:
 • NO logos, NO watermarks, NO brand marks.
 • NO hands, NO people, NO faces.
 • NO borders or frames around the image.
-• Each image must show ONE item only.
+• NO numbers drawn anywhere on the picture.
+• NEVER put more than one item in a picture. No grids, no collages, no contact
+  sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
+  picture, always.
 
-Generate ONE image for EACH of the 10 items below, in this exact order, and
-number them 1 to 10 so I can match them:
+OUTPUT: give me 10 SEPARATE pictures — one picture per item, generated one at a
+time, in the order listed below. Do not merge them. Do not label them.
 
 1. an iced americano, clear dark coffee over large ice cubes
 2. an iced caramel macchiato, distinct layers and caramel crosshatch
@@ -312,10 +344,13 @@ STRICT RULES:
 • NO logos, NO watermarks, NO brand marks.
 • NO hands, NO people, NO faces.
 • NO borders or frames around the image.
-• Each image must show ONE item only.
+• NO numbers drawn anywhere on the picture.
+• NEVER put more than one item in a picture. No grids, no collages, no contact
+  sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
+  picture, always.
 
-Generate ONE image for EACH of the 10 items below, in this exact order, and
-number them 1 to 10 so I can match them:
+OUTPUT: give me 10 SEPARATE pictures — one picture per item, generated one at a
+time, in the order listed below. Do not merge them. Do not label them.
 
 1. a pomegranate mojito, deep red, mint leaves and pomegranate seeds
 2. a strawberry mojito, pink, fresh strawberry and mint
@@ -357,10 +392,13 @@ STRICT RULES:
 • NO logos, NO watermarks, NO brand marks.
 • NO hands, NO people, NO faces.
 • NO borders or frames around the image.
-• Each image must show ONE item only.
+• NO numbers drawn anywhere on the picture.
+• NEVER put more than one item in a picture. No grids, no collages, no contact
+  sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
+  picture, always.
 
-Generate ONE image for EACH of the 10 items below, in this exact order, and
-number them 1 to 10 so I can match them:
+OUTPUT: give me 10 SEPARATE pictures — one picture per item, generated one at a
+time, in the order listed below. Do not merge them. Do not label them.
 
 1. a thick mango smoothie in a tall glass, fresh mango cheek beside
 2. a thick pineapple smoothie, pineapple wedge on the rim
