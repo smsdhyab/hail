@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import sharp from "sharp";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { requireAdmin } from "./auth";
 import type { StationSlug } from "./hail-menu";
@@ -180,7 +179,9 @@ export async function setCategoryStation(categoryId: string, station: StationSlu
   return { ok: true as const };
 }
 
-/** Upload an item image → resized webp in the public `menu` bucket. Returns its URL. */
+/** Upload an item image to the public `menu` bucket. Returns its URL.
+ *  The browser already resized it to webp (see resize-image.ts), so there is no
+ *  native image library on the server and this runs on any runtime. */
 export async function uploadItemImage(formData: FormData): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
   await requireAdmin();
   const file = formData.get("file");
@@ -188,12 +189,12 @@ export async function uploadItemImage(formData: FormData): Promise<{ ok: true; u
   if (!file.type.startsWith("image/")) return { ok: false, error: "الملف ليس صورة." };
   if (file.size > 8 * 1024 * 1024) return { ok: false, error: "الصورة كبيرة جداً (أكثر من 8MB)." };
 
-  const buf = Buffer.from(await file.arrayBuffer());
-  const webp = await sharp(buf).rotate().resize(800, 800, { fit: "inside", withoutEnlargement: true }).webp({ quality: 80 }).toBuffer();
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const ext = file.type === "image/webp" ? "webp" : file.type === "image/png" ? "png" : "jpg";
 
   const svc = createSupabaseServiceClient();
-  const path = `items/${crypto.randomUUID()}.webp`;
-  const { error } = await svc.storage.from("menu").upload(path, webp, { contentType: "image/webp", upsert: false });
+  const path = `items/${crypto.randomUUID()}.${ext}`;
+  const { error } = await svc.storage.from("menu").upload(path, bytes, { contentType: file.type, upsert: false });
   if (error) return { ok: false, error: error.message };
   const { data } = svc.storage.from("menu").getPublicUrl(path);
   return { ok: true, url: data.publicUrl };

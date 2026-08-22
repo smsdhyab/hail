@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { getServerUser, createSupabaseServiceClient } from "@/lib/supabase/server";
 import type { StationSlug } from "./hail-menu";
@@ -15,9 +16,15 @@ export type Staff = {
   station: StationSlug | null;
 };
 
-/** The current signed-in staff member, or null. Uses the service client to read
- *  the employees/roles tables reliably (after the auth token is validated). */
-export async function getStaff(): Promise<Staff | null> {
+/**
+ * The current signed-in staff member, or null.
+ *
+ * ONE database round trip: the employee row embeds its role and its station.
+ * It used to be three sequential queries, which cost ~1s per page render when
+ * the database is far away — the shop is in Iraq. `cache()` also collapses the
+ * repeated calls inside a single render into one.
+ */
+export const getStaff = cache(async function getStaff(): Promise<Staff | null> {
   if (isLocalDb()) return getLocalStaff();
 
   const user = await getServerUser();
@@ -26,26 +33,19 @@ export async function getStaff(): Promise<Staff | null> {
   const svc = createSupabaseServiceClient();
   const { data: emp } = await svc
     .from("employees")
-    .select("id, name_ar, role_id, station_id")
+    .select("id, name_ar, roles(name_en), stations(slug)")
     .eq("auth_user_id", user.id)
     .eq("is_active", true)
     .maybeSingle();
   if (!emp) return null;
 
-  let role: StaffRole | null = null;
-  if (emp.role_id) {
-    const { data: r } = await svc.from("roles").select("name_en").eq("id", emp.role_id).maybeSingle();
-    role = r?.name_en === "admin" ? "admin" : r?.name_en === "cashier" ? "cashier" : null;
-  }
-
-  let station: StationSlug | null = null;
-  if (emp.station_id) {
-    const { data: s } = await svc.from("stations").select("slug").eq("id", emp.station_id).maybeSingle();
-    station = (s?.slug as StationSlug) ?? null;
-  }
+  const one = <T,>(v: T[] | T | null): T | null => (Array.isArray(v) ? (v[0] ?? null) : v);
+  const roleName = one(emp.roles)?.name_en;
+  const role: StaffRole | null = roleName === "admin" ? "admin" : roleName === "cashier" ? "cashier" : null;
+  const station = (one(emp.stations)?.slug as StationSlug | undefined) ?? null;
 
   return { userId: user.id, employeeId: emp.id, name: emp.name_ar, email: user.email ?? null, role, station };
-}
+});
 
 /** Local (no-DB) session: an httpOnly cookie holding `<employeeId>:<station>`. */
 async function getLocalStaff(): Promise<Staff | null> {

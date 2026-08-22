@@ -19,6 +19,7 @@ import { formatIqdLabel } from "@/lib/cafe/money";
 import { STATIONS, type StationSlug } from "@/lib/cafe/hail-menu";
 import { MenuIcon } from "./MenuIcon";
 import { PriceInput } from "./PriceInput";
+import { resizeToWebp } from "@/lib/cafe/resize-image";
 
 type Editing = { item: AdminItem | null; categoryId: string };
 
@@ -220,7 +221,8 @@ function ItemForm({ editing, categories, onClose }: { editing: Editing; categori
     setUploading(true);
     setMsg(null);
     const fd = new FormData();
-    fd.append("file", f);
+    // shrink on the device: a phone photo goes up as ~120 KB, not 4 MB
+    fd.append("file", await resizeToWebp(f));
     const res = await uploadItemImage(fd);
     setUploading(false);
     if (!res.ok) {

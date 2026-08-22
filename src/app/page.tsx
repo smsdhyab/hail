@@ -1,7 +1,21 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { HailMark } from "@/components/cafe/Logo";
+import { getStaff } from "@/lib/cafe/auth";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+/**
+ * Routing used to live in a Next `proxy` (middleware). Next 16 pins proxy to
+ * the Node runtime, which edge hosts cannot run, so the two redirects it did
+ * now live in the pages that own them. Nothing security-related moved: the
+ * gate was always `(staff)/layout.tsx` re-checking the session server-side.
+ */
+export default async function Home() {
+  const staff = await getStaff().catch(() => null);
+  if (staff) redirect("/dashboard");
+  if (process.env.MODERN_ONLY === "1") redirect("/menu");
+
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-8 p-6 text-center">
       <div className="space-y-3">

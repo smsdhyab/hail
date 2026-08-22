@@ -94,6 +94,10 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
+  // Runs on the edge runtime: it only reads cookies and env and issues
+  // redirects, so it needs nothing from Node — and edge is the only runtime
+  // Cloudflare Workers can host middleware on.
+  runtime: "edge",
   // Run on all routes except Next internals and static assets. The PWA manifest
   // must stay public — the browser fetches it credential-less to install the app.
   matcher: ["/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|admin-manifest.webmanifest|sw.js|.*\\.(?:svg|png|jpg|jpeg|webp|gif|ico|pdf)$).*)"],

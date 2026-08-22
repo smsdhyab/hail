@@ -25,3 +25,6 @@ Thumbs.db
 .data/
 # generated PNG slices of the XD boards (regenerate from the .webp sources)
 /design/xd/png/
+# Cloudflare build output
+/.open-next/
+/.wrangler/

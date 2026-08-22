@@ -172,7 +172,9 @@ export function HelpClient({ isAdmin }: { isAdmin: boolean }) {
       <Accordion items={tab === "cashier" ? CASHIER : ADMIN} />
 
       <p className="rounded-xl bg-secondary/60 p-3 text-center text-xs text-muted-foreground">
-        لأي مشكلة تقنية تواصل مع الدعم. مخبز ومقهى هيل — الرمادي، العراق ☕
+        لأي مشكلة تقنية تواصل مع الدعم الفني في مركز الرؤية للابتكار الرقمي — واتساب 07734446636.
+        <br />
+        نظام الرؤية المتطور لإدارة الكافيهات والمخابز · مخبز ومقهى هيل — الرمادي، العراق ☕
       </p>
     </div>
   );

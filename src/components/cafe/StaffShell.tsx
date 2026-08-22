@@ -32,6 +32,7 @@ import type { StaffRole } from "@/lib/cafe/auth";
 import { listPendingOrders } from "@/lib/cafe/cashier-actions";
 import { savePushSubscription, removePushSubscription } from "@/lib/cafe/push-actions";
 import { HailMark } from "./Logo";
+import { SYSTEM } from "@/lib/cafe/branding";
 import { signOutLocal } from "@/lib/cafe/local-auth";
 
 function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
@@ -301,6 +302,17 @@ export function StaffShell({
         </div>
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-5 pb-24 md:pb-5">{children}</main>
+
+      {/* حقوق النظام — تظهر لطاقم العمل فقط، لا للزبون */}
+      <footer className="mx-auto w-full max-w-6xl px-4 pb-24 pt-2 text-center text-[11px] leading-relaxed text-muted-foreground print:hidden md:pb-6">
+        <p className="font-semibold">{SYSTEM.name_ar}</p>
+        <p>
+          تطوير{" "}
+          <a href={SYSTEM.site} target="_blank" rel="noopener noreferrer" className="font-bold text-primary hover:underline">
+            {SYSTEM.vendor_ar}
+          </a>
+        </p>
+      </footer>
 
       {/* app-like bottom tab bar (mobile only) */}
       <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border bg-background/95 backdrop-blur md:hidden print:hidden">

@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useCafeUI } from "@/components/CafeUIProvider";
 import { HailMark } from "@/components/cafe/Logo";
+import { StationIcon } from "@/components/cafe/StationIcon";
 import { STATIONS, type StationSlug } from "@/lib/cafe/hail-menu";
+import { SYSTEM } from "@/lib/cafe/branding";
 import { signInLocal } from "@/lib/cafe/local-auth";
 
 /**
@@ -87,6 +89,7 @@ export function SignInForm({ redirectTo, localMode }: { redirectTo: string; loca
           <h1 className="text-2xl font-bold text-primary">مخبز ومقهى هيل</h1>
           <p className="mt-1 text-sm text-muted-foreground">اختر الكاشير الذي تعمل عليه</p>
         </div>
+        <p className="-mt-3 text-xs text-muted-foreground">{SYSTEM.name_ar}</p>
         <div className="grid gap-3 sm:grid-cols-2">
           {STATIONS.map((s) => (
             <button
@@ -95,7 +98,7 @@ export function SignInForm({ redirectTo, localMode }: { redirectTo: string; loca
               onClick={() => setStation(s.slug)}
               className="flex flex-col items-center gap-2 rounded-2xl border-2 border-border bg-card p-6 transition hover:border-primary hover:bg-primary/5 active:scale-95"
             >
-              <span className="text-4xl">{s.emoji}</span>
+              <StationIcon station={s.slug} className="size-12 text-accent" />
               <span className="text-lg font-extrabold text-primary">{s.name_ar}</span>
             </button>
           ))}
@@ -120,7 +123,7 @@ export function SignInForm({ redirectTo, localMode }: { redirectTo: string; loca
           }}
           className="mx-auto flex items-center gap-2 rounded-full bg-accent/15 px-4 py-1.5 text-sm font-bold text-primary transition hover:bg-accent/25"
         >
-          <span>{chosen.emoji}</span>
+          <StationIcon station={chosen.slug} className="size-5" />
           <span>{chosen.name_ar}</span>
           <span className="text-xs font-normal text-muted-foreground">— تغيير</span>
         </button>
@@ -162,6 +165,15 @@ export function SignInForm({ redirectTo, localMode }: { redirectTo: string; loca
       >
         {loading ? t("auth.signingIn") : t("auth.signIn")}
       </button>
+
+      <p className="text-center text-[11px] text-muted-foreground">
+        {SYSTEM.name_ar}
+        <br />
+        تطوير{" "}
+        <a href={SYSTEM.site} target="_blank" rel="noopener noreferrer" className="font-bold text-primary hover:underline">
+          {SYSTEM.vendor_ar}
+        </a>
+      </p>
 
       {localMode && (
         <p className="text-center text-xs text-muted-foreground">

@@ -89,23 +89,42 @@ async function restWrite(path: string, method: string, body?: unknown) {
   });
   if (!r.ok) throw new Error(`${method} ${r.status}: ${(await r.text()).slice(0, 160)}`);
 }
-const summary = (from: string, to: string) =>
-  fetch(`${URL_}/rest/v1/rpc/range_summary`, { method: "POST", headers: H, body: JSON.stringify({ p_from: from, p_to: to }) }).then((r) => r.json());
+/** p_station null = the whole shop (the manager's unified view). */
+const summary = (from: string, to: string, station: string | null = null) =>
+  fetch(`${URL_}/rest/v1/rpc/range_summary`, {
+    method: "POST", headers: H, body: JSON.stringify({ p_from: from, p_to: to, p_station: station }),
+  }).then((r) => r.json());
 
-async function countOrdersToday() {
-  const r = await fetch(`${URL_}/rest/v1/orders?business_day=eq.${baghdadDay()}&select=id`, {
-    headers: { ...H, Prefer: "count=exact", Range: "0-0" },
+/** The two registers keep separate books; the manager sees the total AND the
+ *  split. Returns the «حسب الكاشير» lines appended to every money report. */
+async function stationLines(from: string, to: string) {
+  const stations = (await rest("stations?select=slug,name_ar&order=sort.asc")) as Row[];
+  const parts = await Promise.all(stations.map((st) => summary(from, to, String(st.slug))));
+  const out = ["", "🏷️ <b>حسب الكاشير</b>"];
+  stations.forEach((st, i) => {
+    const t = sumRows(parts[i]);
+    out.push(`• ${esc(st.name_ar)}: <b>${fmt(t.s)} د.ع</b> — ${t.c} طلب`);
   });
-  return Number((r.headers.get("content-range") ?? "/0").split("/")[1]) || 0;
+  return out;
+}
+
+/** One customer ticket = one order, however many registers it touched. */
+async function countOrdersToday() {
+  const rows = (await restAll(`orders?business_day=eq.${baghdadDay()}&select=group_no`)) as Row[];
+  return new Set(rows.map((o) => o.group_no)).size;
 }
 const pendingOrders = () =>
-  rest("orders?status=eq.pending&select=order_seq,channel,table_no,subtotal,created_at&order=created_at.asc");
+  rest("orders?status=eq.pending&select=group_no,channel,table_no,floor,subtotal,created_at,stations(name_ar)&order=created_at.asc");
 const todayTableOrders = () =>
-  rest(`orders?business_day=eq.${baghdadDay()}&table_no=not.is.null&select=table_no,status,order_seq,created_at&order=created_at.desc`);
+  rest(`orders?business_day=eq.${baghdadDay()}&table_no=not.is.null&select=table_no,status,group_no,created_at&order=created_at.desc`);
 const soldByItem = (fromDay: string) =>
   restAll(`order_items?select=name_ar,qty,orders!inner(status,business_day)&orders.status=eq.paid&orders.business_day=gte.${fromDay}`);
 const allItems = () => rest("menu_items?select=id,name_ar,price,cost,is_active,category_id&order=sort.asc");
-const allCats = () => rest("categories?select=id,name_ar,sort&order=sort.asc");
+const rpc = (fn: string, args: unknown) =>
+  fetch(`${URL_}/rest/v1/rpc/${fn}`, { method: "POST", headers: H, body: JSON.stringify(args) }).then((r) => r.json());
+const stockRows = (lowOnly = false) =>
+  rest(`inventory_view?select=item_id,name_ar,category_name,qty,unit,low_at,is_low${lowOnly ? "&is_low=eq.true" : ""}&order=category_name.asc,name_ar.asc`);
+const allCats = () => rest("categories?select=id,name_ar,sort,stations(name_ar)&order=sort.asc");
 const oneItem = async (id: string) =>
   (await rest(`menu_items?id=eq.${id}&select=id,name_ar,price,cost,is_active,category_id`))[0];
 
@@ -131,7 +150,11 @@ function mainMenu() {
     [{ text: "📆 مبيعات أمس", callback_data: "day|1" }, { text: "🔎 مبيعات بتاريخ", callback_data: "search" }],
     [{ text: "🧾 الطلبات الآن", callback_data: "now" }, { text: "🍽️ الطاولات", callback_data: "tables" }],
     [{ text: "🔥 الأكثر والأقل مبيعاً", callback_data: "top" }, { text: "📃 مبيعات كل منتج", callback_data: "counts" }],
-    [{ text: "📋 المنتجات المتاحة", callback_data: "avail" }, { text: "⚙️ إدارة المنتجات", callback_data: "pcats" }],
+    [{ text: "📋 الأصناف المتاحة", callback_data: "avail" }, { text: "⚙️ إدارة الأصناف", callback_data: "pcats" }],
+    [{ text: "📦 المخزون", callback_data: "stock" }, { text: "⚠️ النواقص", callback_data: "low" }],
+    [{ text: "🎁 العروض", callback_data: "offers" }, { text: "🥐 المعجنات", callback_data: "pastry" }],
+    [{ text: "🪑 أكثر الطاولات طلباً", callback_data: "tabtop|29" }, { text: "📅 تقرير العدد اليومي", callback_data: "dcount|6" }],
+    [{ text: "⚖️ مقارنة الكاشيرين", callback_data: "vs|6" }],
     [{ text: "🌙 التقرير اليومي النهائي", callback_data: "final" }, { text: "📉 إضافة مصروف", callback_data: "expadd" }],
   ];
 }
@@ -161,7 +184,7 @@ async function viewReport(days: number) {
 /** Full totals for one business day — for reconciling the drawer with a day that
  *  has already rolled over past midnight (business_day is a Baghdad calendar day). */
 async function viewDaySummary(day: string) {
-  const t = sumRows(await summary(day, day));
+  const [t, per] = [sumRows(await summary(day, day)), await stationLines(day, day)];
   const suffix = day === baghdadDay(-1) ? " (أمس)" : day === baghdadDay() ? " (اليوم)" : "";
   return [
     `📆 <b>مبيعات يوم ${day}${suffix}</b>`, "",
@@ -170,6 +193,7 @@ async function viewDaySummary(day: string) {
     `📈 الأرباح: <b>${fmt(t.p)} د.ع</b>`,
     `📉 المصروفات: <b>${fmt(t.e)} د.ع</b>`,
     `✅ الصافي: <b>${fmt(t.n)} د.ع</b>`,
+    ...per,
   ].join("\n");
 }
 
@@ -177,7 +201,11 @@ async function viewNow() {
   const [pending, total] = await Promise.all([pendingOrders(), countOrdersToday()]);
   const lines = [`🧾 <b>الطلبات الآن</b>`, "", `المعلّقة (بانتظار الدفع): <b>${pending.length}</b>`];
   for (const o of pending.slice(0, 15)) {
-    lines.push(`#${String(o.order_seq).padStart(3, "0")} — ${CHANNEL_AR[o.channel] ?? o.channel}${o.table_no ? ` — طاولة ${esc(o.table_no)}` : ""} — <b>${fmt(o.subtotal)} د.ع</b> (قبل ${agoMin(o.created_at)} د)`);
+    const st = (o.stations as Row | null)?.name_ar;
+    const where = o.table_no ? ` — طاولة ${esc(o.table_no)}${o.floor ? ` (ط${o.floor})` : ""}` : "";
+    lines.push(
+      `#${String(o.group_no).padStart(3, "0")}${st ? ` · ${esc(st)}` : ""} — ${CHANNEL_AR[o.channel] ?? o.channel}${where} — <b>${fmt(o.subtotal)} د.ع</b> (قبل ${agoMin(o.created_at)} د)`,
+    );
   }
   if (pending.length === 0) lines.push("لا يوجد طلبات معلّقة ✅");
   lines.push("", `إجمالي طلبات اليوم: <b>${total}</b>`);
@@ -201,7 +229,7 @@ async function viewTables() {
     const o = latest.get(t);
     if (!o) { empty.push(label(t)); continue; }
     const age = agoMin(o.created_at);
-    if (o.status === "pending") lines.push(`🔴 ${label(t)}: طلب #${String(o.order_seq).padStart(3, "0")} بانتظار الدفع (قبل ${age} د)`);
+    if (o.status === "pending") lines.push(`🔴 ${label(t)}: طلب #${String(o.group_no).padStart(3, "0")} بانتظار الدفع (قبل ${age} د)`);
     else if (o.status === "paid" && age <= 60) lines.push(`🟢 ${label(t)}: مشغولة — دُفع قبل ${age} د`);
     else empty.push(label(t));
   }
@@ -260,6 +288,7 @@ async function viewAvail() {
 async function viewDailyFinal() {
   const today = baghdadDay();
   const t = sumRows(await summary(today, today));
+  const per = await stationLines(today, today);
   const sold = (await aggregateSold(today)).filter(([, q]) => q > 0);
   const guests = sold.reduce((s, [, q]) => s + q, 0); // one item ≈ one guest
   const closure = (await rest(`register_closures?business_day=eq.${today}&select=remaining,note`))[0];
@@ -291,9 +320,146 @@ async function viewDailyFinal() {
   return lines.join("\n").slice(0, 4000);
 }
 
+
+/** 📦 المخزون — الكميات مجمّعة حسب القسم. صنف بلا صف مخزون لا يُتتبَّع. */
+async function viewStock() {
+  const rows = (await stockRows()) as Row[];
+  if (!rows.length) {
+    return "📦 <b>المخزون</b>\n\nلا يوجد صنف مُتتبَّع بعد.\nافتح «⚙️ إدارة الأصناف» ← اختر صنفاً ← «📦 المخزون» لإدخال أول كمية.";
+  }
+  const lines = ["📦 <b>المخزون</b>", ""];
+  let cat = "";
+  for (const r of rows) {
+    if (r.category_name !== cat) { cat = String(r.category_name); lines.push("", `<b>${esc(cat)}</b>`); }
+    lines.push(`${r.is_low ? "⚠️" : "•"} ${esc(r.name_ar)} — <b>${fmt(r.qty)}</b> ${esc(r.unit)}${r.is_low ? ` (الحدّ ${r.low_at})` : ""}`);
+  }
+  const low = rows.filter((r) => r.is_low).length;
+  lines.push("", low ? `⚠️ ${low} صنف عند حدّ النقص أو تحته` : "كل الكميات فوق حدّ التنبيه ✅");
+  return lines.join("\n").slice(0, 4000);
+}
+
+/** ⚠️ النواقص — ما يجب شراؤه أو تحضيره اليوم. */
+async function viewLow() {
+  const rows = (await stockRows(true)) as Row[];
+  if (!rows.length) return "⚠️ <b>النواقص</b>\n\nلا يوجد نقص — كل الكميات فوق حدّ التنبيه ✅";
+  const lines = ["⚠️ <b>النواقص — تحتاج تجهيز</b>", ""];
+  for (const r of rows) {
+    lines.push(`• ${esc(r.name_ar)} <i>(${esc(r.category_name)})</i> — المتبقي <b>${fmt(r.qty)}</b> ${esc(r.unit)} · الحدّ ${r.low_at}`);
+  }
+  return lines.join("\n").slice(0, 4000);
+}
+
+/** 🎁 العروض — عروض اليوم العامة وأسعار الأصناف المخفّضة. */
+async function viewOffers() {
+  const [general, items] = await Promise.all([
+    rest("active_offers?select=title,description"),
+    rest("active_item_offers?select=item_id,offer_price"),
+  ]);
+  const lines = ["🎁 <b>عروض اليوم</b>", ""];
+  if ((general as Row[]).length) {
+    for (const o of general as Row[]) lines.push(`• <b>${esc(o.title)}</b>${o.description ? ` — ${esc(o.description)}` : ""}`);
+  } else lines.push("لا توجد عروض عامة اليوم.");
+  if ((items as Row[]).length) {
+    const nameOf = new Map(((await allItems()) as Row[]).map((i) => [String(i.id), String(i.name_ar)]));
+    lines.push("", "<b>أسعار خاصة اليوم:</b>");
+    for (const o of items as Row[]) {
+      const price = Number(o.offer_price) === 0 ? "مجاناً" : `${fmt(o.offer_price)} د.ع`;
+      lines.push(`• ${esc(nameOf.get(String(o.item_id)) ?? "صنف")} — <b>${price}</b>`);
+    }
+  }
+  return lines.join("\n").slice(0, 4000);
+}
+
+/** 🥐 المعجنات — الدفعات المودعة وأيها قارب على الانتهاء. */
+async function viewPastry() {
+  const batches = (await rest(
+    "pastry_batches?active=eq.true&select=item_name,quantity,deposited_on,shelf_days,note&order=deposited_on.asc",
+  )) as Row[];
+  if (!batches.length) return "🥐 <b>المعجنات</b>\n\nلا توجد دفعات مسجّلة.\nتُسجَّل من صفحة «المعجنات والعروض» في النظام.";
+  const todayMs = new Date(`${baghdadDay()}T00:00:00Z`).getTime();
+  const daysLeft = (b: Row) => {
+    const exp = new Date(`${b.deposited_on}T00:00:00Z`);
+    exp.setUTCDate(exp.getUTCDate() + (Number(b.shelf_days) || 6));
+    return Math.round((exp.getTime() - todayMs) / 86_400_000);
+  };
+  const lines = ["🥐 <b>المعجنات المودعة</b>", ""];
+  for (const b of batches) {
+    const d = daysLeft(b);
+    const tag = d < 0 ? "❌ منتهية" : d <= 1 ? "⚠️ تنتهي قريباً" : `✅ باقٍ ${d} يوم`;
+    lines.push(`• ${esc(b.item_name)} — <b>${fmt(b.quantity)}</b> · ${tag}${b.note ? ` — ${esc(b.note)}` : ""}`);
+  }
+  const soon = batches.filter((b) => daysLeft(b) <= 1);
+  if (soon.length) lines.push("", `⚠️ قدّمها كعرض اليوم: <b>${soon.map((b) => esc(b.item_name)).join("، ")}</b>`);
+  return lines.join("\n").slice(0, 4000);
+}
+
+/** 🪑 أكثر الطاولات طلباً — بالتذاكر، فالطلب المشترك يُعدّ مرة واحدة. */
+async function viewTableTop(days: number) {
+  const rows = (await rpc("table_popularity", { p_from: baghdadDay(-days), p_to: baghdadDay() })) as Row[];
+  if (!Array.isArray(rows) || !rows.length) return "🪑 <b>أكثر الطاولات طلباً</b>\n\nلا توجد طلبات على طاولات في هذه المدة.";
+  const label = (t: string) => (/^[0-9]+$/.test(t) ? `طاولة ${t}` : t);
+  const lines = [`🪑 <b>أكثر الطاولات طلباً — آخر ${days + 1} يوم</b>`, ""];
+  rows.slice(0, 15).forEach((r, i) => {
+    const medal = ["🥇", "🥈", "🥉"][i] ?? `${i + 1}.`;
+    lines.push(`${medal} ${esc(label(String(r.table_no)))} — <b>${fmt(r.tickets)}</b> طلب · ${fmt(r.sales)} د.ع`);
+  });
+  return lines.join("\n").slice(0, 4000);
+}
+
+/** 📅 تقرير العدد اليومي — صف لكل يوم: التذاكر والقطع والمبيعات. */
+async function viewDailyCounts(days: number) {
+  const rows = (await rpc("daily_counts", { p_from: baghdadDay(-days), p_to: baghdadDay() })) as Row[];
+  if (!Array.isArray(rows)) return "تعذّر جلب التقرير.";
+  const lines = [`📅 <b>تقرير العدد اليومي — آخر ${days + 1} يوم</b>`, ""];
+  let tT = 0, tP = 0, tS = 0;
+  for (const r of rows) {
+    tT += +r.tickets; tP += +r.pieces; tS += +r.sales;
+    lines.push(`📆 ${String(r.day).slice(5)} — <b>${fmt(r.tickets)}</b> طلب · ${fmt(r.pieces)} قطعة · <b>${fmt(r.sales)} د.ع</b>`);
+  }
+  lines.push("", `<b>المجموع:</b> ${fmt(tT)} طلب · ${fmt(tP)} قطعة · <b>${fmt(tS)} د.ع</b>`);
+  lines.push(`متوسط قيمة الطلب: <b>${fmt(tT ? tS / tT : 0)} د.ع</b>`);
+  return lines.join("\n").slice(0, 4000);
+}
+
+/** ⚖️ مقارنة الكاشيرين — من باع أكثر، وبأي نسبة، وأين ذهب الفرق. */
+async function viewVersus(days: number) {
+  const from = baghdadDay(-days), to = baghdadDay();
+  const stations = (await rest("stations?select=slug,name_ar&order=sort.asc")) as Row[];
+  const parts = await Promise.all(stations.map((st) => summary(from, to, String(st.slug))));
+  const rows = stations.map((st, i) => ({ name: String(st.name_ar), t: sumRows(parts[i]) }));
+  const grand = rows.reduce((a, r) => a + r.t.s, 0);
+  const title = days === 0 ? "اليوم" : `آخر ${days + 1} يوم`;
+
+  const lines = [`⚖️ <b>مقارنة الكاشيرين — ${title}</b>`, ""];
+  for (const r of rows) {
+    const share = grand ? Math.round((r.t.s * 100) / grand) : 0;
+    // شريط بصري من ١٠ خانات ليُقرأ الفرق بلمحة
+    const bar = "█".repeat(Math.round(share / 10)) + "░".repeat(10 - Math.round(share / 10));
+    lines.push(
+      `<b>${esc(r.name)}</b>`,
+      `<code>${bar}</code> ${share}%`,
+      `💰 المبيعات: <b>${fmt(r.t.s)} د.ع</b> · 🧾 ${fmt(r.t.c)} طلب`,
+      `📈 الأرباح: <b>${fmt(r.t.p)} د.ع</b> · 🧮 متوسط الطلب: <b>${fmt(r.t.c ? r.t.s / r.t.c : 0)} د.ع</b>`,
+      "",
+    );
+  }
+  lines.push(`💰 <b>مجموع المحل: ${fmt(grand)} د.ع</b>`);
+  if (rows.length === 2 && grand) {
+    const [a, b] = rows;
+    const hi = a.t.s >= b.t.s ? a : b, lo = a.t.s >= b.t.s ? b : a;
+    const diff = hi.t.s - lo.t.s;
+    lines.push(
+      diff === 0
+        ? "⚖️ القسمان متعادلان تماماً."
+        : `🔺 <b>${esc(hi.name)}</b> يتقدّم بـ <b>${fmt(diff)} د.ع</b> (${lo.t.s ? Math.round((diff * 100) / lo.t.s) : 100}% فوق ${esc(lo.name)})`,
+    );
+  }
+  return lines.join("\n").slice(0, 4000);
+}
+
 async function kbCategories() {
   const cats = await allCats();
-  const rows = cats.map((c: Row) => [{ text: c.name_ar, callback_data: `pcat|${c.id}` }]);
+  const rows = cats.map((c: Row) => [{ text: `${c.name_ar} · ${(c.stations as Row | null)?.name_ar ?? "؟"}`, callback_data: `pcat|${c.id}` }]);
   rows.push(BACK);
   return rows;
 }
@@ -307,12 +473,23 @@ async function kbItems(catId: string) {
 function kbItem(it: Row) {
   return [
     [{ text: "💰 تعديل السعر", callback_data: `pset|${it.id}|price` }, { text: "🏷️ تعديل الكلفة", callback_data: `pset|${it.id}|cost` }],
-    [{ text: it.is_active ? "⛔ تعطيل" : "✅ تفعيل", callback_data: `ptog|${it.id}` }, { text: "🗑️ حذف", callback_data: `pdel|${it.id}` }],
+    [{ text: "📦 المخزون", callback_data: `pstock|${it.id}` }, { text: it.is_active ? "⛔ تعطيل" : "✅ تفعيل", callback_data: `ptog|${it.id}` }],
+    [{ text: "🗑️ حذف", callback_data: `pdel|${it.id}` }],
     [{ text: "⬅️ رجوع", callback_data: `pcat|${it.category_id}` }, ...BACK],
   ];
 }
-const itemText = (it: Row) =>
-  [`⚙️ <b>${esc(it.name_ar)}</b>`, "", `💰 السعر: <b>${fmt(it.price)} د.ع</b>`, `🏷️ الكلفة: <b>${fmt(it.cost)} د.ع</b>`, `الحالة: ${it.is_active ? "مفعّل ✅" : "معطّل ⛔"}`].join("\n");
+async function itemText(it: Row) {
+  const inv = ((await rest(`inventory?item_id=eq.${it.id}&select=qty,unit,low_at`)) as Row[])[0];
+  return [
+    `⚙️ <b>${esc(it.name_ar)}</b>`, "",
+    `💰 السعر: <b>${fmt(it.price)} د.ع</b>`,
+    `🏷️ الكلفة: <b>${fmt(it.cost)} د.ع</b>`,
+    inv
+      ? `📦 المخزون: <b>${fmt(inv.qty)}</b> ${esc(inv.unit)}${Number(inv.qty) <= Number(inv.low_at) ? " ⚠️ ناقص" : ""} (الحدّ ${inv.low_at})`
+      : `📦 المخزون: غير مُتتبَّع`,
+    `الحالة: ${it.is_active ? "مفعّل ✅" : "معطّل ⛔"}`,
+  ].join("\n");
+}
 
 // ── handlers ───────────────────────────────────────────────────────────────
 const authorized = (chatId: number | string) => !OWNERS.length || OWNERS.includes(String(chatId));
@@ -335,6 +512,27 @@ async function onMessage(msg: Row) {
       }
       await say(chatId, await viewDaySummary(day), [[{ text: "🔄 تحديث", callback_data: `dayx|${day}` }], BACK]);
       return;
+    }
+    if (state.action === "stock") {
+      const raw = normDigits(text.trim());
+      const it = await oneItem(String(state.itemId));
+      // «حد 5» sets the low-stock threshold instead of the quantity
+      const thr = raw.match(/^(?:حد|حدّ)\s*(\d+)$/);
+      if (thr) {
+        await restWrite("inventory", "POST", { item_id: state.itemId, qty: 0, low_at: Number(thr[1]) });
+        await restWrite(`inventory?item_id=eq.${state.itemId}`, "PATCH", { low_at: Number(thr[1]) });
+        await clearState(chatId);
+        return say(chatId, `✅ حدّ التنبيه لـ<b>${esc(it.name_ar)}</b> صار <b>${thr[1]}</b>\n\n${await itemText(it)}`, kbItem(it));
+      }
+      const m = raw.match(/^([+-]?)(\d+)$/);
+      if (!m) return say(chatId, "أرسل رقماً فقط — أو <code>+10</code> / <code>-3</code> / <code>حد 5</code>");
+      const n = Number(m[2]);
+      const args = m[1] === "+" ? { p_item: state.itemId, p_delta: n }
+        : m[1] === "-" ? { p_item: state.itemId, p_delta: -n }
+        : { p_item: state.itemId, p_set: n };
+      const qty = await rpc("adjust_stock", args);
+      await clearState(chatId);
+      return say(chatId, `✅ مخزون <b>${esc(it.name_ar)}</b> صار <b>${fmt(qty)}</b>\n\n${await itemText(it)}`, kbItem(it));
     }
     if (state.action === "price" || state.action === "cost") {
       const val = Math.round(Number(text.replace(/[^\d.]/g, "")));
@@ -401,18 +599,51 @@ async function onCallback(cb: Row) {
   if (cmd === "top") return say(chatId, await viewTop(), [BACK], mid);
   if (cmd === "counts") return say(chatId, await viewCounts(), [BACK], mid);
   if (cmd === "avail") return say(chatId, await viewAvail(), [BACK], mid);
+  if (cmd === "stock")
+    return say(chatId, await viewStock(), [[{ text: "🔄 تحديث", callback_data: "stock" }, { text: "⚠️ النواقص", callback_data: "low" }], BACK], mid);
+  if (cmd === "low")
+    return say(chatId, await viewLow(), [[{ text: "🔄 تحديث", callback_data: "low" }, { text: "📦 كل المخزون", callback_data: "stock" }], BACK], mid);
+  if (cmd === "offers") return say(chatId, await viewOffers(), [[{ text: "🔄 تحديث", callback_data: "offers" }], BACK], mid);
+  if (cmd === "pastry") return say(chatId, await viewPastry(), [[{ text: "🔄 تحديث", callback_data: "pastry" }], BACK], mid);
+  if (cmd === "tabtop")
+    return say(chatId, await viewTableTop(Number(a)), [
+      [{ text: "٧ أيام", callback_data: "tabtop|6" }, { text: "٣٠ يوم", callback_data: "tabtop|29" }, { text: "٩٠ يوم", callback_data: "tabtop|89" }],
+      BACK,
+    ], mid);
+  if (cmd === "dcount")
+    return say(chatId, await viewDailyCounts(Number(a)), [
+      [{ text: "٧ أيام", callback_data: "dcount|6" }, { text: "٣٠ يوم", callback_data: "dcount|29" }],
+      BACK,
+    ], mid);
+  if (cmd === "vs")
+    return say(chatId, await viewVersus(Number(a)), [
+      [{ text: "اليوم", callback_data: "vs|0" }, { text: "٧ أيام", callback_data: "vs|6" }, { text: "٣٠ يوم", callback_data: "vs|29" }],
+      BACK,
+    ], mid);
+  if (cmd === "pstock") {
+    await setState(chatId, { action: "stock", itemId: a });
+    const it = await oneItem(a);
+    const cur = ((await rest(`inventory?item_id=eq.${a}&select=qty,low_at`)) as Row[])[0];
+    return say(
+      chatId,
+      `📦 <b>${esc(it.name_ar)}</b>\nالكمية الحالية: <b>${cur ? fmt(cur.qty) : 0}</b>${cur ? ` · حدّ التنبيه ${cur.low_at}` : " (غير مُتتبَّع بعد)"}\n\n`
+        + "أرسل الكمية الجديدة (رقم)، أو <code>+10</code> للإضافة و<code>-3</code> للخصم.\nولتغيير حدّ التنبيه أرسل: <code>حد 5</code>",
+      [[{ text: "إلغاء", callback_data: `pitem|${a}` }]],
+      mid,
+    );
+  }
   if (cmd === "expadd") {
     await setState(chatId, { action: "expense" });
     return say(chatId, "💸 أرسل: <i>المبلغ ثم الوصف</i>\nمثال: <code>5000 مشتريات حليب</code>", [[{ text: "إلغاء", callback_data: "menu" }]], mid);
   }
   if (cmd === "pcats") return say(chatId, "⚙️ <b>إدارة المنتجات</b> — اختر القسم:", await kbCategories(), mid);
   if (cmd === "pcat") return say(chatId, "اختر منتجاً لإدارته:", await kbItems(a), mid);
-  if (cmd === "pitem") { const it = await oneItem(a); return say(chatId, itemText(it), kbItem(it), mid); }
+  if (cmd === "pitem") { const it = await oneItem(a); return say(chatId, await itemText(it), kbItem(it), mid); }
   if (cmd === "ptog") {
     const it = await oneItem(a);
     await restWrite(`menu_items?id=eq.${a}`, "PATCH", { is_active: !it.is_active });
     const upd = await oneItem(a);
-    return say(chatId, `${upd.is_active ? "تم التفعيل ✅" : "تم التعطيل ⛔"}\n\n${itemText(upd)}`, kbItem(upd), mid);
+    return say(chatId, `${upd.is_active ? "تم التفعيل ✅" : "تم التعطيل ⛔"}\n\n${await itemText(upd)}`, kbItem(upd), mid);
   }
   if (cmd === "pset") {
     await setState(chatId, { action: b, itemId: a });

@@ -1,0 +1,13 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "hail",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-08-01",
+  // Next.js server code needs the Node built-ins (crypto, buffer, streams).
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": { "enabled": true }
+}

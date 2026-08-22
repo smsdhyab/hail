@@ -13,7 +13,7 @@ const tajawal = Tajawal({
 
 export const metadata: Metadata = {
   title: "مخبز ومقهى هيل — HAIL Bakery & Cafe",
-  description: "منيو ونظام طلبات وولاء مخبز ومقهى هيل.",
+  description: "منيو ونظام طلبات وولاء مخبز ومقهى هيل — نظام الرؤية المتطور لإدارة الكافيهات والمخابز، تطوير مركز الرؤية للابتكار الرقمي.",
   manifest: "/manifest.webmanifest",
   // favicon comes from src/app/icon.png (Next serves it automatically)
   icons: {

@@ -4,9 +4,15 @@
 #  ويشغّله مع بدء التشغيل، يختبر فتح الدرج، ويصنع اختصار «كاشير هيل»
 #  بوضع الطباعة الصامتة. آمن لإعادة التشغيل في أي وقت.
 #
-#  التشغيل (PowerShell كمسؤول):
-#    irm http://localhost:3000/scripts/setup-pos.ps1 -OutFile "$env:TEMP\hail-setup.ps1"; powershell -ExecutionPolicy Bypass -File "$env:TEMP\hail-setup.ps1"
+#  التشغيل: انسخ سطر التثبيت من ملف «تثبيت — كاشير …» وألصقه في PowerShell.
+#
+#  -Station  pastry | cafe   (أي كاشير يعمل عليه هذا الجهاز)
+#  -Url      رابط النظام     (إن تُرك فارغاً يسأل عنه)
 # ══════════════════════════════════════════════════════════════════════════
+param(
+  [ValidateSet("pastry", "cafe")][string]$Station = "",
+  [string]$Url = ""
+)
 $ErrorActionPreference = "Continue"
 chcp 65001 | Out-Null
 
@@ -27,8 +33,25 @@ if (-not $isAdmin) {
   exit 1
 }
 
+# ── 0.5) أي كاشير؟ وما رابط النظام؟ ────────────────────────────────────────
+if (-not $Station) {
+  Write-Host ""
+  Write-Host "  1) كاشير المعجنات والمخبوزات"
+  Write-Host "  2) كاشير الكافيه"
+  $pick = Read-Host "اختر رقم الكاشير لهذا الجهاز (1 أو 2)"
+  $Station = if ($pick -eq "2") { "cafe" } else { "pastry" }
+}
+$StationName = if ($Station -eq "cafe") { "كاشير الكافيه" } else { "كاشير المعجنات" }
+
+if (-not $Url) {
+  $Url = Read-Host "الصق رابط النظام (مثال: https://hail.example.workers.dev)"
+}
+$Url = $Url.Trim().TrimEnd("/")
+if (-not $Url.StartsWith("http")) { $Url = "https://$Url" }
+
 Write-Host ""
-Write-Host "══════ إعداد كاشير مخبز ومقهى هيل ══════"
+Write-Host "══════ إعداد $StationName — مخبز ومقهى هيل ══════"
+Write-Host "الرابط: $Url"
 Write-Host ""
 
 # ── 1) اكتشاف طابعة الفواتير ────────────────────────────────────────────────
@@ -134,20 +157,25 @@ if ($browser) {
   # أيقونة هيل للاختصار (تُنزَّل مرة واحدة؛ إن فشل التنزيل نستخدم أيقونة المتصفح)
   $ico = "$dir\hail.ico"
   try {
-    Invoke-WebRequest "http://localhost:3000/public/logo.ico" -OutFile $ico -UseBasicParsing -TimeoutSec 20
+    Invoke-WebRequest "$Url/icons/icon-192.png" -OutFile "$dir\hail.png" -UseBasicParsing -TimeoutSec 20
+    Add-Type -AssemblyName System.Drawing
+    $bmp = [Drawing.Bitmap]::FromFile("$dir\hail.png")
+    $icon = [Drawing.Icon]::FromHandle($bmp.GetHicon())
+    $fs = [IO.File]::Create($ico); $icon.Save($fs); $fs.Close(); $bmp.Dispose()
   } catch { $ico = $null }
 
   $ws = New-Object -ComObject WScript.Shell
-  $lnk = $ws.CreateShortcut("$([Environment]::GetFolderPath('CommonDesktopDirectory'))\كاشير هيل.lnk")
+  $lnk = $ws.CreateShortcut("$([Environment]::GetFolderPath('CommonDesktopDirectory'))\$StationName.lnk")
   $lnk.TargetPath = $browser
-  # نافذة تطبيق مستقلة بلا أشرطة متصفح (--app) + طباعة صامتة + ملء الشاشة — تفتح الكاشير مباشرة كتطبيق
-  $lnk.Arguments = "--app=http://localhost:3000/cashier --kiosk-printing --start-maximized --no-first-run"
+  # نافذة تطبيق مستقلة بلا أشرطة متصفح (--app) + طباعة صامتة + ملء الشاشة.
+  # تفتح على شاشة الطلبات الواردة — وهي شاشة العمل اليومية لكل كاشير.
+  $lnk.Arguments = "--app=$Url/orders --kiosk-printing --start-maximized --no-first-run"
   if ($ico -and (Test-Path $ico)) { $lnk.IconLocation = "$ico,0" } else { $lnk.IconLocation = "$browser,0" }
   $lnk.Save()
-  Say "اختصار «كاشير هيل» (نافذة تطبيق نظيفة بلا متصفح + أيقونة هيل + طباعة صامتة)"
+  Say "اختصار «$StationName» (نافذة تطبيق نظيفة + أيقونة هيل + طباعة صامتة)"
 
   # ── يفتح الكاشير تلقائياً عند تشغيل ويندوز (نسخة من الاختصار في مجلد بدء التشغيل) ──
-  $startupLnk = $ws.CreateShortcut("$startupDir\كاشير هيل.lnk")
+  $startupLnk = $ws.CreateShortcut("$startupDir\$StationName.lnk")
   $startupLnk.TargetPath  = $browser
   $startupLnk.Arguments   = $lnk.Arguments
   $startupLnk.IconLocation = $lnk.IconLocation
@@ -159,9 +187,14 @@ if ($browser) {
 
 Write-Host ""
 Write-Host "══════ اكتمل الإعداد ══════"
-Write-Host "الطابعة: $($chosen.Name)  |  المشاركة: $share  |  الوكيل: 127.0.0.1:9977"
-Write-Host "الكاشير + وكيل الدرج يبدآن تلقائياً عند تشغيل ويندوز (بعد تسجيل الدخول)."
-Write-Host "المتبقي عليك: أول مرة سجّل الدخول في «كاشير هيل» وفعّل خياري 🖨️ و 💰 داخل الشاشة."
+Write-Host "الجهاز: $StationName"
+Write-Host "الطابعة: $($chosen.Name)  |  المشاركة: $share  |  وكيل الدرج: 127.0.0.1:9977"
+Write-Host "الرابط: $Url/orders"
+Write-Host ""
+Write-Host "الشاشة + وكيل الدرج يبدآن تلقائياً عند تشغيل ويندوز (بعد تسجيل الدخول)."
+Write-Host "المتبقي عليك مرة واحدة:"
+Write-Host "  1) افتح الاختصار، اختر «$StationName»، وسجّل الدخول بحساب هذا الكاشير."
+Write-Host "  2) داخل الشاشة فعّل: 🖨️ الطباعة التلقائية  و  💰 فتح القاصة عند الدفع."
 Write-Host ""
 Write-Host "اختياري — لتشغيل غير مراقَب تماماً (بلا كتابة كلمة سر ويندوز عند الإقلاع):"
 Write-Host "  شغّل  netplwiz  ← ألغِ تحديد «يجب على المستخدمين إدخال اسم وكلمة مرور» ← أدخل كلمة السر مرة."

@@ -1,4 +1,5 @@
 import { formatIqd } from "@/lib/cafe/money";
+import { SYSTEM } from "@/lib/cafe/branding";
 
 export type ReceiptData = {
   orderNumber: string;
@@ -108,6 +109,7 @@ export function Receipt({ data }: { data: ReceiptData }) {
       )}
       <div style={{ borderTop: "1px dashed #000", margin: "6px 0 4px" }} />
       <div style={{ textAlign: "center", fontSize: "11px" }}>شكراً لزيارتكم ❤</div>
+      <div style={{ textAlign: "center", fontSize: "9px", marginTop: "2px" }}>{SYSTEM.vendor_ar}</div>
     </div>
   );
 }

@@ -43,7 +43,24 @@ export type Database = {
           name_ar: string; role_id: string | null; station_id: string | null; auth_user_id: string | null; is_active: boolean;
           wage_amount: number; wage_period: "daily" | "weekly" | "monthly" | null;
         }>;
-        Relationships: [];
+        // Declared so `select("...,roles(name_en),stations(slug)")` type-checks —
+        // one round trip instead of three, which matters a lot from Iraq.
+        Relationships: [
+          {
+            foreignKeyName: "employees_role_id_fkey";
+            columns: ["role_id"];
+            isOneToOne: false;
+            referencedRelation: "roles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "employees_station_id_fkey";
+            columns: ["station_id"];
+            isOneToOne: false;
+            referencedRelation: "stations";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       categories: {
         Row: Timestamped & { name_ar: string; image_url: string | null; sort: number; is_active: boolean; station_id: string | null };

@@ -295,6 +295,7 @@ export function ModernMenuClient({
 
           {/* حقوق النظام — أزرار تواصل سريع (تظهر في المنيو فقط) */}
           <footer className="mt-6 border-t border-[#f2924c]/15 pt-6 text-center">
+            <p className="text-[11px] text-[#f2efe4]/45">نظام الرؤية المتطور لإدارة الكافيهات والمخابز</p>
             <p className="text-[11px] text-[#f2efe4]/45">تصميم وتطوير</p>
             <p className="mb-3 text-sm font-bold text-[#f2924c]">مركز الرؤية للابتكار الرقمي</p>
             <div className="flex flex-wrap items-center justify-center gap-2">
