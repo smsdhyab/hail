@@ -5,7 +5,7 @@ import type { Dictionary } from "./index";
  * contain exactly the keys in `en` (a missing or extra key is a type error).
  */
 export const ar: Dictionary = {
-  "app.name": "بيزارا كافيه",
+  "app.name": "مخبز ومقهى هيل",
   "app.tagline": "طلبات الكافيه والولاء",
 
   "nav.menu": "المنيو",

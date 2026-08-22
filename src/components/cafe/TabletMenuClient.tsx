@@ -6,21 +6,23 @@ import Link from "next/link";
 import { Check, LogIn, Minus, Plus, ShoppingCart, X } from "lucide-react";
 import type { MenuCategoryView, MenuItemView } from "@/lib/cafe/menu-data";
 import { formatIqdLabel } from "@/lib/cafe/money";
-import { submitOrder, type OrderLineInput } from "@/lib/cafe/order-actions";
+import { submitOrder, type OrderLineInput, type OrderSplitPart } from "@/lib/cafe/order-actions";
 import { useCart } from "./use-cart";
 import { MenuIcon } from "./MenuIcon";
-import { PizzaraMark } from "./Logo";
+import { HailMark } from "./Logo";
 
 /** Primary customer menu — full-screen: category rail on the RIGHT, product grid
  *  on the LEFT, cart + checkout, table number, size picker + hot-drink pastry
- *  cross-sell. Coffee palette. */
+ *  cross-sell. HAIL palette. */
 
-// coffee palette (adopted as the standard look)
+// HAIL palette — straight from the XD design file: cream paper, olive panels,
+// orange CTA. --accent is olive (headings/prices, readable on cream);
+// --accent2 is the orange used for the primary call-to-action.
 const VARS: Record<string, string> = {
-  "--accent": "#d18b4a", "--accent2": "#e6a862", "--panel": "#2a1a10", "--panelsoft": "#241610",
-  "--text": "#f3e3cf", "--muted": "#c9b299", "--line": "rgba(209,139,74,0.16)", "--active": "#f3e3cf", "--activeink": "#2b1a10",
+  "--accent": "#556f42", "--accent2": "#f2924c", "--panel": "#e8ebe0", "--panelsoft": "#ffffff",
+  "--text": "#22301a", "--muted": "#5e6f51", "--line": "rgba(85,111,66,0.18)", "--active": "#556f42", "--activeink": "#f6f4ee",
 };
-const GRAD = "radial-gradient(1100px 700px at 88% -8%, rgba(209,139,74,0.14), transparent 55%), linear-gradient(160deg, #1d120b, #120a05)";
+const GRAD = "radial-gradient(1100px 700px at 88% -8%, rgba(242,146,76,0.13), transparent 55%), linear-gradient(160deg, #f7f5ef, #eae7db)";
 
 /** menu image → CDN path; returns both the light -sm variant and the full one
  *  (admin-uploaded images have no -sm, so we fall back to full then to an icon). */
@@ -38,11 +40,15 @@ function onImgError(e: React.SyntheticEvent<HTMLImageElement>) {
 }
 
 type Effect = "hot" | "cold" | "pastry";
-function effectFor(cat: string): Effect {
-  if (cat.includes("الساخنة")) return "hot";
-  if (cat.includes("معجنات")) return "pastry";
-  return "cold";
+/** Which idle animation the product cards get. Driven by the owning station
+ *  first, so every bakery category behaves the same without name matching. */
+function effectFor(cat: MenuCategoryView | undefined): Effect {
+  if (!cat) return "cold";
+  if (cat.station === "pastry") return "pastry";
+  return cat.name_ar.includes("الساخنة") ? "hot" : "cold";
 }
+/** How many bakery items to offer alongside a drink before the strip gets long. */
+const CROSS_SELL_LIMIT = 12;
 const DROPS = [
   { left: "24%", top: "16%", size: 5, dur: "2.4s", delay: "0s" },
   { left: "62%", top: "12%", size: 4, dur: "3s", delay: "0.6s" },
@@ -71,6 +77,9 @@ export function TabletMenuClient({
   const [phone, setPhone] = useState("");
   const [note, setNote] = useState("");
   const [confirmed, setConfirmed] = useState<string | null>(null);
+  // when an order spans both registers, tell the customer who is preparing what
+  const [confirmedParts, setConfirmedParts] = useState<OrderSplitPart[]>([]);
+  const [confirmedFloor, setConfirmedFloor] = useState<number | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   // product modal (size + cross-sell)
@@ -79,8 +88,14 @@ export function TabletMenuClient({
   const [crossSel, setCrossSel] = useState<Set<string>>(new Set()); // selected cross-sell pastries
 
   const cat = menu.find((c) => c.name_ar === activeCat) ?? menu[0];
-  const effect = effectFor(cat?.name_ar ?? "");
-  const pastries = menu.find((c) => c.name_ar.includes("معجنات"))?.items ?? [];
+  const effect = effectFor(cat);
+  // Cross-sell pulls from the OTHER register: order a drink, get offered
+  // something from the bakery. Station-driven, so it keeps working when
+  // categories are renamed or added.
+  const crossSell = cat?.station === "cafe";
+  const pastries = crossSell
+    ? menu.filter((c) => c.station === "pastry").flatMap((c) => c.items).slice(0, CROSS_SELL_LIMIT)
+    : [];
 
   function selectCat(name: string) {
     setActiveCat(name);
@@ -102,16 +117,16 @@ export function TabletMenuClient({
     });
   }
   function onPlus(it: MenuItemView) {
-    // size choice OR hot-drink cross-sell → open the modal; otherwise add straight
-    if (it.variants.length > 0 || effect === "hot") {
+    // size choice OR a drink we can pair a pastry with → open the modal
+    if (it.variants.length > 0 || crossSell) {
       setModalItem(it);
       setModalVariant(it.variants[0]?.id ?? null);
       setCrossSel(new Set());
     } else {
-      add(it, null, it.price);
+      add(it, null, priceOf(it));
     }
   }
-  const modalPrice = modalItem ? (modalItem.variants.find((v) => v.id === modalVariant)?.price ?? modalItem.price) : 0;
+  const modalPrice = modalItem ? (modalItem.variants.find((v) => v.id === modalVariant)?.price ?? priceOf(modalItem)) : 0;
   const crossTotal = [...crossSel].reduce((s, id) => {
     const p = pastries.find((x) => x.id === id);
     return s + (p ? priceOf(p) : 0);
@@ -130,6 +145,8 @@ export function TabletMenuClient({
     setNote("");
     setPhone("");
     setCartOpen(false);
+    setConfirmedParts(res.parts ?? []);
+    setConfirmedFloor(res.floor ?? null);
     setConfirmed(res.orderNumber);
   }
 
@@ -138,8 +155,8 @@ export function TabletMenuClient({
       {/* top bar */}
       <header className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--line)] px-5 py-3 backdrop-blur">
         <div className="flex items-center gap-2.5">
-          <PizzaraMark className="size-9 shrink-0" />
-          <span className="text-lg font-extrabold text-[var(--accent)]">بيزارا كافيه</span>
+          <HailMark className="size-9 shrink-0" />
+          <span className="text-lg font-extrabold text-[var(--accent)]">مخبز ومقهى هيل</span>
         </div>
         {table ? (
           <span className="rounded-full border border-[var(--accent)] bg-[var(--accent)]/10 px-4 py-1.5 text-sm font-extrabold text-[var(--accent)]">
@@ -167,7 +184,7 @@ export function TabletMenuClient({
               const s = imgSrcs(it.image_url);
               return (
                 <article key={it.id} className="overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--panelsoft)]">
-                  <div className="relative aspect-[4/5] bg-[var(--panel)]" style={effect === "pastry" ? { animation: "pz-float 4s ease-in-out infinite" } : undefined}>
+                  <div className="relative aspect-[4/5] bg-[var(--panel)]" style={effect === "pastry" ? { animation: "hail-float 4s ease-in-out infinite" } : undefined}>
                     <MenuIcon name={it.name_ar} category={cat?.name_ar} className="absolute inset-0 m-auto size-16 text-[var(--accent)] opacity-45" />
                     {s && (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -176,15 +193,15 @@ export function TabletMenuClient({
                     {effect === "hot" && (
                       <div aria-hidden className="pointer-events-none absolute left-1/2 top-[20%] -translate-x-1/2">
                         {[0, 1, 2].map((i) => (
-                          <span key={i} className="absolute block h-14 w-2 rounded-full bg-white/55 blur-[5px]" style={{ left: `${(i - 1) * 12}px`, animation: `pz-steam 2.8s ease-out ${i * 0.9}s infinite` }} />
+                          <span key={i} className="absolute block h-14 w-2 rounded-full bg-white/55 blur-[5px]" style={{ left: `${(i - 1) * 12}px`, animation: `hail-steam 2.8s ease-out ${i * 0.9}s infinite` }} />
                         ))}
                       </div>
                     )}
                     {effect === "cold" && (
                       <>
-                        <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(120% 60% at 50% 35%, rgba(170,215,255,0.38), transparent 60%)", animation: "pz-frost 5s ease-in-out infinite" }} />
+                        <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(120% 60% at 50% 35%, rgba(170,215,255,0.38), transparent 60%)", animation: "hail-frost 5s ease-in-out infinite" }} />
                         {DROPS.map((d, i) => (
-                          <span key={i} aria-hidden className="pointer-events-none absolute rounded-full bg-sky-100/90" style={{ left: d.left, top: d.top, width: d.size, height: d.size * 1.4, filter: "blur(0.5px)", animation: `pz-drip ${d.dur} linear ${d.delay} infinite` }} />
+                          <span key={i} aria-hidden className="pointer-events-none absolute rounded-full bg-sky-100/90" style={{ left: d.left, top: d.top, width: d.size, height: d.size * 1.4, filter: "blur(0.5px)", animation: `hail-drip ${d.dur} linear ${d.delay} infinite` }} />
                         ))}
                       </>
                     )}
@@ -199,7 +216,7 @@ export function TabletMenuClient({
                   </div>
                   <div className="px-3 py-2.5 text-right">
                     <p className="line-clamp-2 min-h-[2.4em] text-[15px] font-bold leading-tight">{it.name_ar}</p>
-                    <p className="mt-1 whitespace-nowrap text-lg font-extrabold tabular-nums text-[var(--accent)]">{formatIqdLabel(it.price)}</p>
+                    <p className="mt-1 whitespace-nowrap text-lg font-extrabold tabular-nums text-[var(--accent)]">{formatIqdLabel(priceOf(it))}</p>
                   </div>
                 </article>
               );
@@ -212,7 +229,7 @@ export function TabletMenuClient({
           {menu.map((c) => {
             const on = c.name_ar === activeCat;
             return (
-              <button key={c.name_ar} onClick={() => selectCat(c.name_ar)} className={`flex w-full flex-col items-center gap-1.5 px-2 py-3.5 text-center transition ${on ? "bg-[var(--active)] text-[var(--activeink)]" : "text-[var(--muted)] hover:bg-[var(--panel)]"}`}>
+              <button key={c.name_ar} aria-label={c.name_ar} onClick={() => selectCat(c.name_ar)} className={`flex w-full flex-col items-center gap-1.5 px-2 py-3.5 text-center transition ${on ? "bg-[var(--active)] text-[var(--activeink)]" : "text-[var(--muted)] hover:bg-[var(--panel)]"}`}>
                 <MenuIcon name={c.name_ar} category={c.name_ar} className={`size-8 ${on ? "text-[var(--activeink)]" : "text-[var(--accent)]"}`} />
                 <span className="text-[13px] font-bold leading-tight">
                   {c.name_ar.split(" ").map((w, i) => (
@@ -227,7 +244,7 @@ export function TabletMenuClient({
 
       {/* cart bar */}
       {count > 0 && !cartOpen && !confirmed && !modalItem && (
-        <button onClick={() => setCartOpen(true)} className="fixed inset-x-0 bottom-0 z-30 mx-auto flex max-w-5xl items-center justify-between gap-3 bg-[var(--accent)] px-5 py-4 font-extrabold text-[var(--activeink)] shadow-lg">
+        <button onClick={() => setCartOpen(true)} className="fixed inset-x-0 bottom-0 z-30 mx-auto flex max-w-5xl items-center justify-between gap-3 bg-[var(--accent2)] px-5 py-4 font-extrabold text-[#22301a] shadow-lg">
           <span className="flex items-center gap-2"><ShoppingCart className="size-5" /> عرض السلة ({count})</span>
           <span className="tabular-nums">{formatIqdLabel(total)}</span>
         </button>
@@ -262,7 +279,7 @@ export function TabletMenuClient({
               </div>
             )}
 
-            {effect === "hot" && pastries.length > 0 && (
+            {crossSell && pastries.length > 0 && (
               <div className="mb-4">
                 <h3 className="mb-2 text-sm font-bold text-[var(--accent)]">🥐 يناسبها مع… (اختياري)</h3>
                 <div className="flex gap-2 overflow-x-auto pb-1">
@@ -368,7 +385,22 @@ export function TabletMenuClient({
             <h2 className="mt-4 text-2xl font-extrabold">تم إرسال طلبك ✓</h2>
             <p className="mt-2 text-[var(--muted)]">رقم الطلب</p>
             <p className="text-4xl font-extrabold text-[var(--accent)]">{confirmed}</p>
-            {table && <p className="mt-2 text-sm text-[var(--muted)]">طاولة {table} — سيصلك طلبك قريباً</p>}
+            {table && (
+              <p className="mt-2 text-sm text-[var(--muted)]">
+                طاولة {table}{confirmedFloor ? ` — الطابق ${confirmedFloor}` : ""} — سيصلك طلبك قريباً
+              </p>
+            )}
+            {confirmedParts.length > 1 && (
+              <div className="mt-4 space-y-1.5 rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-3 text-right text-sm">
+                <p className="font-bold text-[var(--accent)]">طلبك يُحضَّر في قسمين — والدفع مرة واحدة</p>
+                {confirmedParts.map((p) => (
+                  <div key={p.station} className="flex items-center justify-between gap-3">
+                    <span>{p.station_ar}</span>
+                    <span className="font-bold tabular-nums">{formatIqdLabel(p.subtotal)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
             <button onClick={() => setConfirmed(null)} className="mt-5 w-full rounded-2xl border border-[var(--accent)] py-3 font-bold text-[var(--accent)]">طلب آخر</button>
           </div>
         </div>

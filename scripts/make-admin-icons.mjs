@@ -16,8 +16,8 @@ const banner = (size) => {
   const fs = Math.round(h * 0.52);
   return Buffer.from(
     `<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
-      <rect x="0" y="${y}" width="${size}" height="${h}" fill="#2b1a10" opacity="0.92"/>
-      <text x="${size / 2}" y="${y + h / 2 + fs * 0.36}" font-family="Arial, sans-serif" font-size="${fs}" font-weight="800" fill="#f3e3cf" text-anchor="middle" letter-spacing="${Math.round(fs * 0.18)}">ADMIN</text>
+      <rect x="0" y="${y}" width="${size}" height="${h}" fill="#3c5030" opacity="0.92"/>
+      <text x="${size / 2}" y="${y + h / 2 + fs * 0.36}" font-family="Arial, sans-serif" font-size="${fs}" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="${Math.round(fs * 0.18)}">ADMIN</text>
     </svg>`,
   );
 };
@@ -27,6 +27,7 @@ for (const [src, out, size] of [
   ["icon-maskable-512.png", "admin-maskable-512.png", 512],
 ]) {
   await sharp(join(dir, src))
+    .resize(size, size, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .composite([{ input: banner(size) }])
     .png()
     .toFile(join(dir, out));

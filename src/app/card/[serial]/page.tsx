@@ -1,6 +1,6 @@
 import QRCode from "qrcode";
 import { getCardPublic } from "@/lib/cafe/loyalty-actions";
-import { PizzaraMark } from "@/components/cafe/Logo";
+import { HailMark } from "@/components/cafe/Logo";
 import { InstallCardButton } from "@/components/cafe/InstallCardButton";
 
 export const dynamic = "force-dynamic";
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({ params }: { params: Promise<{ serial: string }> }) {
   const { serial } = await params;
   // per-card manifest so "install" opens straight on this customer's card
-  return { title: "بطاقة بيزارا كافيه", manifest: `/card/${serial}/manifest.webmanifest` };
+  return { title: "بطاقة هيل", manifest: `/card/${serial}/manifest.webmanifest` };
 }
 
 /** Public loyalty card — the customer's "wallet" page. Unguessable serial in the
@@ -42,9 +42,9 @@ export default async function CardPage({ params }: { params: Promise<{ serial: s
         <div className="flex items-center justify-between bg-primary px-6 py-5 text-primary-foreground">
           <div>
             <p className="text-sm opacity-80">بطاقة ولاء</p>
-            <h1 className="text-2xl font-extrabold">بيزارا كافيه</h1>
+            <h1 className="text-2xl font-extrabold">مخبز ومقهى هيل</h1>
           </div>
-          <PizzaraMark className="size-14 shrink-0" />
+          <HailMark className="size-14 shrink-0" />
         </div>
         <div className="space-y-4 p-6 text-center">
           {card.name_ar && <p className="text-lg font-semibold">{card.name_ar}</p>}

@@ -17,9 +17,9 @@ for (const k of ["SUPABASE_DB_URL", "NEXT_PUBLIC_SUPABASE_URL", "TG_WEBHOOK_SECR
 }
 
 const sql = `
-do $do$ begin perform cron.unschedule('pizzara-nightly-report'); exception when others then null; end $do$;
+do $do$ begin perform cron.unschedule('hail-nightly-report'); exception when others then null; end $do$;
 select cron.schedule(
-  'pizzara-nightly-report',
+  'hail-nightly-report',
   '59 20 * * *',
   $job$select net.http_post(
     url := '${env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/telegram-bot?job=daily',

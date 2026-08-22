@@ -4,16 +4,30 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useCafeUI } from "@/components/CafeUIProvider";
-import { PizzaraMark } from "@/components/cafe/Logo";
+import { HailMark } from "@/components/cafe/Logo";
+import { STATIONS, type StationSlug } from "@/lib/cafe/hail-menu";
+import { signInLocal } from "@/lib/cafe/local-auth";
 
-export function SignInForm({ redirectTo }: { redirectTo: string }) {
+/**
+ * Two registers, one screen: pick which counter you are opening, then sign in.
+ * The station choice scopes the whole session — the order queue, the receipts
+ * and the sales figures all follow it, so the two sets of books never mix.
+ */
+export function SignInForm({ redirectTo, localMode }: { redirectTo: string; localMode: boolean }) {
   const { t } = useCafeUI();
   const router = useRouter();
+
+  const [station, setStation] = useState<StationSlug | null>(null);
+  const [login, setLogin] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // If the visitor landed here only because their access token expired, the
   // browser client can silently refresh it from the refresh token — then send
   // them straight back in instead of asking for the password again.
   useEffect(() => {
+    if (localMode) return;
     let cancelled = false;
     (async () => {
       try {
@@ -26,19 +40,27 @@ export function SignInForm({ redirectTo }: { redirectTo: string }) {
     return () => {
       cancelled = true;
     };
-  }, [router, redirectTo]);
-  const [login, setLogin] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  }, [router, redirectTo, localMode]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!station) return;
     setLoading(true);
     setError(null);
     try {
-      // phone numbers & usernames map to <login>@pizzara.iq auth accounts
-      const email = login.includes("@") ? login.trim() : `${login.trim()}@pizzara.iq`;
+      if (localMode) {
+        const res = await signInLocal(login, password, station);
+        if (!res.ok) {
+          setError(res.error);
+          return;
+        }
+        router.replace(redirectTo);
+        router.refresh();
+        return;
+      }
+
+      // phone numbers & usernames map to <login>@hail.iq auth accounts
+      const email = login.includes("@") ? login.trim() : `${login.trim()}@hail.iq`;
       // Supabase enforces >=6-char passwords; short PINs (e.g. the cashier's
       // «123») are stored zero-padded to 6, so pad the same way on login.
       const realPassword = password.length < 6 ? password.padEnd(6, "0") : password;
@@ -56,15 +78,52 @@ export function SignInForm({ redirectTo }: { redirectTo: string }) {
     }
   }
 
+  // step 1 — which register is this device?
+  if (!station) {
+    return (
+      <div className="w-full max-w-md space-y-5 text-center">
+        <HailMark className="mx-auto size-24" />
+        <div>
+          <h1 className="text-2xl font-bold text-primary">مخبز ومقهى هيل</h1>
+          <p className="mt-1 text-sm text-muted-foreground">اختر الكاشير الذي تعمل عليه</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {STATIONS.map((s) => (
+            <button
+              key={s.slug}
+              type="button"
+              onClick={() => setStation(s.slug)}
+              className="flex flex-col items-center gap-2 rounded-2xl border-2 border-border bg-card p-6 transition hover:border-primary hover:bg-primary/5 active:scale-95"
+            >
+              <span className="text-4xl">{s.emoji}</span>
+              <span className="text-lg font-extrabold text-primary">{s.name_ar}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const chosen = STATIONS.find((s) => s.slug === station)!;
+
+  // step 2 — who is opening it?
   return (
-    <form
-      onSubmit={onSubmit}
-      className="w-full max-w-sm space-y-5 rounded-2xl border border-border bg-card p-6 shadow-sm"
-    >
+    <form onSubmit={onSubmit} className="w-full max-w-sm space-y-5 rounded-2xl border border-border bg-card p-6 shadow-sm">
       <div className="space-y-2 text-center">
-        <PizzaraMark className="mx-auto size-20" />
-        <h1 className="text-2xl font-bold text-primary">بيزارا كافيه</h1>
-        <p className="text-sm text-muted-foreground">{t("auth.title")}</p>
+        <HailMark className="mx-auto size-16" />
+        <h1 className="text-xl font-bold text-primary">مخبز ومقهى هيل</h1>
+        <button
+          type="button"
+          onClick={() => {
+            setStation(null);
+            setError(null);
+          }}
+          className="mx-auto flex items-center gap-2 rounded-full bg-accent/15 px-4 py-1.5 text-sm font-bold text-primary transition hover:bg-accent/25"
+        >
+          <span>{chosen.emoji}</span>
+          <span>{chosen.name_ar}</span>
+          <span className="text-xs font-normal text-muted-foreground">— تغيير</span>
+        </button>
       </div>
 
       <label className="block space-y-1">
@@ -73,7 +132,7 @@ export function SignInForm({ redirectTo }: { redirectTo: string }) {
           type="text"
           required
           autoComplete="username"
-          placeholder="07XXXXXXXXX"
+          placeholder={localMode ? "pastry" : "07XXXXXXXXX"}
           value={login}
           onChange={(e) => setLogin(e.target.value)}
           className="w-full rounded-lg border border-input bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring"
@@ -103,6 +162,12 @@ export function SignInForm({ redirectTo }: { redirectTo: string }) {
       >
         {loading ? t("auth.signingIn") : t("auth.signIn")}
       </button>
+
+      {localMode && (
+        <p className="text-center text-xs text-muted-foreground">
+          وضع محلي بلا قاعدة بيانات · admin/1234 · pastry/1111 · cafe/2222
+        </p>
+      )}
     </form>
   );
 }

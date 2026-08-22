@@ -1,4 +1,4 @@
-// بوت بيزارا كافيه — Supabase Edge Function (Telegram webhook, يعمل 24/7).
+// بوت مخبز ومقهى هيل — Supabase Edge Function (Telegram webhook, يعمل 24/7).
 // نفس بوت الأزرار الكامل: تقارير، الطلبات الآن، الطاولات، الأكثر/الأقل مبيعاً،
 // إدارة المنتجات (إضافة/حذف/تسعير/تفعيل) — والحالة الحوارية محفوظة في bot_state.
 // GET/POST ?job=daily (بسر x-job-secret) يرسل التقرير الليلي — يستدعيه pg_cron
@@ -149,7 +149,7 @@ async function viewReport(days: number) {
   const t = sumRows(await summary(from, to));
   const title = days === 0 ? `اليوم ${to}` : days === 6 ? "آخر ٧ أيام" : "آخر ٣٠ يوماً";
   return [
-    `☕️ <b>بيزارا كافيه — ${title}</b>`, "",
+    `☕️ <b>مخبز ومقهى هيل — ${title}</b>`, "",
     `🧾 الطلبات: <b>${t.c}</b>`,
     `💰 المبيعات: <b>${fmt(t.s)} د.ع</b>`,
     `📈 الأرباح: <b>${fmt(t.p)} د.ع</b>`,
@@ -376,7 +376,7 @@ async function onMessage(msg: Row) {
       return;
     }
   }
-  await say(chatId, "☕️ <b>بيزارا كافيه — لوحة التحكم</b>\nاختر من الأزرار:", mainMenu());
+  await say(chatId, "☕️ <b>مخبز ومقهى هيل — لوحة التحكم</b>\nاختر من الأزرار:", mainMenu());
 }
 
 async function onCallback(cb: Row) {
@@ -387,7 +387,7 @@ async function onCallback(cb: Row) {
   await clearState(chatId);
 
   const [cmd, a, b] = String(cb.data).split("|");
-  if (cmd === "menu") return say(chatId, "☕️ <b>بيزارا كافيه — لوحة التحكم</b>\nاختر من الأزرار:", mainMenu(), mid);
+  if (cmd === "menu") return say(chatId, "☕️ <b>مخبز ومقهى هيل — لوحة التحكم</b>\nاختر من الأزرار:", mainMenu(), mid);
   if (cmd === "rpt") return say(chatId, await viewReport(Number(a)), [[{ text: "🔄 تحديث", callback_data: cb.data }], BACK], mid);
   if (cmd === "day") return say(chatId, await viewDaySummary(baghdadDay(-Number(a))), [[{ text: "🔄 تحديث", callback_data: cb.data }], BACK], mid);
   if (cmd === "dayx") return say(chatId, await viewDaySummary(a), [[{ text: "🔄 تحديث", callback_data: cb.data }], BACK], mid);

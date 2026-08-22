@@ -4,7 +4,7 @@
  * Grow this per feature — keep keys namespaced by area (`auth.*`, `menu.*`, …).
  */
 export const en = {
-  "app.name": "Pizzara",
+  "app.name": "HAIL",
   "app.tagline": "Cafe ordering & loyalty",
 
   "nav.menu": "Menu",

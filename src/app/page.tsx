@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { PizzaraMark } from "@/components/cafe/Logo";
+import { HailMark } from "@/components/cafe/Logo";
 
 export default function Home() {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-8 p-6 text-center">
       <div className="space-y-3">
-        <PizzaraMark className="mx-auto size-28" />
-        <h1 className="text-4xl font-extrabold text-primary">بيزارا كافيه</h1>
+        <HailMark className="mx-auto size-28" />
+        <h1 className="text-4xl font-extrabold text-primary">مخبز ومقهى هيل</h1>
         <p className="text-muted-foreground">منيو وطلبات وولاء الكافيه</p>
       </div>
       <div className="flex flex-col gap-3 w-full max-w-xs">

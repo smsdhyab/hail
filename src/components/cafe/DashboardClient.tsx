@@ -37,6 +37,7 @@ export function DashboardClient({
   todayDate,
   yesterday,
   yesterdaySummary = null,
+  scopeLabel = "",
 }: {
   days: number;
   summary: DaySummary[];
@@ -49,6 +50,8 @@ export function DashboardClient({
   todayDate: string;
   yesterday: string;
   yesterdaySummary?: DaySummary | null;
+  /** which register these figures cover — «كل الأقسام» for the manager */
+  scopeLabel?: string;
 }) {
   const router = useRouter();
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -92,7 +95,10 @@ export function DashboardClient({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">لوحة التحكم</h1>
+        <div>
+          <h1 className="text-2xl font-bold">لوحة التحكم</h1>
+          {scopeLabel && <p className="text-sm font-semibold text-accent">{scopeLabel}</p>}
+        </div>
         <div className="flex gap-1 rounded-lg border border-border p-1">
           {[
             { d: 1, label: "اليوم" },

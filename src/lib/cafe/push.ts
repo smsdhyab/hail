@@ -20,7 +20,7 @@ export async function sendNewOrderPush(p: { seq: number; table: string | null; c
       title: `طلب جديد #${String(p.seq).padStart(3, "0")}`,
       body: `${p.table ? `طاولة ${p.table} · ` : ""}${p.count} صنف`,
       url: "/orders",
-      tag: `pz-order-${p.seq}`,
+      tag: `hail-order-${p.seq}`,
     });
 
     await Promise.allSettled(

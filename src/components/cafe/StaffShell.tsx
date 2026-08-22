@@ -31,7 +31,8 @@ import { useCafeUI } from "@/components/CafeUIProvider";
 import type { StaffRole } from "@/lib/cafe/auth";
 import { listPendingOrders } from "@/lib/cafe/cashier-actions";
 import { savePushSubscription, removePushSubscription } from "@/lib/cafe/push-actions";
-import { PizzaraMark } from "./Logo";
+import { HailMark } from "./Logo";
+import { signOutLocal } from "@/lib/cafe/local-auth";
 
 function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
@@ -92,12 +93,17 @@ const NAV: NavItem[] = [
 export function StaffShell({
   role,
   name,
+  station = null,
+  localMode = false,
   pushKey = null,
   pastryAlert = 0,
   children,
 }: {
   role: StaffRole | null;
   name: string;
+  /** the register this session is working — shown so nobody rings up on the wrong till */
+  station?: string | null;
+  localMode?: boolean;
   pushKey?: string | null;
   pastryAlert?: number;
   children: React.ReactNode;
@@ -150,7 +156,7 @@ export function StaffShell({
         if (knownIds.current) {
           const fresh = orders.find((o) => !knownIds.current!.has(o.id));
           if (fresh) {
-            setToast({ seq: fresh.order_seq, table: fresh.table_no });
+            setToast({ seq: fresh.group_no, table: fresh.table_no });
             chime();
             setTimeout(() => setToast(null), 9000);
           }
@@ -208,9 +214,13 @@ export function StaffShell({
 
   async function signOut() {
     try {
-      await createSupabaseBrowserClient().auth.signOut();
+      if (localMode) await signOutLocal();
+      else await createSupabaseBrowserClient().auth.signOut();
+    } catch {
+      /* already signed out */
     } finally {
       router.replace("/sign-in");
+      router.refresh();
     }
   }
 
@@ -220,8 +230,8 @@ export function StaffShell({
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2.5">
           <div className="flex min-w-0 items-center gap-4">
             <Link href="/dashboard" className="flex shrink-0 items-center gap-2 whitespace-nowrap text-lg font-extrabold text-primary">
-              <PizzaraMark className="size-9" />
-              بيزارا كافيه
+              <HailMark className="size-9" />
+              مخبز ومقهى هيل
             </Link>
             <nav className="hidden gap-1 overflow-x-auto md:flex">
               {links.map((l) => (
@@ -245,7 +255,10 @@ export function StaffShell({
             </nav>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <span className="hidden text-sm text-muted-foreground sm:inline">{name}</span>
+            <span className="hidden text-sm text-muted-foreground sm:inline">
+              {name}
+              {station && station !== "—" && <span className="ms-2 rounded-full bg-accent/20 px-2 py-0.5 text-xs font-bold text-primary">{station}</span>}
+            </span>
             <button
               onClick={() => setTheme(document.documentElement.classList.contains("dark") ? "Light" : "Dark")}
               aria-label="المظهر الليلي/النهاري"

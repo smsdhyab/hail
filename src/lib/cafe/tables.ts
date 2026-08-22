@@ -11,6 +11,9 @@ export type CafeTable = {
   active: boolean;
   x: number; // percent 0-100
   y: number; // percent 0-100
+  /** which storey the table is on — delivery info, printed on the ticket.
+   *  It does NOT affect what the menu shows or which register gets the order. */
+  floor?: number;
 };
 
 /** «طاولة 5» for numeric tables, the name itself for named ones (خارجي 1). */

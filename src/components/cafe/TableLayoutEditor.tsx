@@ -26,6 +26,11 @@ export function TableLayoutEditor({
   const [tables, setTables] = useState<CafeTable[]>(initial);
   const [indoor, setIndoor] = useState(initial.filter((t) => t.kind === "indoor").length || 12);
   const [outdoor, setOutdoor] = useState(initial.filter((t) => t.kind === "outdoor").length || 2);
+  // The shop has more than one storey. Indoor tables are spread evenly across
+  // them; the floor is delivery information only — the menu and the routing are
+  // the same everywhere.
+  const [floorCount, setFloorCount] = useState(Math.max(1, ...initial.map((t) => t.floor ?? 1)));
+  const [editFloor, setEditFloor] = useState(1);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -34,15 +39,19 @@ export function TableLayoutEditor({
 
   function generate() {
     const next: CafeTable[] = [];
+    const perFloor = Math.ceil(indoor / floorCount);
     for (let i = 1; i <= indoor; i++) {
       const name = String(i);
-      next.push(tables.find((t) => t.name === name) ?? { name, kind: "indoor", active: true, ...gridPos("indoor", i) });
+      const floor = Math.min(floorCount, Math.floor((i - 1) / perFloor) + 1);
+      const existing = tables.find((t) => t.name === name);
+      next.push(existing ? { ...existing, floor } : { name, kind: "indoor", active: true, floor, ...gridPos("indoor", ((i - 1) % perFloor) + 1) });
     }
     for (let i = 1; i <= outdoor; i++) {
       const name = `خارجي ${i}`;
-      next.push(tables.find((t) => t.name === name) ?? { name, kind: "outdoor", active: true, ...gridPos("outdoor", i) });
+      next.push(tables.find((t) => t.name === name) ?? { name, kind: "outdoor", active: true, floor: 1, ...gridPos("outdoor", i) });
     }
     setTables(next);
+    setEditFloor(1);
   }
 
   function onDown(e: React.PointerEvent, name: string) {
@@ -99,13 +108,31 @@ export function TableLayoutEditor({
           <span className="text-muted-foreground">طاولات خارجية</span>
           <input type="number" min={0} max={20} value={outdoor} onChange={(e) => setOutdoor(Math.max(0, Math.min(20, Number(e.target.value) || 0)))} className="w-24 rounded-lg border border-input bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring" dir="ltr" />
         </label>
+        <label className="space-y-1 text-sm">
+          <span className="text-muted-foreground">عدد الطوابق</span>
+          <input type="number" min={1} max={5} value={floorCount} onChange={(e) => setFloorCount(Math.max(1, Math.min(5, Number(e.target.value) || 1)))} className="w-24 rounded-lg border border-input bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring" dir="ltr" />
+        </label>
         <button onClick={generate} className="rounded-lg bg-secondary px-4 py-2 text-sm font-semibold hover:opacity-90">
           ضبط وتنظيم
         </button>
+        {floorCount > 1 && (
+          <div className="flex gap-1.5">
+            {Array.from({ length: floorCount }, (_, i) => i + 1).map((f) => (
+              <button
+                key={f}
+                onClick={() => setEditFloor(f)}
+                className={`rounded-lg px-3 py-2 text-sm font-bold transition ${editFloor === f ? "bg-primary text-primary-foreground" : "bg-secondary hover:opacity-90"}`}
+              >
+                الطابق {f}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <p className="text-xs text-muted-foreground">
-        اسحب الطاولة لتضعها في مكانها كما في الكافيه. اضغط على الطاولة ضغطة واحدة لتفعيلها/تعطيلها (المعطّلة رمادية ولا تظهر للطلب).
+        اسحب الطاولة لتضعها في مكانها كما في المحل. اضغط على الطاولة ضغطة واحدة لتفعيلها/تعطيلها (المعطّلة رمادية ولا تظهر للطلب).
+        {floorCount > 1 ? " بدّل الطابق من الأزرار أعلاه — رقم الطابق يظهر على وصل الطلب ليعرف العامل أين يوصّل." : ""}
       </p>
 
       <div
@@ -113,8 +140,10 @@ export function TableLayoutEditor({
         onPointerMove={onMove}
         className="relative h-[62vh] min-h-[380px] w-full touch-none overflow-hidden rounded-2xl border-2 border-dashed border-border bg-secondary/30"
       >
-        <span className="pointer-events-none absolute right-3 top-2 text-xs text-muted-foreground">🚪 واجهة المحل</span>
-        {tables.map((t) => (
+        <span className="pointer-events-none absolute right-3 top-2 text-xs text-muted-foreground">
+          {floorCount > 1 ? `🏢 الطابق ${editFloor}` : "🚪 واجهة المحل"}
+        </span>
+        {tables.filter((t) => (t.floor ?? 1) === editFloor).map((t) => (
           <button
             key={t.name}
             onPointerDown={(e) => onDown(e, t.name)}

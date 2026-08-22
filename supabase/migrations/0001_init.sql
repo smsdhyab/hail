@@ -1,4 +1,4 @@
--- 0001_init.sql — Pizzara cafe schema: enums, tables, indexes, points trigger.
+-- 0001_init.sql — HAIL cafe schema: enums, tables, indexes, points trigger.
 -- Idempotent: safe to re-run. Money is integer IQD (no minor unit); SUM() promotes
 -- to bigint. business_day = Asia/Baghdad calendar day.
 -- Apply with: npm run db:apply supabase/migrations/0001_init.sql

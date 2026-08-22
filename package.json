@@ -1,8 +1,8 @@
 {
-  "name": "pizzara-cafe",
+  "name": "hail-cafe",
   "version": "0.1.0",
   "private": true,
-  "description": "Pizzara.iq — cafe order-management system (menu, ordering, cashier POS, loyalty, Telegram stats).",
+  "description": "Hail.iq — cafe order-management system (menu, ordering, cashier POS, loyalty, Telegram stats).",
   "engines": {
     "node": ">=24"
   },

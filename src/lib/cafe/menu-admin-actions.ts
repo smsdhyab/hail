@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import sharp from "sharp";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { requireAdmin } from "./auth";
+import type { StationSlug } from "./hail-menu";
 
 export type AdminVariant = { id: string; name_ar: string; price_override: number | null; kind: string; sort: number };
 export type AdminItem = {
@@ -19,7 +20,12 @@ export type AdminItem = {
   sort: number;
   variants: AdminVariant[];
 };
-export type AdminCategory = { id: string; name_ar: string; sort: number; is_active: boolean; items: AdminItem[] };
+export type AdminCategory = {
+  id: string; name_ar: string; sort: number; is_active: boolean;
+  /** which register sells this category — the whole routing rule lives here */
+  station_slug: StationSlug | null;
+  items: AdminItem[];
+};
 
 function revalidateMenu() {
   revalidatePath("/menu-admin");
@@ -33,7 +39,7 @@ export async function listMenuAdmin(): Promise<AdminCategory[]> {
   await requireAdmin();
   const svc = createSupabaseServiceClient();
   const [{ data: cats }, { data: items }, { data: vars }] = await Promise.all([
-    svc.from("categories").select("id, name_ar, sort, is_active").order("sort"),
+    svc.from("categories").select("id, name_ar, sort, is_active, station_id").order("sort"),
     svc.from("menu_items").select("id, category_id, name_ar, description_ar, image_url, price, cost, flavors, is_active, sort").order("sort"),
     svc.from("item_variants").select("id, item_id, name_ar, price_override, kind, sort").order("sort"),
   ]);
@@ -50,7 +56,16 @@ export async function listMenuAdmin(): Promise<AdminCategory[]> {
     arr.push({ ...it, variants: varsByItem.get(it.id) ?? [] });
     itemsByCat.set(it.category_id, arr);
   }
-  return (cats ?? []).map((c) => ({ ...c, items: itemsByCat.get(c.id) ?? [] }));
+  const { data: stations } = await svc.from("stations").select("id, slug");
+  const slugOf = new Map((stations ?? []).map((st) => [st.id, st.slug as StationSlug]));
+  return (cats ?? []).map((c) => ({
+    id: c.id,
+    name_ar: c.name_ar,
+    sort: c.sort,
+    is_active: c.is_active,
+    station_slug: c.station_id ? (slugOf.get(c.station_id) ?? null) : null,
+    items: itemsByCat.get(c.id) ?? [],
+  }));
 }
 
 export async function listCategoriesAdmin() {
@@ -139,11 +154,27 @@ export async function deleteVariant(id: string) {
   return { ok: true as const };
 }
 
-export async function addCategory(name_ar: string, sort = 0) {
+/** A new category MUST name its register — that is what decides where its
+ *  items are prepared and whose books the money lands on. */
+export async function addCategory(name_ar: string, station: StationSlug, sort = 0) {
   await requireAdmin();
   if (!name_ar.trim()) return { ok: false as const, error: "أدخل اسم القسم." };
   const svc = createSupabaseServiceClient();
-  const { error } = await svc.from("categories").insert({ name_ar: name_ar.trim(), sort: Math.round(sort) });
+  const { data: st } = await svc.from("stations").select("id").eq("slug", station).maybeSingle();
+  if (!st) return { ok: false as const, error: "الكاشير غير معروف." };
+  const { error } = await svc.from("categories").insert({ name_ar: name_ar.trim(), sort: Math.round(sort), station_id: st.id });
+  if (error) return { ok: false as const, error: error.message };
+  revalidateMenu();
+  return { ok: true as const };
+}
+
+/** Move a whole category to the other register (e.g. cake moves to the cafe). */
+export async function setCategoryStation(categoryId: string, station: StationSlug) {
+  await requireAdmin();
+  const svc = createSupabaseServiceClient();
+  const { data: st } = await svc.from("stations").select("id").eq("slug", station).maybeSingle();
+  if (!st) return { ok: false as const, error: "الكاشير غير معروف." };
+  const { error } = await svc.from("categories").update({ station_id: st.id }).eq("id", categoryId);
   if (error) return { ok: false as const, error: error.message };
   revalidateMenu();
   return { ok: true as const };

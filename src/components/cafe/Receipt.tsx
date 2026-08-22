@@ -11,6 +11,12 @@ export type ReceiptData = {
   dateTime: string;
   /** table number for incoming self-order tickets */
   table?: string | null;
+  /** which storey to deliver to — comes from the table's configured floor */
+  floor?: number | null;
+  /** the register this ticket belongs to («المعجنات» / «الكافيه») */
+  station?: string | null;
+  /** per-register breakdown when one payment covered both counters */
+  splits?: { station_ar: string; net: number }[];
   /** ticket heading override (e.g. «طلب جديد — لم يُدفع») */
   heading?: string;
   /** free-text order note («سكر قليل…») */
@@ -24,7 +30,7 @@ export function Receipt({ data }: { data: ReceiptData }) {
     <div className="receipt-print hidden print:block" dir="rtl">
       {/* 80mm roll — applies only while a receipt is mounted (this style unmounts with it) */}
       <style>{`@media print { @page { size: 80mm auto; margin: 0; } }`}</style>
-      <div style={{ textAlign: "center", fontWeight: 800, fontSize: "16px" }}>بيزارا كافيه</div>
+      <div style={{ textAlign: "center", fontWeight: 800, fontSize: "16px" }}>مخبز ومقهى هيل</div>
       <div style={{ textAlign: "center", fontSize: "11px", marginBottom: "6px" }}>الرمادي — العراق</div>
       <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }} />
       {data.heading && (
@@ -34,8 +40,14 @@ export function Receipt({ data }: { data: ReceiptData }) {
         <span>رقم الطلب: {data.orderNumber}</span>
         <span>{data.dateTime}</span>
       </div>
+      {data.station && (
+        <div style={{ textAlign: "center", fontWeight: 800, fontSize: "13px", margin: "2px 0" }}>{data.station}</div>
+      )}
       {data.table && (
-        <div style={{ textAlign: "center", fontWeight: 800, fontSize: "15px", margin: "3px 0" }}>🍽 طاولة {data.table}</div>
+        <div style={{ textAlign: "center", fontWeight: 800, fontSize: "15px", margin: "3px 0" }}>
+          🍽 طاولة {data.table}
+          {data.floor ? ` — الطابق ${data.floor}` : ""}
+        </div>
       )}
       <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }} />
       <table style={{ width: "100%", fontSize: "12px", borderCollapse: "collapse" }}>
@@ -82,6 +94,18 @@ export function Receipt({ data }: { data: ReceiptData }) {
         <span>الإجمالي</span>
         <span>{formatIqd(data.total)} د.ع</span>
       </div>
+      {data.splits && data.splits.length > 1 && (
+        <>
+          <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }} />
+          <div style={{ fontSize: "11px", fontWeight: 700 }}>توزيع المبلغ على الأقسام:</div>
+          {data.splits.map((s, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
+              <span>{s.station_ar}</span>
+              <span>{formatIqd(s.net)} د.ع</span>
+            </div>
+          ))}
+        </>
+      )}
       <div style={{ borderTop: "1px dashed #000", margin: "6px 0 4px" }} />
       <div style={{ textAlign: "center", fontSize: "11px" }}>شكراً لزيارتكم ❤</div>
     </div>

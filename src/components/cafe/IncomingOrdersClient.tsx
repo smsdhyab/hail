@@ -17,11 +17,15 @@ function ageMinutes(iso: string) {
   return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000));
 }
 
+const STATION_AR: Record<string, string> = { pastry: "قسم المعجنات والمخبوزات", cafe: "قسم الكافيه" };
+
 function ticketFor(o: PendingOrder, heading?: string): ReceiptData {
   return {
-    orderNumber: String(o.order_seq).padStart(3, "0"),
+    orderNumber: String(o.group_no).padStart(3, "0"),
     heading,
+    station: STATION_AR[o.station] ?? null,
     table: o.table_no,
+    floor: o.floor,
     note: o.note,
     lines: o.items.map((it) => ({ name: it.name_ar, flavor: it.flavor_ar, qty: it.qty, unitPrice: it.unit_price })),
     subtotal: o.subtotal,
@@ -45,16 +49,16 @@ export function IncomingOrdersClient() {
   const kickBusyRef = useRef(false);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time read of persisted device settings
-    setAutoPrint(localStorage.getItem("pz-autoprint") === "1");
-    setDrawerKick(localStorage.getItem("pz-drawer") === "1");
+    setAutoPrint(localStorage.getItem("hail-autoprint") === "1");
+    setDrawerKick(localStorage.getItem("hail-drawer") === "1");
   }, []);
   useEffect(() => {
     autoPrintRef.current = autoPrint;
-    localStorage.setItem("pz-autoprint", autoPrint ? "1" : "0");
+    localStorage.setItem("hail-autoprint", autoPrint ? "1" : "0");
   }, [autoPrint]);
   useEffect(() => {
     drawerKickRef.current = drawerKick;
-    localStorage.setItem("pz-drawer", drawerKick ? "1" : "0");
+    localStorage.setItem("hail-drawer", drawerKick ? "1" : "0");
   }, [drawerKick]);
   function kickDrawer() {
     // guard against a double-open if the pay action fires twice in quick succession
@@ -133,11 +137,11 @@ export function IncomingOrdersClient() {
         </h1>
         <div className="flex flex-wrap items-center gap-3">
           <label className="flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-            <input type="checkbox" checked={autoPrint} onChange={(e) => setAutoPrint(e.target.checked)} className="accent-[#6f4e37]" />
+            <input type="checkbox" checked={autoPrint} onChange={(e) => setAutoPrint(e.target.checked)} className="accent-[#556f42]" />
             🖨️ طباعة تلقائية للطلبات الواردة
           </label>
           <label className="flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-            <input type="checkbox" checked={drawerKick} onChange={(e) => setDrawerKick(e.target.checked)} className="accent-[#6f4e37]" />
+            <input type="checkbox" checked={drawerKick} onChange={(e) => setDrawerKick(e.target.checked)} className="accent-[#556f42]" />
             💰 فتح القاصة عند الدفع
           </label>
         </div>
@@ -157,11 +161,20 @@ export function IncomingOrdersClient() {
             return (
               <div key={o.id} className="flex flex-col rounded-2xl border border-border bg-card p-4">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-2xl font-extrabold text-primary">#{String(o.order_seq).padStart(3, "0")}</span>
+                  <span className="text-2xl font-extrabold text-primary">#{String(o.group_no).padStart(3, "0")}</span>
                   {o.table_no && (
-                    <span className="rounded-full bg-primary px-3 py-1 text-sm font-bold text-primary-foreground">طاولة {o.table_no}</span>
+                    <span className="rounded-full bg-primary px-3 py-1 text-sm font-bold text-primary-foreground">
+                      طاولة {o.table_no}{o.floor ? ` · طابق ${o.floor}` : ""}
+                    </span>
                   )}
                 </div>
+                {o.otherStations.length > 0 && (
+                  // the same ticket is also being prepared next door — say so, and
+                  // show the FULL amount, because the customer pays once
+                  <p className="mt-2 rounded-lg border border-accent/60 bg-accent/10 px-2.5 py-1.5 text-xs font-bold">
+                    🔗 طلب مشترك مع {o.otherStations.join("، ")} — المطلوب من الزبون {formatIqdLabel(o.groupTotal)}
+                  </p>
+                )}
                 <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
                   <span>{CHANNEL_AR[o.channel] ?? o.channel}</span>
                   <span>·</span>

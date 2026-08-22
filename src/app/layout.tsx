@@ -12,8 +12,8 @@ const tajawal = Tajawal({
 });
 
 export const metadata: Metadata = {
-  title: "بيزارا كافيه — Pizzara",
-  description: "منيو ونظام طلبات وولاء بيزارا كافيه.",
+  title: "مخبز ومقهى هيل — HAIL Bakery & Cafe",
+  description: "منيو ونظام طلبات وولاء مخبز ومقهى هيل.",
   manifest: "/manifest.webmanifest",
   // favicon comes from src/app/icon.png (Next serves it automatically)
   icons: {
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    title: "بيزارا كافيه",
+    title: "مخبز ومقهى هيل",
     statusBarStyle: "default",
   },
 };
@@ -30,7 +30,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#6f4e37",
+  themeColor: "#556f42",
 };
 
 export default async function RootLayout({

@@ -3,19 +3,26 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { requireStaff } from "./auth";
+import { isLocalDb, listOrdersLocal, listTablesLocal, orderItems, saveTablesLocal } from "./local-db";
 import { deriveTableStatuses, DEFAULT_TABLES, type CafeTable, type TableStatus } from "./tables";
 
 /** The configured floor plan (all tables, ordered). Empty → not configured. */
 export async function getTables(): Promise<CafeTable[]> {
   await requireStaff();
+
+  if (isLocalDb()) {
+    return listTablesLocal().map((t) => ({ name: t.name, kind: t.kind, active: t.active, x: t.x, y: t.y, floor: t.floor }));
+  }
+
   const svc = createSupabaseServiceClient();
-  const { data } = await svc.from("cafe_tables").select("name, kind, active, pos_x, pos_y, sort").order("sort");
+  const { data } = await svc.from("cafe_tables").select("name, kind, floor, active, pos_x, pos_y, sort").order("sort");
   return (data ?? []).map((t) => ({
     name: t.name,
     kind: t.kind === "outdoor" ? "outdoor" : "indoor",
     active: t.active,
     x: t.pos_x,
     y: t.pos_y,
+    floor: t.floor,
   }));
 }
 
@@ -39,12 +46,31 @@ export async function saveTables(tables: CafeTable[]): Promise<{ ok: true } | { 
       name: t.name.trim(),
       kind: t.kind === "outdoor" ? "outdoor" : "indoor",
       active: t.active,
+      floor: Math.max(1, Math.round(t.floor ?? 1)),
       pos_x: clamp(t.x),
       pos_y: clamp(t.y),
       sort: i,
     }))
     .filter((r) => r.name);
   if (!rows.length) return { ok: false, error: "لا توجد طاولات." };
+
+  if (isLocalDb()) {
+    saveTablesLocal(
+      rows.map((r) => ({
+        name: r.name,
+        kind: r.kind === "outdoor" ? ("outdoor" as const) : ("indoor" as const),
+        floor: r.floor,
+        active: r.active,
+        x: r.pos_x,
+        y: r.pos_y,
+        sort: r.sort,
+      })),
+    );
+    revalidatePath("/tables");
+    revalidatePath("/cashier");
+    revalidatePath("/qr");
+    return { ok: true };
+  }
 
   const svc = createSupabaseServiceClient();
   const { error } = await svc.rpc("save_cafe_tables", { p_tables: rows });
@@ -62,10 +88,26 @@ function clamp(n: number) {
  *  orders. Guests per table = number of items on the current order. */
 export async function listTableStatus(): Promise<{ tables: TableStatus[]; layout: CafeTable[] }> {
   await requireStaff();
-  const svc = createSupabaseServiceClient();
   const layout = await getTables();
   const names = layout.filter((t) => t.active).map((t) => t.name);
 
+  if (isLocalDb()) {
+    // both registers share the floor, so occupancy is never station-scoped
+    const rows = listOrdersLocal(null, 400)
+      .filter((o) => o.table_no && (o.status === "pending" || o.status === "paid"))
+      .map((o) => ({
+        order_seq: o.group_no,
+        status: o.status,
+        table_no: o.table_no,
+        paid_at: o.paid_at,
+        created_at: o.created_at,
+        subtotal: o.subtotal,
+        guests: orderItems(o.id).reduce((n, i) => n + i.qty, 0),
+      }));
+    return { tables: deriveTableStatuses(rows, Date.now(), layout.length ? names : DEFAULT_TABLES), layout };
+  }
+
+  const svc = createSupabaseServiceClient();
   const since = new Date(Date.now() - 12 * 3600_000).toISOString();
   const { data: orders } = await svc
     .from("orders")

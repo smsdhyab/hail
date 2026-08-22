@@ -6,12 +6,6 @@
   command = "npm run build"
   publish = ".next"
 
-# Product images proxied through the site CDN — cached at edge PoPs far closer
-# to Iraq than the storage origin (Supabase, ap-southeast-2).
-[[redirects]]
-  from = "/img/*"
-  to = "https://bmxwwoeqcngvtbdvsofa.supabase.co/storage/v1/object/public/menu/:splat"
-  status = 200
 
 [build.environment]
   NODE_VERSION = "24"

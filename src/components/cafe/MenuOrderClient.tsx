@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Minus, Plus, ShoppingCart, X, Check, Sparkles } from "lucide-react";
 import type { MenuCategoryView, MenuItemView } from "@/lib/cafe/menu-data";
 import { MenuIcon } from "./MenuIcon";
-import { PizzaraMark } from "./Logo";
+import { HailMark } from "./Logo";
 import { formatIqdLabel } from "@/lib/cafe/money";
 import { submitOrder, type OrderLineInput } from "@/lib/cafe/order-actions";
 
@@ -105,9 +105,9 @@ export function MenuOrderClient({
       <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <PizzaraMark className="size-11 shrink-0" />
+            <HailMark className="size-11 shrink-0" />
             <div>
-              <h1 className="text-xl font-extrabold text-primary">بيزارا كافيه</h1>
+              <h1 className="text-xl font-extrabold text-primary">مخبز ومقهى هيل</h1>
               <p className="text-xs text-muted-foreground">
                 {channel === "kiosk" ? "الطلب من الجهاز اللوحي" : "المنيو الرقمي"}
                 {table ? ` · طاولة ${table}` : ""}

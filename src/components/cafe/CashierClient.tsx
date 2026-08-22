@@ -76,7 +76,7 @@ export function CashierClient({ menu, tables }: { menu: MenuCategoryView[]; tabl
   const kickBusyRef = useRef(false);
   const checkoutBusyRef = useRef(false);
   useEffect(() => {
-    drawerKickRef.current = localStorage.getItem("pz-drawer") === "1";
+    drawerKickRef.current = localStorage.getItem("hail-drawer") === "1";
   }, []);
   function kickDrawer() {
     // guard against a double-open if the pay action ever fires twice in quick succession
@@ -88,7 +88,7 @@ export function CashierClient({ menu, tables }: { menu: MenuCategoryView[]; tabl
   }
 
   // Auto-print the receipt the moment an order completes. Silent one-click under
-  // the «كاشير بيزارا» shortcut (--kiosk-printing); the manual طباعة button stays
+  // the «كاشير هيل» shortcut (--kiosk-printing); the manual طباعة button stays
   // as a reprint. The small delay lets the print-only receipt lay out first.
   useEffect(() => {
     if (!receipt) return;
@@ -167,6 +167,8 @@ export function CashierClient({ menu, tables }: { menu: MenuCategoryView[]; tabl
       setReceipt({
         orderNumber: res.orderNumber,
         table,
+        // one payment, but the ticket shows what each register earned
+        splits: res.perStation,
         note: orderNote.trim() || null,
         lines: lines.map((l) => ({ name: l.name, flavor: l.flavor, qty: l.qty, unitPrice: l.unitPrice })),
         subtotal,

@@ -1,8 +1,8 @@
-# Render Blueprint — one-click deploy of the Pizzara cafe system.
+# Render Blueprint — one-click deploy of the HAIL cafe system.
 # In Render: New + → Blueprint → pick this repo → fill the 3 secret values.
 services:
   - type: web
-    name: pizzaraiq
+    name: hailiq
     runtime: node
     plan: free
     buildCommand: npm ci && npm run build

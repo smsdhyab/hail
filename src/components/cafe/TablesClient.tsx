@@ -41,6 +41,9 @@ export function TablesClient() {
 
   const statusByName = new Map(tables.map((t) => [t.table, t]));
   const activeLayout = layout.filter((t) => t.active);
+  // one map per storey — the floor is delivery information, so the runner can
+  // see at a glance which level a live order is on
+  const floors = [...new Set(activeLayout.map((t) => t.floor ?? 1))].sort((a, b) => a - b);
   const busy = tables.filter((t) => t.state === "pending").length;
   const seated = tables.filter((t) => t.state === "seated").length;
   const free = tables.filter((t) => t.state === "free").length;
@@ -91,10 +94,13 @@ export function TablesClient() {
       {!loaded ? (
         <p className="rounded-2xl border border-dashed border-border p-8 text-center text-muted-foreground">جارٍ التحميل…</p>
       ) : activeLayout.length > 0 ? (
-        // positioned floor map
-        <div className="relative h-[64vh] min-h-[400px] w-full overflow-hidden rounded-2xl border-2 border-border bg-secondary/20 p-2">
-          <span className="pointer-events-none absolute right-3 top-2 text-xs text-muted-foreground">🚪 واجهة المحل</span>
-          {activeLayout.map((lt) => {
+        floors.map((floor) => (
+        // positioned floor map, one per storey
+        <div key={floor} className="relative h-[64vh] min-h-[400px] w-full overflow-hidden rounded-2xl border-2 border-border bg-secondary/20 p-2">
+          <span className="pointer-events-none absolute right-3 top-2 text-xs text-muted-foreground">
+            {floors.length > 1 ? `🏢 الطابق ${floor}` : "🚪 واجهة المحل"}
+          </span>
+          {activeLayout.filter((lt) => (lt.floor ?? 1) === floor).map((lt) => {
             const s = statusByName.get(lt.name);
             const state = s?.state ?? "free";
             return (
@@ -114,6 +120,7 @@ export function TablesClient() {
             );
           })}
         </div>
+        ))
       ) : (
         // fallback grid when no layout is configured yet
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">

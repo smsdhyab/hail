@@ -1,10 +1,10 @@
 ﻿# ══════════════════════════════════════════════════════════════════════════
-#  مُصلح الطابعة — Pizzara printer doctor
+#  مُصلح الطابعة — HAIL printer doctor
 #  يعالج توقف طابعة الفواتير بعد إعادة التشغيل: سبولر متجمد، طابور معلّق،
 #  وضع Offline، تغيّر الافتراضية — ثم يطبع سطر اختبار حقيقياً ويختبر القاصة.
 #
 #  التشغيل (PowerShell كمسؤول):
-#    irm https://raw.githubusercontent.com/satrkhah-ux/PZ/main/scripts/fix-printer.ps1 -OutFile "$env:TEMP\pz-fix.ps1"; powershell -ExecutionPolicy Bypass -File "$env:TEMP\pz-fix.ps1"
+#    irm http://localhost:3000/scripts/fix-printer.ps1 -OutFile "$env:TEMP\hail-fix.ps1"; powershell -ExecutionPolicy Bypass -File "$env:TEMP\hail-fix.ps1"
 # ══════════════════════════════════════════════════════════════════════════
 $ErrorActionPreference = "Continue"
 chcp 65001 | Out-Null
@@ -23,7 +23,7 @@ if (-not $isAdmin) {
 }
 
 Write-Host ""
-Write-Host "══════ إصلاح طابعة بيزارا ══════"
+Write-Host "══════ إصلاح طابعة هيل ══════"
 Write-Host ""
 
 # ── 1) إعادة تشغيل خدمة الطباعة (تحل أغلب حالات التجمد) ────────────────────
@@ -92,8 +92,8 @@ try {
 }
 
 # ── 6) طباعة سطر اختبار حقيقي عبر المشاركة ─────────────────────────────────
-$test = [byte[]](27, 64) + [Text.Encoding]::ASCII.GetBytes("PIZZARA PRINT TEST`n`n`n`n`n") + [byte[]](29, 86, 66, 0)  # ESC @ init, feed, partial cut
-$tf = Join-Path $env:TEMP "pz-print-test.bin"
+$test = [byte[]](27, 64) + [Text.Encoding]::ASCII.GetBytes("HAIL PRINT TEST`n`n`n`n`n") + [byte[]](29, 86, 66, 0)  # ESC @ init, feed, partial cut
+$tf = Join-Path $env:TEMP "hail-print-test.bin"
 [IO.File]::WriteAllBytes($tf, $test)
 cmd /c "copy /b `"$tf`" \\127.0.0.1\$share" | Out-Null
 if ($LASTEXITCODE -eq 0) {
@@ -104,8 +104,8 @@ if ($LASTEXITCODE -eq 0) {
 
 # ── 7) وكيل القاصة: تشغيل + اختبار ─────────────────────────────────────────
 $agentRunning = Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" | Where-Object { $_.CommandLine -like "*drawer-agent.ps1*" }
-if (-not $agentRunning -and (Test-Path "C:\pizzara\drawer-agent.ps1")) {
-  Start-Process powershell -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File `"C:\pizzara\drawer-agent.ps1`""
+if (-not $agentRunning -and (Test-Path "C:\hail\drawer-agent.ps1")) {
+  Start-Process powershell -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File `"C:\hail\drawer-agent.ps1`""
   Start-Sleep -Seconds 2
   Say "وكيل القاصة لم يكن يعمل — شُغّل الآن"
 } elseif ($agentRunning) {

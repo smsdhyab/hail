@@ -1,4 +1,4 @@
-# برومبت المصمم (ذكاء اصطناعي) — صور منتجات بيزارا كافيه النظيفة
+# برومبت المصمم (ذكاء اصطناعي) — صور منتجات هيل كافيه النظيفة
 
 الهدف: 36 صورة منتج **بدون أي نصوص أو أسعار** (الأسعار تأتي حيّة من قاعدة البيانات،
 والتطبيق يضيف الاسم والسعر والأنيميشن فوق الصورة برمجياً).
@@ -6,7 +6,7 @@
 ## المواصفات الإلزامية (تُلصق مع كل دفعة)
 
 ```
-Ultra-realistic professional product photography for the Iraqi coffee brand "Pizzara Coffee".
+Ultra-realistic professional product photography for the Iraqi coffee brand "HAIL Coffee".
 
 SCENE: [PRODUCT] on a dark black marble cafe counter. Moody cinematic warm lighting,
 deep dark espresso-brown background (#2b1a10) with softly blurred cafe elements,
@@ -30,7 +30,7 @@ CONSISTENCY: identical lighting, palette, counter and camera across the entire s
 - **المعجنات (34–36):** `warm golden baked texture, a few crumbs, soft warm light`
 
 ## التسمية — مهم جداً
-احفظ كل صورة بالاسم: `PZ-Item-01.png` … `PZ-Item-36.png` بنفس الترقيم أدناه.
+احفظ كل صورة بالاسم: `HAIL-Item-01.png` … `HAIL-Item-36.png` بنفس الترقيم أدناه.
 ضع الملفات في مجلد واحد، ثم في المشروع:
 `node scripts/import-product-images.mjs <مسار المجلد>` — يستبدل الصور القديمة تلقائياً.
 

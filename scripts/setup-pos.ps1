@@ -1,11 +1,11 @@
 ﻿# ══════════════════════════════════════════════════════════════════════════
-#  مُعِدّ جهاز الكاشير — Pizzara POS one-shot installer
+#  مُعِدّ جهاز الكاشير — HAIL POS one-shot installer
 #  يكتشف طابعة الفواتير، يشاركها، يجعلها الافتراضية، يثبّت وكيل القاصة
-#  ويشغّله مع بدء التشغيل، يختبر فتح الدرج، ويصنع اختصار «كاشير بيزارا»
+#  ويشغّله مع بدء التشغيل، يختبر فتح الدرج، ويصنع اختصار «كاشير هيل»
 #  بوضع الطباعة الصامتة. آمن لإعادة التشغيل في أي وقت.
 #
 #  التشغيل (PowerShell كمسؤول):
-#    irm https://raw.githubusercontent.com/satrkhah-ux/PZ/main/scripts/setup-pos.ps1 -OutFile "$env:TEMP\pz-setup.ps1"; powershell -ExecutionPolicy Bypass -File "$env:TEMP\pz-setup.ps1"
+#    irm http://localhost:3000/scripts/setup-pos.ps1 -OutFile "$env:TEMP\hail-setup.ps1"; powershell -ExecutionPolicy Bypass -File "$env:TEMP\hail-setup.ps1"
 # ══════════════════════════════════════════════════════════════════════════
 $ErrorActionPreference = "Continue"
 chcp 65001 | Out-Null
@@ -28,7 +28,7 @@ if (-not $isAdmin) {
 }
 
 Write-Host ""
-Write-Host "══════ إعداد كاشير بيزارا كافيه ══════"
+Write-Host "══════ إعداد كاشير مخبز ومقهى هيل ══════"
 Write-Host ""
 
 # ── 1) اكتشاف طابعة الفواتير ────────────────────────────────────────────────
@@ -74,12 +74,12 @@ try {
 }
 
 # ── 4) تثبيت وكيل القاصة (اسم المشاركة مضمّن تلقائياً) ─────────────────────
-$dir = "C:\pizzara"
+$dir = "C:\hail"
 New-Item -ItemType Directory -Force -Path $dir | Out-Null
 $agent = @'
 param([string]$PrinterShare = "__SHARE__", [int]$Port = 9977)
 $bytes = [byte[]](27, 112, 0, 25, 250)
-$kickFile = Join-Path $env:TEMP "pz-drawer-kick.bin"
+$kickFile = Join-Path $env:TEMP "hail-drawer-kick.bin"
 [IO.File]::WriteAllBytes($kickFile, $bytes)
 $listener = New-Object System.Net.HttpListener
 $listener.Prefixes.Add("http://127.0.0.1:$Port/")
@@ -105,7 +105,7 @@ Say "وكيل القاصة مثبت في $dir\drawer-agent.ps1 (المشاركة
 # ── 5) التشغيل مع إقلاع الجهاز + تشغيله الآن ────────────────────────────────
 $startupDir = "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp"
 "@echo off`r`nstart `"`" /min powershell -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$dir\drawer-agent.ps1`"" |
-  Set-Content -Path "$startupDir\pizzara-drawer.cmd" -Encoding ASCII
+  Set-Content -Path "$startupDir\hail-drawer.cmd" -Encoding ASCII
 Say "أُضيف لبدء التشغيل التلقائي"
 
 Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" |
@@ -123,7 +123,7 @@ try {
   Say "لم يستجب الوكيل للاختبار — أعد تشغيل الجهاز وجرّب http://127.0.0.1:9977/kick" $false
 }
 
-# ── 7) اختصار «كاشير بيزارا» بوضع الطباعة الصامتة ──────────────────────────
+# ── 7) اختصار «كاشير هيل» بوضع الطباعة الصامتة ──────────────────────────
 $browser = @(
   "C:\Program Files\Google\Chrome\Application\chrome.exe",
   "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
@@ -131,23 +131,23 @@ $browser = @(
   "C:\Program Files\Microsoft\Edge\Application\msedge.exe"
 ) | Where-Object { Test-Path $_ } | Select-Object -First 1
 if ($browser) {
-  # أيقونة بيزارا للاختصار (تُنزَّل مرة واحدة؛ إن فشل التنزيل نستخدم أيقونة المتصفح)
-  $ico = "$dir\pizzara.ico"
+  # أيقونة هيل للاختصار (تُنزَّل مرة واحدة؛ إن فشل التنزيل نستخدم أيقونة المتصفح)
+  $ico = "$dir\hail.ico"
   try {
-    Invoke-WebRequest "https://raw.githubusercontent.com/satrkhah-ux/PZ/main/public/logo.ico" -OutFile $ico -UseBasicParsing -TimeoutSec 20
+    Invoke-WebRequest "http://localhost:3000/public/logo.ico" -OutFile $ico -UseBasicParsing -TimeoutSec 20
   } catch { $ico = $null }
 
   $ws = New-Object -ComObject WScript.Shell
-  $lnk = $ws.CreateShortcut("$([Environment]::GetFolderPath('CommonDesktopDirectory'))\كاشير بيزارا.lnk")
+  $lnk = $ws.CreateShortcut("$([Environment]::GetFolderPath('CommonDesktopDirectory'))\كاشير هيل.lnk")
   $lnk.TargetPath = $browser
   # نافذة تطبيق مستقلة بلا أشرطة متصفح (--app) + طباعة صامتة + ملء الشاشة — تفتح الكاشير مباشرة كتطبيق
-  $lnk.Arguments = "--app=https://pizzara-modern.netlify.app/cashier --kiosk-printing --start-maximized --no-first-run"
+  $lnk.Arguments = "--app=http://localhost:3000/cashier --kiosk-printing --start-maximized --no-first-run"
   if ($ico -and (Test-Path $ico)) { $lnk.IconLocation = "$ico,0" } else { $lnk.IconLocation = "$browser,0" }
   $lnk.Save()
-  Say "اختصار «كاشير بيزارا» (نافذة تطبيق نظيفة بلا متصفح + أيقونة بيزارا + طباعة صامتة)"
+  Say "اختصار «كاشير هيل» (نافذة تطبيق نظيفة بلا متصفح + أيقونة هيل + طباعة صامتة)"
 
   # ── يفتح الكاشير تلقائياً عند تشغيل ويندوز (نسخة من الاختصار في مجلد بدء التشغيل) ──
-  $startupLnk = $ws.CreateShortcut("$startupDir\كاشير بيزارا.lnk")
+  $startupLnk = $ws.CreateShortcut("$startupDir\كاشير هيل.lnk")
   $startupLnk.TargetPath  = $browser
   $startupLnk.Arguments   = $lnk.Arguments
   $startupLnk.IconLocation = $lnk.IconLocation
@@ -161,7 +161,7 @@ Write-Host ""
 Write-Host "══════ اكتمل الإعداد ══════"
 Write-Host "الطابعة: $($chosen.Name)  |  المشاركة: $share  |  الوكيل: 127.0.0.1:9977"
 Write-Host "الكاشير + وكيل الدرج يبدآن تلقائياً عند تشغيل ويندوز (بعد تسجيل الدخول)."
-Write-Host "المتبقي عليك: أول مرة سجّل الدخول في «كاشير بيزارا» وفعّل خياري 🖨️ و 💰 داخل الشاشة."
+Write-Host "المتبقي عليك: أول مرة سجّل الدخول في «كاشير هيل» وفعّل خياري 🖨️ و 💰 داخل الشاشة."
 Write-Host ""
 Write-Host "اختياري — لتشغيل غير مراقَب تماماً (بلا كتابة كلمة سر ويندوز عند الإقلاع):"
 Write-Host "  شغّل  netplwiz  ← ألغِ تحديد «يجب على المستخدمين إدخال اسم وكلمة مرور» ← أدخل كلمة السر مرة."

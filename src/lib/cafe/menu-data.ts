@@ -1,4 +1,5 @@
 import { isDemoServer } from "./demo";
+import type { StationSlug } from "./hail-menu";
 import { DEMO_MENU } from "./demo-menu";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -12,7 +13,13 @@ export type MenuItemView = {
   flavors: string[];
   variants: MenuVariantView[];
 };
-export type MenuCategoryView = { name_ar: string; image_url: string | null; items: MenuItemView[] };
+export type MenuCategoryView = {
+  name_ar: string;
+  image_url: string | null;
+  /** which cash register owns every item in this category — drives order routing */
+  station: StationSlug;
+  items: MenuItemView[];
+};
 
 // The menu is identical for every (anon) visitor and changes rarely, yet every
 // page open re-hit the DB (pages are force-dynamic). Memoize the result per warm
@@ -44,7 +51,7 @@ export async function getPublicMenu(): Promise<MenuCategoryView[]> {
   for (const r of rows ?? []) {
     let c = cats.get(r.category_name);
     if (!c) {
-      c = { name_ar: r.category_name, image_url: r.category_image, items: [] };
+      c = { name_ar: r.category_name, image_url: r.category_image, station: (r.station_slug ?? "cafe") as StationSlug, items: [] };
       cats.set(r.category_name, c);
     }
     c.items.push({

@@ -3,6 +3,8 @@
 import { isDemoServer } from "./demo";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { sendNewOrderPush } from "./push";
+import { isLocalDb, placeOrderLocal, tableFloor } from "./local-db";
+import { stationName, type StationSlug } from "./hail-menu";
 import type { Json } from "@/lib/types";
 
 export type OrderLineInput = {
@@ -23,8 +25,20 @@ export type SubmitOrderInput = {
   note?: string | null;
 };
 
+/** One customer order can land on both registers — the confirmation tells them
+ *  which counters are preparing what, under a single order number. */
+export type OrderSplitPart = { station: StationSlug; station_ar: string; subtotal: number; count: number };
+
 export type SubmitOrderResult =
-  | { ok: true; orderNumber: string; orderId?: string | null; cardSerial?: string | null }
+  | {
+      ok: true;
+      orderNumber: string;
+      orderId?: string | null;
+      cardSerial?: string | null;
+      /** empty when the order stayed on one register */
+      parts?: OrderSplitPart[];
+      floor?: number | null;
+    }
   | { ok: false; error: string };
 
 /** Place a self-order. Demo → a plausible number, no persistence. Real → place_order rpc.
@@ -32,6 +46,33 @@ export type SubmitOrderResult =
  *  order to them, so paying at the counter auto-awards their points. */
 export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderResult> {
   if (!input.lines?.length) return { ok: false, error: "السلة فارغة" };
+
+  if (isLocalDb()) {
+    const placed = placeOrderLocal({
+      channel: input.channel,
+      lines: input.lines,
+      table: input.table,
+      note: input.note,
+    });
+    if ("error" in placed) return { ok: false, error: placed.error };
+    await sendNewOrderPush({
+      seq: placed.group_no,
+      table: input.table?.trim() || null,
+      count: input.lines.reduce((s, l) => s + l.qty, 0),
+    });
+    return {
+      ok: true,
+      orderNumber: String(placed.group_no).padStart(3, "0"),
+      orderId: placed.orders[0]?.id ?? null,
+      floor: tableFloor(input.table?.trim() || null),
+      parts: placed.orders.map((o) => ({
+        station: o.station,
+        station_ar: stationName(o.station),
+        subtotal: o.subtotal,
+        count: 0,
+      })),
+    };
+  }
 
   if (isDemoServer()) {
     const n = Math.floor(Math.random() * 900 + 100);
@@ -65,11 +106,11 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
   if (error || !data?.[0]) return { ok: false, error: "تعذّر إرسال الطلب، حاول مجدداً." };
   // alert subscribed staff devices even when the app is closed (never throws)
   await sendNewOrderPush({
-    seq: data[0].order_seq,
+    seq: data[0].group_no,
     table: input.table?.trim() || null,
     count: input.lines.reduce((s, l) => s + l.qty, 0),
   });
-  return { ok: true, orderNumber: String(data[0].order_seq).padStart(3, "0"), orderId: data[0].order_id, cardSerial };
+  return { ok: true, orderNumber: String(data[0].group_no).padStart(3, "0"), orderId: data[0].order_id, cardSerial };
 }
 
 export type PublicOrderItem = { name_ar: string; flavor_ar: string | null; qty: number; unit_price: number; line_total: number };
@@ -86,7 +127,7 @@ export type PublicOrder = {
 
 /** Customer-side order tracking — looks up their own orders by unguessable id. */
 export async function getMyOrders(ids: string[]): Promise<PublicOrder[]> {
-  if (!ids.length || isDemoServer()) return [];
+  if (!ids.length || isDemoServer() || isLocalDb()) return [];
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.rpc("get_orders_public", { p_orders: ids.slice(0, 20) });
   return (Array.isArray(data) ? data : []) as PublicOrder[];

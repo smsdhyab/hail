@@ -22,7 +22,7 @@ type CafeUIContextValue = {
 
 const CafeUIContext = createContext<CafeUIContextValue | null>(null);
 
-const STORAGE_KEY = "pizzara-ui";
+const STORAGE_KEY = "hail-ui";
 
 type PersistedState = { language: Language; theme: ThemeMode };
 

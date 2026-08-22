@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
-import { requireAdmin } from "./auth";
+import { requireAdmin, requireStaff, stationScope, type Staff } from "./auth";
+import { stationName, type StationSlug } from "./hail-menu";
+import { isLocalDb, listOrdersLocal, orderItems, summaryLocal } from "./local-db";
 import { businessDay } from "./time";
 
 export type DaySummary = {
@@ -14,28 +16,52 @@ export type DaySummary = {
   net: number;
 };
 
-/** Daily sales/profit/expenses rollup over a range. Admin only — reads profit,
- *  so it goes through the service client (range_summary is service-role-only). */
-export async function getRangeSummary(from: string, to: string): Promise<DaySummary[]> {
-  await requireAdmin();
-  const svc = createSupabaseServiceClient();
-  const { data, error } = await svc.rpc("range_summary", { p_from: from, p_to: to });
-  if (error) throw new Error(error.message);
-  return (data ?? []) as DaySummary[];
+const EMPTY = (day: string): DaySummary => ({ day, sales: 0, orders_count: 0, profit: 0, expenses: 0, net: 0 });
+
+/**
+ * Cost and profit stay management-only — the DB revokes those columns from
+ * everyone but the service role, and this strips them again for a cashier who
+ * legitimately sees their own register's sales.
+ */
+function forViewer(rows: DaySummary[], staff: Staff): DaySummary[] {
+  if (staff.role === "admin") return rows;
+  return rows.map((r) => ({ ...r, profit: 0, expenses: 0, net: 0 }));
 }
 
-/** Full sales/profit rollup for a single business day (Baghdad calendar day).
- *  `business_day` rolls at midnight, so after 12am «today» starts fresh — this
- *  lets the owner pull yesterday's (or any date's) closing total to reconcile
- *  the cash drawer. Admin only (reads profit → service client). */
-export async function getDaySummary(day: string): Promise<DaySummary> {
-  await requireAdmin();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) throw new Error("تاريخ غير صالح");
+/** Which register the figures cover, for the screen's heading. */
+export async function getScopeLabel(): Promise<{ station: StationSlug | null; label: string }> {
+  const staff = await requireStaff();
+  const scope = stationScope(staff);
+  return { station: scope, label: scope ? stationName(scope) : "كل الأقسام" };
+}
+
+/**
+ * Daily rollup over a range, scoped to the caller's register. A cashier sees
+ * only their own books; the manager sees the whole shop. This is what keeps
+ * the two sets of accounts separate on one system.
+ */
+export async function getRangeSummary(from: string, to: string): Promise<DaySummary[]> {
+  const staff = await requireStaff();
+  const scope = stationScope(staff);
+
+  if (isLocalDb()) {
+    return forViewer(
+      summaryLocal(from, to, scope).map((d) => ({ ...d, profit: 0, expenses: 0, net: 0 })),
+      staff,
+    );
+  }
+
   const svc = createSupabaseServiceClient();
-  const { data, error } = await svc.rpc("range_summary", { p_from: day, p_to: day });
+  const { data, error } = await svc.rpc("range_summary", { p_from: from, p_to: to, p_station: scope });
   if (error) throw new Error(error.message);
-  const row = (data ?? [])[0] as DaySummary | undefined;
-  return row ?? { day, sales: 0, orders_count: 0, profit: 0, expenses: 0, net: 0 };
+  return forViewer((data ?? []) as DaySummary[], staff);
+}
+
+/** Full rollup for a single business day — used to reconcile the drawer after
+ *  midnight, when `business_day` has already rolled over. */
+export async function getDaySummary(day: string): Promise<DaySummary> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) throw new Error("تاريخ غير صالح");
+  return (await getRangeSummary(day, day))[0] ?? EMPTY(day);
 }
 
 // Baghdad is UTC+3 year-round (Iraq has no DST).
@@ -48,6 +74,7 @@ function baghdadDayStart(): string {
  *  counting again from now. The Telegram bot is unaffected (full day). Admin only. */
 export async function resetDailyAccount(): Promise<{ ok: true }> {
   await requireAdmin();
+  if (isLocalDb()) return { ok: true };
   const svc = createSupabaseServiceClient();
   await svc.from("daily_resets").insert({});
   revalidatePath("/dashboard");
@@ -55,14 +82,18 @@ export async function resetDailyAccount(): Promise<{ ok: true }> {
 }
 
 /** Today's rollup counting only orders/expenses AFTER the latest reset (or day
- *  start if none). Drives the dashboard's TODAY card so a shift settlement zeros
- *  it. Admin only (reads profit → service client). */
+ *  start if none), scoped to the caller's register. */
 export async function getTodaySinceReset(): Promise<DaySummary> {
-  await requireAdmin();
-  const svc = createSupabaseServiceClient();
+  const staff = await requireStaff();
+  const scope = stationScope(staff);
   const day = businessDay();
-  const dayStart = baghdadDayStart();
 
+  if (isLocalDb()) {
+    return forViewer([{ ...(summaryLocal(day, day, scope)[0] ?? EMPTY(day)), profit: 0, expenses: 0, net: 0 }], staff)[0];
+  }
+
+  const svc = createSupabaseServiceClient();
+  const dayStart = baghdadDayStart();
   const { data: resets } = await svc
     .from("daily_resets")
     .select("reset_at")
@@ -71,27 +102,37 @@ export async function getTodaySinceReset(): Promise<DaySummary> {
     .limit(1);
   const cutoff = resets?.[0]?.reset_at ?? dayStart;
 
-  const { data: orders } = await svc
-    .from("orders")
-    .select("subtotal, cost_total")
-    .eq("status", "paid")
-    .gte("paid_at", cutoff);
-  const sales = (orders ?? []).reduce((s, o) => s + (o.subtotal ?? 0), 0);
-  const cost = (orders ?? []).reduce((s, o) => s + (o.cost_total ?? 0), 0);
-  const orders_count = (orders ?? []).length;
+  const stationId = scope ? await stationIdOf(scope) : null;
+  let q = svc.from("orders").select("subtotal, cost_total, discount, extra, group_no").eq("status", "paid").gte("paid_at", cutoff);
+  if (stationId) q = q.eq("station_id", stationId);
+  const { data: orders } = await q;
 
-  const { data: exps } = await svc.from("expenses").select("amount").gte("created_at", cutoff);
+  const sales = (orders ?? []).reduce((s, o) => s + (o.subtotal ?? 0) - (o.discount ?? 0) + (o.extra ?? 0), 0);
+  const cost = (orders ?? []).reduce((s, o) => s + (o.cost_total ?? 0), 0);
+  // one customer ticket = one order, however many registers it touched
+  const orders_count = new Set((orders ?? []).map((o) => o.group_no)).size;
+
+  let eq = svc.from("expenses").select("amount").gte("created_at", cutoff);
+  if (stationId) eq = eq.eq("station_id", stationId);
+  const { data: exps } = await eq;
   const expenses = (exps ?? []).reduce((s, e) => s + (e.amount ?? 0), 0);
 
   const profit = sales - cost;
-  return { day, sales, orders_count, profit, expenses, net: profit - expenses };
+  return forViewer([{ day, sales, orders_count, profit, expenses, net: profit - expenses }], staff)[0];
+}
+
+async function stationIdOf(slug: StationSlug): Promise<string | null> {
+  const svc = createSupabaseServiceClient();
+  const { data } = await svc.from("stations").select("id").eq("slug", slug).maybeSingle();
+  return data?.id ?? null;
 }
 
 /** Estimated guest count over a range = total item quantity on paid orders
- *  (one item ≈ one guest). Aggregated server-side by the guest_estimate RPC so
- *  it isn't silently capped by PostgREST's 1000-row limit. Admin only. */
+ *  (one item ≈ one guest). Aggregated server-side so PostgREST's 1000-row cap
+ *  can't silently truncate it. Admin only. */
 export async function getGuestEstimate(from: string, to: string): Promise<number> {
   await requireAdmin();
+  if (isLocalDb()) return 0;
   const svc = createSupabaseServiceClient();
   const { data } = await svc.rpc("guest_estimate", { p_from: from, p_to: to });
   return Number(data) || 0;
@@ -109,15 +150,38 @@ export type RecentOrder = {
   items: RecentOrderItem[];
 };
 
-/** Recent orders WITH their stored line items — every table order stays reviewable. */
+/** Recent orders WITH their stored line items, scoped to the caller's register. */
 export async function getRecentOrders(limit = 15): Promise<RecentOrder[]> {
-  await requireAdmin();
+  const staff = await requireStaff();
+  const scope = stationScope(staff);
+
+  if (isLocalDb()) {
+    return listOrdersLocal(scope, limit).map((o) => ({
+      id: o.id,
+      order_seq: o.group_no,
+      channel: o.channel,
+      status: o.status,
+      subtotal: o.subtotal - o.discount + o.extra,
+      table_no: o.table_no,
+      created_at: o.created_at,
+      items: orderItems(o.id).map((i) => ({
+        name_ar: i.name_ar,
+        flavor_ar: i.flavor_ar,
+        qty: i.qty,
+        line_total: i.qty * i.unit_price,
+      })),
+    }));
+  }
+
   const svc = createSupabaseServiceClient();
-  const { data: orders } = await svc
+  const stationId = scope ? await stationIdOf(scope) : null;
+  let q = svc
     .from("orders")
-    .select("id, order_seq, channel, status, subtotal, table_no, created_at")
+    .select("id, group_no, channel, status, subtotal, table_no, created_at")
     .order("created_at", { ascending: false })
     .limit(limit);
+  if (stationId) q = q.eq("station_id", stationId);
+  const { data: orders } = await q;
   if (!orders?.length) return [];
 
   const ids = orders.map((o) => o.id);
@@ -131,5 +195,14 @@ export async function getRecentOrders(limit = 15): Promise<RecentOrder[]> {
     arr.push({ name_ar: it.name_ar, flavor_ar: it.flavor_ar, qty: it.qty, line_total: it.line_total });
     byOrder.set(it.order_id, arr);
   }
-  return orders.map((o) => ({ ...o, items: byOrder.get(o.id) ?? [] })) as RecentOrder[];
+  return orders.map((o) => ({
+    id: o.id,
+    order_seq: o.group_no,
+    channel: o.channel,
+    status: o.status,
+    subtotal: o.subtotal,
+    table_no: o.table_no,
+    created_at: o.created_at,
+    items: byOrder.get(o.id) ?? [],
+  }));
 }

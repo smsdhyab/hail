@@ -10,12 +10,20 @@
 export type OrderChannel = "qr" | "kiosk" | "cashier";
 export type OrderStatus = "pending" | "paid" | "cancelled" | "refunded";
 export type VariantKind = "size" | "flavor";
+/** The two cash registers: separate books, one system. */
+export type StationSlug = "pastry" | "cafe";
 
 type Timestamped = { id: string; created_at: string };
 
 export type Database = {
   public: {
     Tables: {
+      stations: {
+        Row: Timestamped & { slug: StationSlug; name_ar: string; sort: number };
+        Insert: { id?: string; slug: StationSlug; name_ar: string; sort?: number; created_at?: string };
+        Update: Partial<{ slug: StationSlug; name_ar: string; sort: number }>;
+        Relationships: [];
+      };
       roles: {
         Row: Timestamped & { name_ar: string; name_en: string };
         Insert: { id?: string; name_ar: string; name_en: string; created_at?: string };
@@ -24,23 +32,23 @@ export type Database = {
       };
       employees: {
         Row: Timestamped & {
-          name_ar: string; role_id: string | null; auth_user_id: string | null; is_active: boolean;
+          name_ar: string; role_id: string | null; station_id: string | null; auth_user_id: string | null; is_active: boolean;
           wage_amount: number; wage_period: "daily" | "weekly" | "monthly" | null;
         };
         Insert: {
-          id?: string; name_ar: string; role_id?: string | null; auth_user_id?: string | null; is_active?: boolean;
+          id?: string; name_ar: string; role_id?: string | null; station_id?: string | null; auth_user_id?: string | null; is_active?: boolean;
           wage_amount?: number; wage_period?: "daily" | "weekly" | "monthly" | null; created_at?: string;
         };
         Update: Partial<{
-          name_ar: string; role_id: string | null; auth_user_id: string | null; is_active: boolean;
+          name_ar: string; role_id: string | null; station_id: string | null; auth_user_id: string | null; is_active: boolean;
           wage_amount: number; wage_period: "daily" | "weekly" | "monthly" | null;
         }>;
         Relationships: [];
       };
       categories: {
-        Row: Timestamped & { name_ar: string; image_url: string | null; sort: number; is_active: boolean };
-        Insert: { id?: string; name_ar: string; image_url?: string | null; sort?: number; is_active?: boolean; created_at?: string };
-        Update: Partial<{ name_ar: string; image_url: string | null; sort: number; is_active: boolean }>;
+        Row: Timestamped & { name_ar: string; image_url: string | null; sort: number; is_active: boolean; station_id: string | null };
+        Insert: { id?: string; name_ar: string; image_url?: string | null; sort?: number; is_active?: boolean; station_id?: string | null; created_at?: string };
+        Update: Partial<{ name_ar: string; image_url: string | null; sort: number; is_active: boolean; station_id: string | null }>;
         Relationships: [];
       };
       menu_items: {
@@ -110,9 +118,9 @@ export type Database = {
         Relationships: [];
       };
       cafe_tables: {
-        Row: { name: string; kind: string; active: boolean; pos_x: number; pos_y: number; sort: number; updated_at: string };
-        Insert: { name: string; kind?: string; active?: boolean; pos_x?: number; pos_y?: number; sort?: number; updated_at?: string };
-        Update: Partial<{ kind: string; active: boolean; pos_x: number; pos_y: number; sort: number; updated_at: string }>;
+        Row: { name: string; kind: string; floor: number; active: boolean; pos_x: number; pos_y: number; sort: number; updated_at: string };
+        Insert: { name: string; kind?: string; floor?: number; active?: boolean; pos_x?: number; pos_y?: number; sort?: number; updated_at?: string };
+        Update: Partial<{ kind: string; floor: number; active: boolean; pos_x: number; pos_y: number; sort: number; updated_at: string }>;
         Relationships: [];
       };
       monthly_costs: {
@@ -122,8 +130,8 @@ export type Database = {
         Relationships: [];
       };
       register_closures: {
-        Row: { business_day: string; remaining: number; note: string | null; closed_by: string | null; created_at: string; updated_at: string };
-        Insert: { business_day: string; remaining: number; note?: string | null; closed_by?: string | null; created_at?: string; updated_at?: string };
+        Row: { business_day: string; station_id: string | null; remaining: number; note: string | null; closed_by: string | null; created_at: string; updated_at: string };
+        Insert: { business_day: string; station_id?: string | null; remaining: number; note?: string | null; closed_by?: string | null; created_at?: string; updated_at?: string };
         Update: Partial<{ remaining: number; note: string | null; closed_by: string | null; updated_at: string }>;
         Relationships: [];
       };
@@ -134,25 +142,27 @@ export type Database = {
         Relationships: [];
       };
       order_counters: {
-        Row: { business_day: string; last_seq: number };
-        Insert: { business_day: string; last_seq?: number };
+        Row: { business_day: string; scope: string; last_seq: number };
+        Insert: { business_day: string; scope: string; last_seq?: number };
         Update: Partial<{ last_seq: number }>;
         Relationships: [];
       };
       orders: {
         Row: Timestamped & {
           business_day: string; order_seq: number; channel: OrderChannel; status: OrderStatus;
+          station_id: string; group_no: number; collected_by_station_id: string | null;
           subtotal: number; cost_total: number; discount: number; extra: number; extra_note: string | null;
-          table_no: string | null; note: string | null;
+          table_no: string | null; floor: number | null; note: string | null;
           customer_id: string | null; cashier_id: string | null; paid_at: string | null;
         };
         Insert: {
           id?: string; business_day?: string; order_seq: number; channel: OrderChannel; status?: OrderStatus;
+          station_id: string; group_no: number; collected_by_station_id?: string | null;
           subtotal?: number; cost_total?: number; discount?: number; extra?: number; extra_note?: string | null;
-          table_no?: string | null; note?: string | null;
+          table_no?: string | null; floor?: number | null; note?: string | null;
           customer_id?: string | null; cashier_id?: string | null; paid_at?: string | null; created_at?: string;
         };
-        Update: Partial<{ status: OrderStatus; discount: number; extra: number; extra_note: string | null; customer_id: string | null; paid_at: string | null }>;
+        Update: Partial<{ status: OrderStatus; discount: number; extra: number; extra_note: string | null; customer_id: string | null; collected_by_station_id: string | null; paid_at: string | null }>;
         Relationships: [];
       };
       order_items: {
@@ -168,8 +178,8 @@ export type Database = {
         Relationships: [];
       };
       expenses: {
-        Row: Timestamped & { business_day: string; amount: number; category: string | null; note: string | null; created_by: string | null };
-        Insert: { id?: string; business_day?: string; amount: number; category?: string | null; note?: string | null; created_by?: string | null; created_at?: string };
+        Row: Timestamped & { business_day: string; amount: number; category: string | null; note: string | null; created_by: string | null; station_id: string | null };
+        Insert: { id?: string; business_day?: string; amount: number; category?: string | null; note?: string | null; created_by?: string | null; station_id?: string | null; created_at?: string };
         Update: Partial<{ business_day: string; amount: number; category: string | null; note: string | null }>;
         Relationships: [];
       };
@@ -190,6 +200,8 @@ export type Database = {
           id: string; category_id: string; name_ar: string; description_ar: string | null; image_url: string | null;
           price: number; flavors: string[]; sort: number;
           category_name: string; category_image: string | null; category_sort: number;
+          /** the register that owns this category — drives order routing */
+          station_slug: "pastry" | "cafe" | null;
         };
         Relationships: [];
       };
@@ -211,14 +223,25 @@ export type Database = {
       };
     };
     Functions: {
+      /** Splits the lines by station → one order row per station, all sharing group_no. */
       place_order: {
         Args: { p_channel: OrderChannel; p_lines: Json; p_customer?: string | null; p_table?: string | null; p_note?: string | null };
-        Returns: { order_id: string; order_seq: number }[];
+        Returns: { order_id: string; order_seq: number; group_no: number; station_slug: StationSlug }[];
       };
       mark_order_paid: {
         Args: { p_order: string; p_discount?: number; p_customer?: string | null; p_award_points?: number; p_extra?: number; p_extra_note?: string | null };
         Returns: number;
       };
+      /** One payment for a whole group; prorates discount/extra across stations. */
+      pay_order_group: {
+        Args: {
+          p_group: number; p_day?: string | null; p_discount?: number; p_extra?: number;
+          p_extra_note?: string | null; p_customer?: string | null; p_award_points?: number;
+          p_collected_by?: string | null;
+        };
+        Returns: { order_id: string; station_slug: StationSlug; net: number }[];
+      };
+      cancel_order_group: { Args: { p_group: number; p_day?: string | null }; Returns: undefined };
       cancel_order: { Args: { p_order: string }; Returns: undefined };
       refund_order: { Args: { p_order: string }; Returns: undefined };
       get_card: { Args: { p_serial: string }; Returns: { id: string; name_ar: string | null; points: number }[] };
@@ -229,7 +252,7 @@ export type Database = {
       save_cafe_tables: { Args: { p_tables: Json }; Returns: undefined };
       guest_estimate: { Args: { p_from: string; p_to: string }; Returns: number };
       range_summary: {
-        Args: { p_from: string; p_to: string };
+        Args: { p_from: string; p_to: string; p_station?: string | null };
         Returns: { day: string; sales: number; orders_count: number; profit: number; expenses: number; net: number }[];
       };
     };

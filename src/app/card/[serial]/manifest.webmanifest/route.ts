@@ -7,16 +7,16 @@ export async function GET(_req: Request, ctx: { params: Promise<{ serial: string
   const { serial } = await ctx.params;
   return NextResponse.json(
     {
-      name: "بطاقة بيزارا كافيه",
-      short_name: "بطاقة بيزارا",
-      description: "بطاقة ولاء بيزارا كافيه — نقاطك ورمز QR دائماً معك",
+      name: "بطاقة هيل",
+      short_name: "بطاقة هيل",
+      description: "بطاقة ولاء مخبز ومقهى هيل — نقاطك ورمز QR دائماً معك",
       start_url: `/card/${serial}`,
       scope: `/card/${serial}`,
       display: "standalone",
       dir: "rtl",
       lang: "ar",
       background_color: "#ffffff",
-      theme_color: "#6f4e37",
+      theme_color: "#556f42",
       icons: [
         { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
         { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },

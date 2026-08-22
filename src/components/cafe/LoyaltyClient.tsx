@@ -20,7 +20,7 @@ function sendCardWhatsApp(phone: string, serial: string) {
   const digits = phone.replace(/\D/g, "");
   const intl = digits.startsWith("964") ? digits : digits.replace(/^0/, "964");
   const url = `${window.location.origin}/card/${serial}`;
-  const text = `مرحباً بك في بيزارا كافيه ☕\nهذه بطاقة الولاء الخاصة بك — احفظها لديك:\n${url}\n\nاجمع النقاط مع كل طلب واستبدلها بمكافآت مجانية 🎁`;
+  const text = `مرحباً بك في مخبز ومقهى هيل ☕\nهذه بطاقة الولاء الخاصة بك — احفظها لديك:\n${url}\n\nاجمع النقاط مع كل طلب واستبدلها بمكافآت مجانية 🎁`;
   window.open(`https://wa.me/${intl}?text=${encodeURIComponent(text)}`, "_blank");
 }
 

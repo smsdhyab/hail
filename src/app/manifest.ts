@@ -6,9 +6,9 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/menu",
-    name: "بيزارا كافيه — Pizzara",
-    short_name: "بيزارا كافيه",
-    description: "منيو وطلبات وولاء بيزارا كافيه",
+    name: "مخبز ومقهى هيل — HAIL Bakery & Cafe",
+    short_name: "هيل",
+    description: "منيو وطلبات وولاء مخبز ومقهى هيل",
     // start at the root: the proxy routes it by session — customers → /menu,
     // signed-in staff → dashboard. Robust even if iOS confuses the two PWAs.
     start_url: "/",
@@ -16,7 +16,7 @@ export default function manifest(): MetadataRoute.Manifest {
     dir: "rtl",
     lang: "ar",
     background_color: "#ffffff",
-    theme_color: "#6f4e37",
+    theme_color: "#556f42",
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
       { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },

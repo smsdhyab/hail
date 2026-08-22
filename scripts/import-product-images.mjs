@@ -32,7 +32,7 @@ loadEnv();
 const args = process.argv.slice(2);
 const STAGING = args.includes("--staging");
 const ONLY = args.find((a) => a.startsWith("--only="))?.slice(7) ?? null;
-const SRC = args.find((a) => !a.startsWith("--")) ?? "C:/Users/al3r1/Documents/Codex/2026-07-22/referenced-chatgpt-conversation-this-is-untrusted/outputs/PZ-All-Products";
+const SRC = args.find((a) => !a.startsWith("--")) ?? "C:/Users/al3r1/Documents/Codex/2026-07-22/referenced-chatgpt-conversation-this-is-untrusted/outputs/HAIL-All-Products";
 
 // image number (01-36) → exact menu_items.name_ar
 const MAP = {
@@ -57,15 +57,15 @@ let ok = 0, missing = 0, failed = 0;
 for (const [num, name] of Object.entries(MAP)) {
   if (ONLY && num !== ONLY.padStart(2, "0")) continue;
   // designer set first (clean), current promo set as fallback
-  const candidates = [`PZ-Item-${num}.png`, `PZ-Product-${num}.png`, `PZ-Item-${num}.jpg`, `PZ-Product-${num}.jpg`];
+  const candidates = [`HAIL-Item-${num}.png`, `HAIL-Product-${num}.png`, `HAIL-Item-${num}.jpg`, `HAIL-Product-${num}.jpg`];
   const file = candidates.map((f) => join(SRC, f)).find(existsSync);
   if (!file) { console.log(`✗ ${num} ${name}: no file`); missing++; continue; }
 
   try {
-    // The interim PZ-Product promo posters have the name/price baked into the top
+    // The interim HAIL-Product promo posters have the name/price baked into the top
     // ~33% — crop it out (720×900 = clean 4:5 around the product). The designer's
-    // clean PZ-Item set has no text and is used as-is.
-    const isPromo = file.includes("PZ-Product-");
+    // clean HAIL-Item set has no text and is used as-is.
+    const isPromo = file.includes("HAIL-Product-");
     let img = sharp(file);
     if (isPromo) {
       const meta = await img.metadata();

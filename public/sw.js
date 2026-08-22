@@ -1,4 +1,4 @@
-// Pizzara service worker — Web Push only (no offline caching: the POS must
+// HAIL service worker — Web Push only (no offline caching: the POS must
 // always load the latest deploy, and every screen needs the live DB anyway).
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
@@ -11,7 +11,7 @@ self.addEventListener("push", (event) => {
     /* non-JSON payload */
   }
   event.waitUntil(
-    self.registration.showNotification(data.title || "بيزارا كافيه", {
+    self.registration.showNotification(data.title || "مخبز ومقهى هيل", {
       body: data.body || "",
       icon: "/icons/icon-192.png",
       badge: "/icons/icon-192.png",

@@ -2,7 +2,7 @@ import { en } from "./en";
 import { ar } from "./ar";
 
 /**
- * Pizzara i18n core.
+ * HAIL i18n core.
  *
  * - `en` is the master key set; `TranslationKey = keyof typeof en`.
  * - `ar` (./ar.ts) is typed `Dictionary` = Record<TranslationKey, string>, so

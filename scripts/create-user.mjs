@@ -1,8 +1,12 @@
 // Creates a staff login: auth user + linked employees row with a role.
-// Logins without "@" become <login>@pizzara.iq — this is how phone-number and
+// Logins without "@" become <login>@hail.iq — this is how phone-number and
 // username sign-in works (the sign-in form applies the same mapping).
-//   Usage: node scripts/create-user.mjs <login> <password> <name_ar> <admin|cashier>
+// A CASHIER must be tied to a register (pastry|cafe) — that is what scopes their
+// order queue, their receipts and their sales figures. An admin may omit it and
+// works either till.
+//   Usage: node scripts/create-user.mjs <login> <password> <name_ar> <admin|cashier> [pastry|cafe]
 //   e.g.:  node scripts/create-user.mjs 07802525022 Secret123 "الإدارة" admin
+//          node scripts/create-user.mjs 07701234567 Secret123 "أبو أحمد" cashier pastry
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -24,12 +28,20 @@ function loadEnv() {
 }
 loadEnv();
 
-const [login, password, name, roleName] = process.argv.slice(2);
+const [login, password, name, roleName, stationSlug] = process.argv.slice(2);
 if (!login || !password || !name || !["admin", "cashier"].includes(roleName)) {
-  console.error('usage: node scripts/create-user.mjs <login> <password> <name_ar> <admin|cashier>');
+  console.error("usage: node scripts/create-user.mjs <login> <password> <name_ar> <admin|cashier> [pastry|cafe]");
   process.exit(1);
 }
-const email = login.includes("@") ? login : `${login}@pizzara.iq`;
+if (stationSlug && !["pastry", "cafe"].includes(stationSlug)) {
+  console.error("✗ station must be «pastry» or «cafe»");
+  process.exit(1);
+}
+if (roleName === "cashier" && !stationSlug) {
+  console.error("✗ a cashier needs a register: add «pastry» or «cafe» as the 5th argument");
+  process.exit(1);
+}
+const email = login.includes("@") ? login : `${login}@hail.iq`;
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
@@ -56,12 +68,21 @@ if (!userId) { console.error("✗ could not resolve auth user"); process.exit(1)
 const { data: role } = await supabase.from("roles").select("id").eq("name_en", roleName).single();
 if (!role) { console.error(`✗ role ${roleName} not found`); process.exit(1); }
 
-// 3) employee row linked to the auth user
+// 3) register (cashiers only)
+let stationId = null;
+if (stationSlug) {
+  const { data: st } = await supabase.from("stations").select("id").eq("slug", stationSlug).maybeSingle();
+  if (!st) { console.error(`✗ station ${stationSlug} not found — apply 0021_stations.sql first`); process.exit(1); }
+  stationId = st.id;
+}
+
+// 4) employee row linked to the auth user
+const row = { name_ar: name, role_id: role.id, station_id: stationId, is_active: true };
 const { data: existing } = await supabase.from("employees").select("id").eq("auth_user_id", userId).maybeSingle();
 if (existing) {
-  await supabase.from("employees").update({ name_ar: name, role_id: role.id, is_active: true }).eq("id", existing.id);
+  await supabase.from("employees").update(row).eq("id", existing.id);
 } else {
-  const { error } = await supabase.from("employees").insert({ name_ar: name, role_id: role.id, auth_user_id: userId, is_active: true });
+  const { error } = await supabase.from("employees").insert({ ...row, auth_user_id: userId });
   if (error) { console.error(`✗ employee insert: ${error.message}`); process.exit(1); }
 }
-console.log(`✓ ${roleName} ready: ${login} (${email})`);
+console.log(`✓ ${roleName}${stationSlug ? ` (${stationSlug})` : ""} ready: ${login} (${email})`);

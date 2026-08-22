@@ -30,6 +30,22 @@ export function proxy(request: NextRequest) {
   try {
     const { pathname } = request.nextUrl;
 
+    // LOCAL mode (no database): the session is the `hail-local` cookie set by
+    // signInLocal. Same gate, different cookie — the station picker still has to
+    // be passed before any staff screen opens.
+    const localMode = process.env.HAIL_LOCAL_DB === "1" && !process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (localMode) {
+      const authed = Boolean(request.cookies.get("hail-local")?.value);
+      if (authed && LOGIN_PATHS.has(pathname)) return NextResponse.redirect(new URL("/dashboard", request.url));
+      if (pathname === "/" && process.env.MODERN_ONLY === "1") return NextResponse.redirect(new URL("/menu", request.url));
+      if (!authed && !isPublic(pathname)) {
+        const u = new URL("/sign-in", request.url);
+        u.searchParams.set("redirect", pathname);
+        return NextResponse.redirect(u);
+      }
+      return NextResponse.next();
+    }
+
     // DEMO trial (local dev only, no Supabase configured): don't force login, so
     // staff screens are browsable. Gated to development so a production deploy
     // whose public env is injected at runtime can NEVER bypass the gate here.

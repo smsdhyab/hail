@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Pencil, Plus, Trash2, X } from "lucide-react";
 import {
   addCategory,
+  setCategoryStation,
   addVariant,
   deleteItem,
   deleteVariant,
@@ -15,6 +16,7 @@ import {
   type AdminItem,
 } from "@/lib/cafe/menu-admin-actions";
 import { formatIqdLabel } from "@/lib/cafe/money";
+import { STATIONS, type StationSlug } from "@/lib/cafe/hail-menu";
 import { MenuIcon } from "./MenuIcon";
 import { PriceInput } from "./PriceInput";
 
@@ -24,6 +26,7 @@ export function MenuAdminClient({ categories }: { categories: AdminCategory[] })
   const router = useRouter();
   const [editing, setEditing] = useState<Editing | null>(null);
   const [newCat, setNewCat] = useState("");
+  const [newCatStation, setNewCatStation] = useState<StationSlug>("pastry");
   const [msg, setMsg] = useState<string | null>(null);
 
   async function onToggle(item: AdminItem) {
@@ -41,7 +44,7 @@ export function MenuAdminClient({ categories }: { categories: AdminCategory[] })
   async function onAddCategory(e: React.FormEvent) {
     e.preventDefault();
     if (!newCat.trim()) return;
-    const res = await addCategory(newCat, categories.length + 1);
+    const res = await addCategory(newCat, newCatStation, categories.length + 1);
     if (!res.ok) {
       setMsg(res.error);
       return;
@@ -61,6 +64,17 @@ export function MenuAdminClient({ categories }: { categories: AdminCategory[] })
             placeholder="قسم جديد…"
             className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
+          {/* a category MUST name its register — that is what routes its orders */}
+          <select
+            value={newCatStation}
+            onChange={(e) => setNewCatStation(e.target.value as StationSlug)}
+            aria-label="كاشير القسم"
+            className="rounded-lg border border-input bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+          >
+            {STATIONS.map((st) => (
+              <option key={st.slug} value={st.slug}>{st.emoji} {st.short_ar}</option>
+            ))}
+          </select>
           <button type="submit" className="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold hover:bg-secondary">
             + قسم
           </button>
@@ -78,8 +92,23 @@ export function MenuAdminClient({ categories }: { categories: AdminCategory[] })
       {categories.map((cat) => (
         <section key={cat.id} className="space-y-2">
           <div className="flex items-center justify-between">
-            <h2 className="font-bold">
+            <h2 className="flex items-center gap-2 font-bold">
               {cat.name_ar} <span className="text-sm font-normal text-muted-foreground">({cat.items.length})</span>
+              {/* which register gets these items — changing it re-routes the whole category */}
+              <select
+                value={cat.station_slug ?? "cafe"}
+                onChange={async (e) => {
+                  const res = await setCategoryStation(cat.id, e.target.value as StationSlug);
+                  if (!res.ok) setMsg(res.error);
+                  router.refresh();
+                }}
+                aria-label={`كاشير ${cat.name_ar}`}
+                className="rounded-full border border-border bg-secondary px-2 py-0.5 text-xs font-semibold outline-none focus:ring-2 focus:ring-ring"
+              >
+                {STATIONS.map((st) => (
+                  <option key={st.slug} value={st.slug}>{st.emoji} {st.short_ar}</option>
+                ))}
+              </select>
             </h2>
             <button
               onClick={() => setEditing({ item: null, categoryId: cat.id })}

@@ -1,4 +1,4 @@
-// بوت تليغرام لإدارة بيزارا كافيه — أزرار كاملة (بدون أوامر كتابية).
+// بوت تليغرام لإدارة مخبز ومقهى هيل — أزرار كاملة (بدون أوامر كتابية).
 // تقارير المبيعات، الطلبات الآن، حالة الطاولات، الأكثر/الأقل مبيعاً، مبيعات كل
 // منتج، المنتجات المتاحة، وإدارة المنتجات (إضافة/حذف/تسعير/تفعيل) من تليغرام.
 // Long-polling; owner-locked via TELEGRAM_OWNER_CHAT_IDS. Data via service-role REST.
@@ -138,7 +138,7 @@ async function viewReport(days) {
   );
   const title = days === 0 ? `اليوم ${to}` : days === 6 ? "آخر ٧ أيام" : "آخر ٣٠ يوماً";
   return [
-    `☕️ <b>بيزارا كافيه — ${title}</b>`,
+    `☕️ <b>مخبز ومقهى هيل — ${title}</b>`,
     "",
     `🧾 الطلبات: <b>${t.c}</b>`,
     `💰 المبيعات: <b>${fmt(t.s)} د.ع</b>`,
@@ -388,7 +388,7 @@ async function onMessage(msg) {
     }
   }
 
-  await say(chatId, "☕️ <b>بيزارا كافيه — لوحة التحكم</b>\nاختر من الأزرار:", mainMenu());
+  await say(chatId, "☕️ <b>مخبز ومقهى هيل — لوحة التحكم</b>\nاختر من الأزرار:", mainMenu());
 }
 
 async function onCallback(cb) {
@@ -400,7 +400,7 @@ async function onCallback(cb) {
 
   const [cmd, a, b] = cb.data.split("|");
 
-  if (cmd === "menu") return say(chatId, "☕️ <b>بيزارا كافيه — لوحة التحكم</b>\nاختر من الأزرار:", mainMenu(), mid);
+  if (cmd === "menu") return say(chatId, "☕️ <b>مخبز ومقهى هيل — لوحة التحكم</b>\nاختر من الأزرار:", mainMenu(), mid);
   if (cmd === "rpt") return say(chatId, await viewReport(Number(a)), [[{ text: "🔄 تحديث", callback_data: cb.data }], BACK], mid);
   if (cmd === "day") return say(chatId, await viewDaySummary(baghdadDay(-Number(a))), [[{ text: "🔄 تحديث", callback_data: cb.data }], BACK], mid);
   if (cmd === "dayx") return say(chatId, await viewDaySummary(a), [[{ text: "🔄 تحديث", callback_data: cb.data }], BACK], mid);
