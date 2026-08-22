@@ -10,7 +10,8 @@
 
 irm https://raw.githubusercontent.com/smsdhyab/hail/main/scripts/setup-pos.ps1 -OutFile "$env:TEMP\hail-setup.ps1"; powershell -ExecutionPolicy Bypass -File "$env:TEMP\hail-setup.ps1" -Station pastry
 
- ٣) سيسألك عن رابط النظام — الصقه واضغط Enter.
+ ٣) سيسألك عن رابط النظام — الصق:
+    https://hail.sms-dhyab.workers.dev
 
  ٤) البرنامج يتكفّل بالباقي:
     • يكتشف طابعة الفواتير ويشاركها باسم POS80
