@@ -11,7 +11,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "منيو وطلبات وولاء مخبز ومقهى هيل",
     // start at the root: the proxy routes it by session — customers → /menu,
     // signed-in staff → dashboard. Robust even if iOS confuses the two PWAs.
-    start_url: "/",
+    // installed from a table QR → opens straight on the menu, not the landing
+    start_url: "/menu",
     display: "standalone",
     dir: "rtl",
     lang: "ar",

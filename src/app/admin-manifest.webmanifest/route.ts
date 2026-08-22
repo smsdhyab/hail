@@ -13,7 +13,8 @@ export function GET() {
       description: "لوحة إدارة مخبز ومقهى هيل — الطلبات والطاولات والتقارير",
       // start at the root: the proxy sends signed-in staff to the dashboard.
       // Robust even if iOS picks the customer manifest for a same-scope PWA.
-      start_url: "/",
+      // the cashier's daily screen — signed out, this still lands on sign-in
+      start_url: "/orders",
       scope: "/",
       display: "standalone",
       dir: "rtl",
