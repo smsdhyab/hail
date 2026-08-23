@@ -57,7 +57,7 @@ export type LocalOrder = {
   station: StationSlug;
   /** each register's own daily sequence, for its receipts and books */
   station_seq: number;
-  channel: "qr" | "kiosk" | "cashier";
+  channel: "qr" | "kiosk" | "cashier" | "delivery";
   status: "pending" | "paid" | "cancelled";
   subtotal: number;
   discount: number;

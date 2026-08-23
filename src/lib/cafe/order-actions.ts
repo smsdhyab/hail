@@ -15,7 +15,7 @@ export type OrderLineInput = {
 };
 
 export type SubmitOrderInput = {
-  channel: "qr" | "kiosk";
+  channel: "qr" | "kiosk" | "delivery";
   table?: string | null;
   lines: OrderLineInput[];
   /** optional customer capture — builds the loyalty base */
@@ -25,6 +25,11 @@ export type SubmitOrderInput = {
   note?: string | null;
   /** «عروض اليوم» slugs taken with this order — priced server-side, never here */
   combos?: string[];
+  /** delivery only — kept on the order, not on the customer: the address
+   *  changes between orders and would otherwise overwrite the previous one */
+  address?: string | null;
+  geo?: string | null;
+  deliverAt?: string | null;
 };
 
 /** One customer order can land on both registers — the confirmation tells them
@@ -105,6 +110,9 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
     p_table: input.table?.trim() || null,
     p_note: input.note?.trim() || null,
     p_combos: (input.combos ?? []) as unknown as Json,
+    p_address: input.address?.trim() || null,
+    p_geo: input.geo?.trim() || null,
+    p_deliver_at: input.deliverAt?.trim() || null,
   });
   if (error || !data?.[0]) return { ok: false, error: "تعذّر إرسال الطلب، حاول مجدداً." };
   // alert subscribed staff devices even when the app is closed (never throws)
@@ -112,6 +120,7 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
     seq: data[0].group_no,
     table: input.table?.trim() || null,
     count: input.lines.reduce((s, l) => s + l.qty, 0),
+    delivery: input.channel === "delivery",
   });
   return { ok: true, orderNumber: String(data[0].group_no).padStart(3, "0"), orderId: data[0].order_id, cardSerial };
 }

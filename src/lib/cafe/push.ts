@@ -6,7 +6,7 @@ import { createSupabaseServiceClient } from "@/lib/supabase/server";
  *  a push failure must never fail the customer's order.
  *  ponytail: sent inline from the order action (zero extra infra); move to a
  *  DB trigger + edge function if order-submit latency ever matters. */
-export async function sendNewOrderPush(p: { seq: number; table: string | null; count: number }) {
+export async function sendNewOrderPush(p: { seq: number; table: string | null; count: number; delivery?: boolean }) {
   try {
     const pub = process.env.WEB_PUSH_PUBLIC_KEY;
     const priv = process.env.WEB_PUSH_PRIVATE_KEY;
@@ -18,7 +18,8 @@ export async function sendNewOrderPush(p: { seq: number; table: string | null; c
     webpush.setVapidDetails("mailto:teletelksa@gmail.com", pub, priv);
     const payload = JSON.stringify({
       title: `طلب جديد #${String(p.seq).padStart(3, "0")}`,
-      body: `${p.table ? `طاولة ${p.table} · ` : ""}${p.count} صنف`,
+      // a delivery order has no table — say so rather than leaving the line bare
+      body: `${p.delivery ? "🛵 توصيل · " : p.table ? `طاولة ${p.table} · ` : ""}${p.count} صنف`,
       url: "/orders",
       tag: `hail-order-${p.seq}`,
     });

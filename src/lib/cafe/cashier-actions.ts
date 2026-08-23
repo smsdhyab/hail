@@ -40,6 +40,10 @@ export type PendingOrder = {
   table_no: string | null;
   floor: number | null;
   note: string | null;
+  /** delivery only */
+  address: string | null;
+  geo: string | null;
+  deliver_at: string | null;
   created_at: string;
   items: PendingItem[];
 };
@@ -64,6 +68,9 @@ export async function listPendingOrders(): Promise<PendingOrder[]> {
         table_no: o.table_no,
         floor: o.floor,
         note: o.note,
+        address: null,
+        geo: null,
+        deliver_at: null,
         created_at: o.created_at,
         items: orderItems(o.id).map((i) => ({
           name_ar: i.name_ar,
@@ -81,15 +88,20 @@ export async function listPendingOrders(): Promise<PendingOrder[]> {
   const slugOf = new Map((stationRows ?? []).map((s) => [s.id, s.slug as StationSlug]));
   const idOf = new Map((stationRows ?? []).map((s) => [s.slug as StationSlug, s.id]));
 
-  let q = supabase
+  // Fetch the WHOLE pending queue, then narrow. Filtering by station in the
+  // query would hide the other half of a shared ticket, and «المطلوب من الزبون»
+  // would show this register's share instead of the whole bill — the cashier
+  // would undercharge every mixed order.
+  const { data: allPending } = await supabase
     .from("orders")
-    .select("id, order_seq, group_no, station_id, channel, subtotal, promo_adjust, table_no, floor, note, created_at")
+    .select("id, order_seq, group_no, station_id, channel, subtotal, promo_adjust, table_no, floor, note, address, geo, deliver_at, created_at")
     .eq("status", "pending")
     .order("created_at", { ascending: true });
+  if (!allPending?.length) return [];
+
   const scopeId = scope ? idOf.get(scope) : undefined;
-  if (scopeId) q = q.eq("station_id", scopeId);
-  const { data: orders } = await q;
-  if (!orders?.length) return [];
+  const orders = scopeId ? allPending.filter((o) => o.station_id === scopeId) : allPending;
+  if (!orders.length) return [];
 
   const ids = orders.map((o) => o.id);
   const { data: items } = await supabase
@@ -103,10 +115,10 @@ export async function listPendingOrders(): Promise<PendingOrder[]> {
     arr.push({ name_ar: it.name_ar, flavor_ar: it.flavor_ar, qty: it.qty, unit_price: it.unit_price, line_total: it.line_total });
     byOrder.set(it.order_id, arr);
   }
-  // group totals so the cashier collects the FULL ticket, not just their half
+  // group totals from the FULL queue so the cashier collects the whole ticket,
+  // not just their half. Combo tickets are worth their combo price.
   const totalByGroup = new Map<number, number>();
-  for (const o of orders) {
-    // combo tickets are worth their combo price, not the sum of list prices
+  for (const o of allPending) {
     totalByGroup.set(o.group_no, (totalByGroup.get(o.group_no) ?? 0) + o.subtotal + (o.promo_adjust ?? 0));
   }
 
@@ -120,12 +132,15 @@ export async function listPendingOrders(): Promise<PendingOrder[]> {
       channel: o.channel,
       subtotal: o.subtotal,
       groupTotal: totalByGroup.get(o.group_no) ?? o.subtotal,
-      otherStations: orders
+      otherStations: allPending
         .filter((x) => x.group_no === o.group_no && x.id !== o.id)
         .map((x) => stationName(slugOf.get(x.station_id))),
       table_no: o.table_no,
       floor: o.floor,
       note: o.note,
+      address: o.address,
+      geo: o.geo,
+      deliver_at: o.deliver_at,
       created_at: o.created_at,
       items: byOrder.get(o.id) ?? [],
     };

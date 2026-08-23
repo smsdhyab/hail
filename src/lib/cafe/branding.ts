@@ -26,3 +26,23 @@ export const SYSTEM = {
 /** «© 2026 مركز الرؤية للابتكار الرقمي» — year resolved by the caller so a
  *  server component never bakes a stale one into a static page. */
 export const copyright = (year: number) => `© ${year} ${SYSTEM.vendor_ar}`;
+
+/**
+ * How each order channel reads on screen and on the ticket.
+ *
+ * There used to be four separate copies of this map (cashier queue, dashboard,
+ * and both bots) which drifted — adding a channel meant remembering all four.
+ * The bots keep their own copy because they run on Deno/Node outside the app
+ * bundle, but everything inside the app imports this one.
+ */
+export const CHANNEL_AR: Record<string, string> = {
+  qr: "موبايل QR",
+  kiosk: "لوحي",
+  cashier: "كاشير",
+  delivery: "توصيل 🛵",
+} as const;
+
+export const channelName = (c: string) => CHANNEL_AR[c] ?? c;
+
+/** التوصيل داخل الرمادي فقط — يظهر أعلى صفحة الطلب. */
+export const DELIVERY_AREA_AR = "التوصيل متاح داخل مدينة الرمادي";

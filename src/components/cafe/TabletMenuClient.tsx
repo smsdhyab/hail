@@ -6,6 +6,8 @@ import Link from "next/link";
 import { Check, LogIn, Minus, Plus, ShoppingCart, X } from "lucide-react";
 import type { ComboView, MenuCategoryView, MenuItemView } from "@/lib/cafe/menu-data";
 import { CombosStrip } from "./CombosStrip";
+import { DeliveryForm, deliveryError, emptyDelivery, type DeliveryDetails } from "./DeliveryForm";
+import { DELIVERY_AREA_AR } from "@/lib/cafe/branding";
 import { formatIqdLabel } from "@/lib/cafe/money";
 import { submitOrder, type OrderLineInput, type OrderSplitPart } from "@/lib/cafe/order-actions";
 import { useCart } from "./use-cart";
@@ -68,7 +70,7 @@ export function TabletMenuClient({
   menu: MenuCategoryView[];
   combos?: ComboView[];
   table?: string | null;
-  channel?: "qr" | "kiosk";
+  channel?: "qr" | "kiosk" | "delivery";
   /** item_id → today's offer price (0 = مجاناً) set by management */
   offers?: Record<string, number>;
 }) {
@@ -81,6 +83,9 @@ export function TabletMenuClient({
   const [note, setNote] = useState("");
   // combos taken this visit — sent with the order so the server can price them
   const [pickedCombos, setPickedCombos] = useState<string[]>([]);
+  // delivery mode: no table, and the driver needs a name, phone and address
+  const isDelivery = channel === "delivery";
+  const [delivery, setDelivery] = useState<DeliveryDetails>(emptyDelivery);
   const [confirmed, setConfirmed] = useState<string | null>(null);
   // when an order spans both registers, tell the customer who is preparing what
   const [confirmedParts, setConfirmedParts] = useState<OrderSplitPart[]>([]);
@@ -161,6 +166,10 @@ export function TabletMenuClient({
 
   async function checkout() {
     if (!lines.length || busy) return;
+    if (isDelivery) {
+      const bad = deliveryError(delivery);
+      if (bad) return setErr(bad);
+    }
     setBusy(true);
     setErr(null);
     const payload: OrderLineInput[] = lines.map((l) => ({ item_id: l.itemId, variant_id: l.variantId, flavor: l.flavor, qty: l.qty }));
@@ -168,15 +177,19 @@ export function TabletMenuClient({
       channel,
       table: table ?? null,
       lines: payload,
-      name: null,
-      phone: phone.trim() || null,
+      name: isDelivery ? delivery.name.trim() : null,
+      phone: isDelivery ? delivery.phone.trim() : phone.trim() || null,
       note: note.trim() || null,
       combos: liveCombos.map((c) => c.slug),
+      address: isDelivery ? delivery.address : null,
+      geo: isDelivery ? delivery.geo : null,
+      deliverAt: isDelivery ? delivery.deliverAt : null,
     });
     setBusy(false);
     if (!res.ok) return setErr(res.error);
     dispatch({ type: "clear" });
     setPickedCombos([]);
+    setDelivery(emptyDelivery);
     setNote("");
     setPhone("");
     setCartOpen(false);
@@ -193,7 +206,11 @@ export function TabletMenuClient({
           <HailMark className="size-9 shrink-0" />
           <span className="text-lg font-extrabold text-[var(--accent)]">مخبز ومقهى هيل</span>
         </div>
-        {table ? (
+        {isDelivery ? (
+          <span className="rounded-full border border-[var(--accent2)] bg-[var(--accent2)]/10 px-4 py-1.5 text-center text-[13px] font-extrabold text-[var(--accent2)]">
+            🛵 {DELIVERY_AREA_AR}
+          </span>
+        ) : table ? (
           <span className="rounded-full border border-[var(--accent)] bg-[var(--accent)]/10 px-4 py-1.5 text-sm font-extrabold text-[var(--accent)]">
             🍽️ طاولة {table}
           </span>
@@ -398,7 +415,11 @@ export function TabletMenuClient({
               ))}
             </ul>
             <div className="mt-3 space-y-2">
-              <input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" placeholder="رقم الهاتف (اختياري — لجمع نقاط الولاء)" dir="ltr" className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none" />
+              {isDelivery ? (
+                <DeliveryForm value={delivery} onChange={setDelivery} />
+              ) : (
+                <input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" placeholder="رقم الهاتف (اختياري — لجمع نقاط الولاء)" dir="ltr" className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none" />
+              )}
               <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="ملاحظة (سكر قليل، بدون ثلج…)" className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none" />
             </div>
             {err && <p className="mt-2 text-sm text-red-400">{err}</p>}
@@ -436,6 +457,9 @@ export function TabletMenuClient({
             <h2 className="mt-4 text-2xl font-extrabold">تم إرسال طلبك ✓</h2>
             <p className="mt-2 text-[var(--muted)]">رقم الطلب</p>
             <p className="text-4xl font-extrabold text-[var(--accent)]">{confirmed}</p>
+            {isDelivery && (
+              <p className="mt-2 text-sm text-[var(--muted)]">سنتصل بك لتأكيد الطلب والعنوان 🛵</p>
+            )}
             {table && (
               <p className="mt-2 text-sm text-[var(--muted)]">
                 طاولة {table}{confirmedFloor ? ` — الطابق ${confirmedFloor}` : ""} — سيصلك طلبك قريباً

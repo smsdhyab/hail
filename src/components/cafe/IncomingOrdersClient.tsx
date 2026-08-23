@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BellRing } from "lucide-react";
 import { formatIqdLabel } from "@/lib/cafe/money";
+import { CHANNEL_AR } from "@/lib/cafe/branding";
 import {
   listPendingOrders,
   payPendingOrder,
@@ -11,7 +12,6 @@ import {
 } from "@/lib/cafe/cashier-actions";
 import { Receipt, type ReceiptData } from "./Receipt";
 
-const CHANNEL_AR: Record<string, string> = { qr: "موبايل", kiosk: "لوحي", cashier: "كاشير" };
 
 function ageMinutes(iso: string) {
   return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000));
@@ -26,6 +26,9 @@ function ticketFor(o: PendingOrder, heading?: string): ReceiptData {
     station: STATION_AR[o.station] ?? null,
     table: o.table_no,
     floor: o.floor,
+    address: o.address,
+    geo: o.geo,
+    deliverAt: o.deliver_at,
     note: o.note,
     lines: o.items.map((it) => ({ name: it.name_ar, flavor: it.flavor_ar, qty: it.qty, unitPrice: it.unit_price })),
     subtotal: o.subtotal,
@@ -162,11 +165,13 @@ export function IncomingOrdersClient() {
               <div key={o.id} className="flex flex-col rounded-2xl border border-border bg-card p-4">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-2xl font-extrabold text-primary">#{String(o.group_no).padStart(3, "0")}</span>
-                  {o.table_no && (
+                  {o.address ? (
+                    <span className="rounded-full bg-accent px-3 py-1 text-sm font-bold text-accent-foreground">🛵 توصيل</span>
+                  ) : o.table_no ? (
                     <span className="rounded-full bg-primary px-3 py-1 text-sm font-bold text-primary-foreground">
                       طاولة {o.table_no}{o.floor ? ` · طابق ${o.floor}` : ""}
                     </span>
-                  )}
+                  ) : null}
                 </div>
                 {o.otherStations.length > 0 && (
                   // the same ticket is also being prepared next door — say so, and
@@ -176,10 +181,21 @@ export function IncomingOrdersClient() {
                   </p>
                 )}
                 <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>{CHANNEL_AR[o.channel] ?? o.channel}</span>
+                  {!o.address && <span>{CHANNEL_AR[o.channel] ?? o.channel}</span>}
                   <span>·</span>
                   <span className={age >= 10 ? "font-bold text-destructive" : ""}>{age === 0 ? "الآن" : `منذ ${age} د`}</span>
                 </div>
+                {o.address && (
+                  <div className="mt-2 rounded-lg border border-accent/60 bg-accent/10 px-2.5 py-1.5 text-sm">
+                    <p className="font-bold">📍 {o.address}</p>
+                    {o.deliver_at && <p className="text-xs text-muted-foreground">الوقت: {o.deliver_at}</p>}
+                    {o.geo && (
+                      <a href={o.geo} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-primary underline">
+                        فتح الموقع على الخريطة ↗
+                      </a>
+                    )}
+                  </div>
+                )}
                 {o.note && (
                   <p className="mt-2 rounded-lg border border-amber-500/50 bg-amber-500/10 px-2.5 py-1.5 text-sm font-bold">📝 {o.note}</p>
                 )}

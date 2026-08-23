@@ -7,7 +7,7 @@
  * When the schema grows, regenerate with `supabase gen types` or extend by hand.
  */
 
-export type OrderChannel = "qr" | "kiosk" | "cashier";
+export type OrderChannel = "qr" | "kiosk" | "cashier" | "delivery";
 export type OrderStatus = "pending" | "paid" | "cancelled" | "refunded";
 export type VariantKind = "size" | "flavor";
 /** The two cash registers: separate books, one system. */
@@ -172,6 +172,8 @@ export type Database = {
           promo_adjust: number;
           subtotal: number; cost_total: number; discount: number; extra: number; extra_note: string | null;
           table_no: string | null; floor: number | null; note: string | null;
+          /** delivery only */
+          address: string | null; geo: string | null; deliver_at: string | null;
           customer_id: string | null; cashier_id: string | null; paid_at: string | null;
         };
         Insert: {
@@ -180,6 +182,7 @@ export type Database = {
           promo_adjust?: number;
           subtotal?: number; cost_total?: number; discount?: number; extra?: number; extra_note?: string | null;
           table_no?: string | null; floor?: number | null; note?: string | null;
+          address?: string | null; geo?: string | null; deliver_at?: string | null;
           customer_id?: string | null; cashier_id?: string | null; paid_at?: string | null; created_at?: string;
         };
         Update: Partial<{ status: OrderStatus; discount: number; extra: number; extra_note: string | null; customer_id: string | null; collected_by_station_id: string | null; paid_at: string | null }>;
@@ -255,6 +258,7 @@ export type Database = {
         Args: {
           p_channel: OrderChannel; p_lines: Json; p_customer?: string | null;
           p_table?: string | null; p_note?: string | null; p_combos?: Json;
+          p_address?: string | null; p_geo?: string | null; p_deliver_at?: string | null;
         };
         Returns: { order_id: string; order_seq: number; group_no: number; station_slug: StationSlug }[];
       };

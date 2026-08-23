@@ -15,8 +15,8 @@ import {
 } from "recharts";
 import type { DaySummary, RecentOrder } from "@/lib/cafe/dashboard-actions";
 import { formatIqd, formatIqdLabel } from "@/lib/cafe/money";
+import { CHANNEL_AR } from "@/lib/cafe/branding";
 
-const CHANNEL_AR: Record<string, string> = { qr: "موبايل QR", kiosk: "لوحي", cashier: "كاشير" };
 const STATUS_AR: Record<string, string> = { pending: "معلّق", paid: "مدفوع", cancelled: "ملغي", refunded: "مسترجع" };
 const STATUS_CLASS: Record<string, string> = {
   pending: "bg-accent text-accent-foreground",
