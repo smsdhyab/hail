@@ -6,11 +6,11 @@
 #
 #  التشغيل: انسخ سطر التثبيت من ملف «تثبيت — كاشير …» وألصقه في PowerShell.
 #
-#  -Station  pastry | cafe   (أي كاشير يعمل عليه هذا الجهاز)
+#  -Station  both | pastry | cafe   (أي كاشير يعمل عليه هذا الجهاز؛ both = صندوق واحد للقسمين)
 #  -Url      رابط النظام     (إن تُرك فارغاً يسأل عنه)
 # ══════════════════════════════════════════════════════════════════════════
 param(
-  [ValidateSet("pastry", "cafe")][string]$Station = "",
+  [ValidateSet("both", "pastry", "cafe")][string]$Station = "",
   [string]$Url = ""
 )
 $ErrorActionPreference = "Continue"
@@ -36,13 +36,14 @@ if (-not $isAdmin) {
 # ── 0.5) أي كاشير؟ وما رابط النظام؟ ────────────────────────────────────────
 if (-not $Station) {
   Write-Host ""
-  Write-Host "  1) PASTRY  - Kashier al-Muajanat  (kasa al-makhbuzat)"
-  Write-Host "  2) CAFE    - Kashier al-Cafe"
-  $pick = Read-Host "Which register is THIS computer? type 1 or 2"
-  $Station = if ($pick -eq "2") { "cafe" } else { "pastry" }
+  Write-Host "  1) BOTH    - one register selling cafe AND bakery"
+  Write-Host "  2) PASTRY  - bakery register only"
+  Write-Host "  3) CAFE    - cafe register only"
+  $pick = Read-Host "Which register is THIS computer? type 1, 2 or 3"
+  $Station = switch ($pick) { "2" { "pastry" } "3" { "cafe" } default { "both" } }
 }
-$StationName  = if ($Station -eq "cafe") { "كاشير الكافيه" } else { "كاشير المعجنات" }
-$StationLatin = if ($Station -eq "cafe") { "CAFE register" } else { "PASTRY register" }
+$StationName  = switch ($Station) { "cafe" { "كاشير الكافيه" } "pastry" { "كاشير المعجنات" } default { "كاشير هيل" } }
+$StationLatin = switch ($Station) { "cafe" { "CAFE register" } "pastry" { "PASTRY register" } default { "HAIL register (cafe + bakery)" } }
 
 if (-not $Url) {
   $Url = Read-Host "Paste the system link (https://hail.sms-dhyab.workers.dev)"
