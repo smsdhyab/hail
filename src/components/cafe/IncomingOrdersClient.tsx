@@ -49,15 +49,19 @@ export function IncomingOrdersClient() {
   const [queueErr, setQueueErr] = useState<string | null>(null);
 
   // device settings (shared with the cashier screen via the same localStorage keys)
-  const [autoPrint, setAutoPrint] = useState(false);
-  const [drawerKick, setDrawerKick] = useState(false);
+  // الطباعة التلقائية تبدأ **مفعّلة**: هي وضع التشغيل الطبيعي لأي كاشير، وكان
+  // بدؤها مطفأة يعني أن كل جهاز جديد لا يطبع شيئاً حتى ينتبه أحدهم للمفتاح.
+  // على الآيباد تُطفأ يدوياً لأن iOS يفتح نافذة طباعة لا تُغلق نفسها.
+  const [autoPrint, setAutoPrint] = useState(true);
+  const [drawerKick, setDrawerKick] = useState(true);
   const autoPrintRef = useRef(false);
   const drawerKickRef = useRef(false);
   const kickBusyRef = useRef(false);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time read of persisted device settings
-    setAutoPrint(localStorage.getItem("hail-autoprint") === "1");
-    setDrawerKick(localStorage.getItem("hail-drawer") === "1");
+    // «0» وحدها تُطفئ — الغياب يعني جهازاً جديداً، وافتراضه التشغيل
+    setAutoPrint(localStorage.getItem("hail-autoprint") !== "0");
+    setDrawerKick(localStorage.getItem("hail-drawer") !== "0");
   }, []);
   useEffect(() => {
     autoPrintRef.current = autoPrint;

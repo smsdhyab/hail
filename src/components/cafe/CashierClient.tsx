@@ -100,7 +100,7 @@ export function CashierClient({ menu, tables }: { menu: MenuCategoryView[]; tabl
   const kickBusyRef = useRef(false);
   const checkoutBusyRef = useRef(false);
   useEffect(() => {
-    drawerKickRef.current = localStorage.getItem("hail-drawer") === "1";
+    drawerKickRef.current = localStorage.getItem("hail-drawer") !== "0"; // كشاشة الطلبات: الغياب = مفعّل
   }, []);
   function kickDrawer() {
     // guard against a double-open if the pay action ever fires twice in quick succession
