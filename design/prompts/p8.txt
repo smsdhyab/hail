@@ -1,11 +1,8 @@
-# برومبت 8 — السموذي
-
-5 برومبت مستقل. الصق واحداً ← صورة واحدة ← احفظها ← الصق التالي.
-لا تحتاج محادثة جديدة ولا خطوات تمهيدية — كل برومبت كامل بذاته.
-
-============================================================
-صورة 1 من 5  ·  سموذي مانجو  ·  احفظها باسم 1.png
-============================================================
+# برومبت 8
+# سموذي مانجو · سموذي اناناس · سموذي فراوله · سموذي توت · سموذي باشن فروت
+#
+# الصق كل ما تحت الخط دفعة واحدة — ١٠ صور بالترتيب.
+==========================================================
 
 HAIL Bakery & Cafe — product photography set.
 
@@ -28,157 +25,13 @@ STRICT RULES:
 • NO logos, NO watermarks, NO brand marks.
 • NO hands, NO people, NO faces.
 • NO borders or frames around the image.
-• NO numbers drawn anywhere on the picture.
-• NEVER put more than one item in a picture. No grids, no collages, no contact
-  sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
-  picture, always.
+• Each image must show ONE item only.
 
-OUTPUT: exactly ONE picture, of the single item named below. Nothing else.
+Generate ONE image for EACH of the 10 items below, in this exact order, and
+number them 1 to 10 so I can match them:
 
-The item:
-a thick mango smoothie in a tall glass, fresh mango cheek beside
-
-
-============================================================
-صورة 2 من 5  ·  سموذي اناناس  ·  احفظها باسم 2.png
-============================================================
-
-HAIL Bakery & Cafe — product photography set.
-
-STYLE (identical in every image, this is one coherent set):
-• Square-ish PORTRAIT crop, aspect ratio 4:5.
-• One single product, centred, filling most of the frame.
-• Shot slightly above eye level, about a 30-degree angle.
-• Background: a smooth warm olive-green surface (#556f42) fading to deeper
-  olive at the edges, with a soft warm-orange (#f2924c) light bloom in the
-  upper right corner. Plain — no patterns, no props clutter, no table edges.
-• Lighting: soft warm daylight from the upper right, gentle shadow to the
-  lower left, no harsh reflections.
-• Palette must stay inside: olive green #556f42, warm orange #f2924c,
-  cream #f4f2ec, deep coffee brown #4a2c1e.
-• Photorealistic, appetising, clean, premium cafe menu quality.
-
-STRICT RULES:
-• NO text of any kind. No words, no letters, no Arabic, no English.
-• NO prices, NO item names, NO labels, NO menu cards, NO signage.
-• NO logos, NO watermarks, NO brand marks.
-• NO hands, NO people, NO faces.
-• NO borders or frames around the image.
-• NO numbers drawn anywhere on the picture.
-• NEVER put more than one item in a picture. No grids, no collages, no contact
-  sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
-  picture, always.
-
-OUTPUT: exactly ONE picture, of the single item named below. Nothing else.
-
-The item:
-a thick pineapple smoothie, pineapple wedge on the rim
-
-
-============================================================
-صورة 3 من 5  ·  سموذي فراوله  ·  احفظها باسم 3.png
-============================================================
-
-HAIL Bakery & Cafe — product photography set.
-
-STYLE (identical in every image, this is one coherent set):
-• Square-ish PORTRAIT crop, aspect ratio 4:5.
-• One single product, centred, filling most of the frame.
-• Shot slightly above eye level, about a 30-degree angle.
-• Background: a smooth warm olive-green surface (#556f42) fading to deeper
-  olive at the edges, with a soft warm-orange (#f2924c) light bloom in the
-  upper right corner. Plain — no patterns, no props clutter, no table edges.
-• Lighting: soft warm daylight from the upper right, gentle shadow to the
-  lower left, no harsh reflections.
-• Palette must stay inside: olive green #556f42, warm orange #f2924c,
-  cream #f4f2ec, deep coffee brown #4a2c1e.
-• Photorealistic, appetising, clean, premium cafe menu quality.
-
-STRICT RULES:
-• NO text of any kind. No words, no letters, no Arabic, no English.
-• NO prices, NO item names, NO labels, NO menu cards, NO signage.
-• NO logos, NO watermarks, NO brand marks.
-• NO hands, NO people, NO faces.
-• NO borders or frames around the image.
-• NO numbers drawn anywhere on the picture.
-• NEVER put more than one item in a picture. No grids, no collages, no contact
-  sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
-  picture, always.
-
-OUTPUT: exactly ONE picture, of the single item named below. Nothing else.
-
-The item:
-a thick strawberry smoothie, fresh strawberry on the rim
-
-
-============================================================
-صورة 4 من 5  ·  سموذي توت  ·  احفظها باسم 4.png
-============================================================
-
-HAIL Bakery & Cafe — product photography set.
-
-STYLE (identical in every image, this is one coherent set):
-• Square-ish PORTRAIT crop, aspect ratio 4:5.
-• One single product, centred, filling most of the frame.
-• Shot slightly above eye level, about a 30-degree angle.
-• Background: a smooth warm olive-green surface (#556f42) fading to deeper
-  olive at the edges, with a soft warm-orange (#f2924c) light bloom in the
-  upper right corner. Plain — no patterns, no props clutter, no table edges.
-• Lighting: soft warm daylight from the upper right, gentle shadow to the
-  lower left, no harsh reflections.
-• Palette must stay inside: olive green #556f42, warm orange #f2924c,
-  cream #f4f2ec, deep coffee brown #4a2c1e.
-• Photorealistic, appetising, clean, premium cafe menu quality.
-
-STRICT RULES:
-• NO text of any kind. No words, no letters, no Arabic, no English.
-• NO prices, NO item names, NO labels, NO menu cards, NO signage.
-• NO logos, NO watermarks, NO brand marks.
-• NO hands, NO people, NO faces.
-• NO borders or frames around the image.
-• NO numbers drawn anywhere on the picture.
-• NEVER put more than one item in a picture. No grids, no collages, no contact
-  sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
-  picture, always.
-
-OUTPUT: exactly ONE picture, of the single item named below. Nothing else.
-
-The item:
-a thick mixed-berry smoothie, deep purple, berries on top
-
-
-============================================================
-صورة 5 من 5  ·  سموذي باشن فروت  ·  احفظها باسم 5.png
-============================================================
-
-HAIL Bakery & Cafe — product photography set.
-
-STYLE (identical in every image, this is one coherent set):
-• Square-ish PORTRAIT crop, aspect ratio 4:5.
-• One single product, centred, filling most of the frame.
-• Shot slightly above eye level, about a 30-degree angle.
-• Background: a smooth warm olive-green surface (#556f42) fading to deeper
-  olive at the edges, with a soft warm-orange (#f2924c) light bloom in the
-  upper right corner. Plain — no patterns, no props clutter, no table edges.
-• Lighting: soft warm daylight from the upper right, gentle shadow to the
-  lower left, no harsh reflections.
-• Palette must stay inside: olive green #556f42, warm orange #f2924c,
-  cream #f4f2ec, deep coffee brown #4a2c1e.
-• Photorealistic, appetising, clean, premium cafe menu quality.
-
-STRICT RULES:
-• NO text of any kind. No words, no letters, no Arabic, no English.
-• NO prices, NO item names, NO labels, NO menu cards, NO signage.
-• NO logos, NO watermarks, NO brand marks.
-• NO hands, NO people, NO faces.
-• NO borders or frames around the image.
-• NO numbers drawn anywhere on the picture.
-• NEVER put more than one item in a picture. No grids, no collages, no contact
-  sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
-  picture, always.
-
-OUTPUT: exactly ONE picture, of the single item named below. Nothing else.
-
-The item:
-a thick passion-fruit smoothie, halved passion fruit beside
-
+1. a thick mango smoothie in a tall glass, fresh mango cheek beside
+2. a thick pineapple smoothie, pineapple wedge on the rim
+3. a thick strawberry smoothie, fresh strawberry on the rim
+4. a thick mixed-berry smoothie, deep purple, berries on top
+5. a thick passion-fruit smoothie, halved passion fruit beside

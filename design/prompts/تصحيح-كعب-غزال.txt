@@ -1,3 +1,6 @@
+# تصحيح صورة كعب غزال — صورة واحدة فقط
+==========================================================
+
 HAIL Bakery & Cafe — product photography set.
 
 STYLE (identical in every image, this is one coherent set):
@@ -19,12 +22,8 @@ STRICT RULES:
 • NO logos, NO watermarks, NO brand marks.
 • NO hands, NO people, NO faces.
 • NO borders or frames around the image.
-• NO numbers drawn anywhere on the picture.
-• NEVER put more than one item in a picture. No grids, no collages, no contact
-  sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
-  picture, always.
+• Each image must show ONE item only.
 
-OUTPUT: exactly ONE picture, of the single item named below. Nothing else.
+Generate ONE image of this single item:
 
-The item:
 two or three Iraqi coconut macaroons piled together, piped rounds with craggy ridged peaks, deep caramelised golden-brown crust, visible shredded coconut texture, crisp outside and soft inside

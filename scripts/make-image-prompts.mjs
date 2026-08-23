@@ -117,12 +117,10 @@ STRICT RULES:
 • NO logos, NO watermarks, NO brand marks.
 • NO hands, NO people, NO faces.
 • NO borders or frames around the image.
-• NO numbers drawn anywhere on the picture.
-• NEVER put more than one item in a picture. No grids, no collages, no contact
-  sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
-  picture, always.
+• Each image must show ONE item only.
 
-OUTPUT: exactly ONE picture, of the single item named below. Nothing else.`;
+Generate ONE image for EACH of the 10 items below, in this exact order, and
+number them 1 to 10 so I can match them:`;
 
 const active = HAIL_MENU.flatMap((c) => c.items.filter((i) => i.active !== false).map((i) => ({ ...i, cat: c.name_ar })));
 const missing = active.filter((i) => !EN[i.name_ar]);
@@ -142,38 +140,11 @@ const out = [
   "",
   "## كيف تستخدمها",
   "",
-  "**استخدم ملفات `design/prompts/pN.txt` — واحد لكل برومبت، جاهز للّصق.**",
-  "",
-  "١. الصق **بلوك الهوية** (الخطوة ١ في الملف) وانتظر رد «جاهز».",
-  "٢. ثم الصق **سطر الصنف الأول فقط** ← صورة واحدة. احفظها 1.png.",
-  "٣. الصق سطر الصنف الثاني ← 2.png … وهكذا حتى العاشر.",
-  "",
-  "هذه الطريقة أبطأ لكنها **لا تُنتج شبكة مجمّعة أبداً** — وهي ما فشل مرتين",
-  "حين طلبنا العشرة في رسالة واحدة.",
-  "",
-  "<details><summary>الطريقة القديمة (١٠ في رسالة) — لا يُنصح بها</summary>",
-  "",
   "١. افتح ChatGPT واطلب توليد الصور بلصق البرومبت كاملاً كما هو.",
   "٢. **بلوك الهوية في أعلى كل برومبت ثابت لا يتغيّر** — هو ما يجعل الصور تبدو طقماً واحداً.",
   "   لا تحذفه ولا تختصره عند التكرار على حساب آخر.",
-  "٣. احفظ الصور **بترتيب توليدها** باسم 1.png، 2.png … 10.png داخل مجلد باسم البرومبت.",
-  "   الترتيب هو الرابط الوحيد بين الصورة وصنفها — لا تبدّله.",
+  "٣. احفظ الصور بأرقامها كما ولّدها (1، 2، 3…) داخل مجلد باسم البرومبت.",
   "٤. أرسل لي المجلدات وأنا أربط كل صورة بصنفها وأرفعها للنظام.",
-  "",
-  "</details>",
-  "",
-  "### إذا جمعها في صورة واحدة (شبكة مرقّمة)",
-  "",
-  "أحياناً يجمع ChatGPT الأصناف العشرة في لوحة واحدة بأرقام مرسومة. لا تقبلها —",
-  "الأرقام تُحرق داخل الصورة والدقة تنخفض. أرسل له:",
-  "",
-  "```",
-  "لا. أعد التوليد: صورة منفصلة لكل صنف، واحدة تلو الأخرى، بنفس الستايل تماماً.",
-  "ممنوع تجميعها في شبكة أو لوحة واحدة، وممنوع رسم أي رقم أو كتابة على الصورة.",
-  "ابدأ بالصنف الأول فقط وانتظرني أقول «التالي».",
-  "```",
-  "",
-  "ثم اكتب «التالي» بعد كل صورة. هذه الطريقة أبطأ لكنها لا تفشل أبداً.",
   "",
   "**التوزيع على ٣ حسابات:** " +
     groups.map((_, i) => `برومبت ${i + 1}`).reduce((acc, n, i) => {
@@ -197,46 +168,7 @@ groups.forEach((g, gi) => {
   out.push("```", "", `<sub>الأصناف: ${g.map((i) => i.name_ar).join(" · ")}</sub>`, "", "---", "");
 });
 
-mkdirSync(join(root, "design", "prompts"), { recursive: true });
-
-// ONE standalone prompt per item: identity + that item + "one picture".
-// Nothing to set up, nothing to remember between messages — paste, get one
-// image, paste the next. Ten items in a single message collapses into a grid;
-// a two-step handshake was fiddly. One self-contained prompt per image is the
-// only shape that has never failed.
-groups.forEach((g, gi) => {
-  const all = [];
-  g.forEach((item, i) => {
-    const n = i + 1;
-    const body = `${IDENTITY}
-
-The item:
-${EN[item.name_ar]}
-`;
-    writeFileSync(join(root, "design", "prompts", `p${gi + 1}-${n}.txt`), body, "utf8");
-    all.push(
-      "".padEnd(60, "="),
-      `صورة ${n} من ${g.length}  ·  ${item.name_ar}  ·  احفظها باسم ${n}.png`,
-      "".padEnd(60, "="),
-      "",
-      body,
-      "",
-    );
-  });
-  writeFileSync(
-    join(root, "design", "prompts", `p${gi + 1}.txt`),
-    [
-      `# برومبت ${gi + 1} — ${[...new Set(g.map((i) => i.cat))].join(" | ")}`,
-      "",
-      `${g.length} برومبت مستقل. الصق واحداً ← صورة واحدة ← احفظها ← الصق التالي.`,
-      "لا تحتاج محادثة جديدة ولا خطوات تمهيدية — كل برومبت كامل بذاته.",
-      "",
-      ...all,
-    ].join("\n"),
-    "utf8",
-  );
-});
-
+mkdirSync(join(root, "design"), { recursive: true });
 const file = join(root, "design", "prompts-الصور.md");
 writeFileSync(file, out.join("\n"), "utf8");
-console.log(`OK design/prompts/pN.txt + pN-1..10.txt  (${active.length} items)`);
+console.log(`✓ ${file}\n  ${groups.length} prompts · ${active.length} items`);
