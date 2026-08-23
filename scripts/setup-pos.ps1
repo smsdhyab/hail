@@ -28,37 +28,38 @@ if (-not $isAdmin) {
     Start-Process powershell -Verb RunAs -ArgumentList "-ExecutionPolicy Bypass -File `"$PSCommandPath`""
     exit
   }
-  Say "شغّل PowerShell كمسؤول (Run as Administrator) ثم أعد المحاولة" $false
-  Read-Host "اضغط Enter للإغلاق"
+  Say "Run PowerShell as Administrator, then try again." $false
+  Read-Host "Press Enter to close"
   exit 1
 }
 
 # ── 0.5) أي كاشير؟ وما رابط النظام؟ ────────────────────────────────────────
 if (-not $Station) {
   Write-Host ""
-  Write-Host "  1) كاشير المعجنات والمخبوزات"
-  Write-Host "  2) كاشير الكافيه"
-  $pick = Read-Host "اختر رقم الكاشير لهذا الجهاز (1 أو 2)"
+  Write-Host "  1) PASTRY  - Kashier al-Muajanat  (kasa al-makhbuzat)"
+  Write-Host "  2) CAFE    - Kashier al-Cafe"
+  $pick = Read-Host "Which register is THIS computer? type 1 or 2"
   $Station = if ($pick -eq "2") { "cafe" } else { "pastry" }
 }
-$StationName = if ($Station -eq "cafe") { "كاشير الكافيه" } else { "كاشير المعجنات" }
+$StationName  = if ($Station -eq "cafe") { "كاشير الكافيه" } else { "كاشير المعجنات" }
+$StationLatin = if ($Station -eq "cafe") { "CAFE register" } else { "PASTRY register" }
 
 if (-not $Url) {
-  $Url = Read-Host "الصق رابط النظام (مثال: https://hail.example.workers.dev)"
+  $Url = Read-Host "Paste the system link (https://hail.sms-dhyab.workers.dev)"
 }
 $Url = $Url.Trim().TrimEnd("/")
 if (-not $Url.StartsWith("http")) { $Url = "https://$Url" }
 
 Write-Host ""
-Write-Host "══════ إعداد $StationName — مخبز ومقهى هيل ══════"
-Write-Host "الرابط: $Url"
+Write-Host "====== HAIL Bakery & Cafe - setting up: $StationLatin ======"
+Write-Host "Link: $Url"
 Write-Host ""
 
 # ── 1) اكتشاف طابعة الفواتير ────────────────────────────────────────────────
 $pat = "POS|-80|80mm|58|Receipt|Thermal|BIXOLON|EPSON TM|TM-|XP-|Xprinter|SAM4S|Citizen|POSBANK|SEWOO|Rongta|GP-|SPRT|HPRT"
 $all = @(Get-Printer | Where-Object { $_.Name -notmatch "OneNote|PDF|XPS|Fax" })
 if (-not $all) {
-  Say "لا توجد أي طابعة مثبتة! ثبّت تعريف طابعة الفواتير أولاً ثم أعد التشغيل" $false
+  Say "No printer installed. Install the receipt printer driver first, then re-run." $false
   Read-Host "اضغط Enter للإغلاق"
   exit 1
 }
@@ -69,21 +70,21 @@ if ($defaultName -and ($cands | Where-Object { $_.Name -eq $defaultName })) { $c
 elseif ($cands) { $chosen = $cands | Select-Object -First 1 }
 elseif ($defaultName) { $chosen = $all | Where-Object { $_.Name -eq $defaultName } | Select-Object -First 1 }
 else { $chosen = $all | Select-Object -First 1 }
-Say "طابعة الفواتير المكتشفة: $($chosen.Name)"
+Say "Receipt printer found: $($chosen.Name)"
 
 # ── 2) مشاركة الطابعة (أو استخدام مشاركتها الحالية) ────────────────────────
 try { Start-Service LanmanServer -ErrorAction Stop } catch {}
 $share = $null
 if ($chosen.Shared -and $chosen.ShareName) {
   $share = $chosen.ShareName
-  Say "الطابعة مشاركة مسبقاً بالاسم: $share (سيُستخدم كما هو)"
+  Say "Printer already shared as: $share (keeping it)"
 } else {
   $share = "POS80"
   try {
     Set-Printer -Name $chosen.Name -Shared $true -ShareName $share -ErrorAction Stop
-    Say "تمت مشاركة الطابعة بالاسم: $share"
+    Say "Printer shared as: $share"
   } catch {
-    Say "تعذّرت المشاركة تلقائياً: $($_.Exception.Message) — شاركها يدوياً بالاسم POS80" $false
+    Say "Could not share automatically: $($_.Exception.Message) - share it manually as POS80" $false
   }
 }
 
@@ -91,9 +92,9 @@ if ($chosen.Shared -and $chosen.ShareName) {
 try {
   (New-Object -ComObject WScript.Network).SetDefaultPrinter($chosen.Name)
   New-ItemProperty -Path "HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Windows" -Name "LegacyDefaultPrinterMode" -Value 1 -PropertyType DWord -Force | Out-Null
-  Say "أصبحت الافتراضية (وأوقفنا تبديل Windows التلقائي لها)"
+  Say "Set as default printer (Windows auto-switching disabled)"
 } catch {
-  Say "تعذّر ضبط الافتراضية تلقائياً — اضبطها من إعدادات الطابعات" $false
+  Say "Could not set default - set it from Windows printer settings" $false
 }
 
 # ── 4) تثبيت وكيل القاصة (اسم المشاركة مضمّن تلقائياً) ─────────────────────
@@ -123,27 +124,27 @@ while ($true) {
 }
 '@
 $agent.Replace("__SHARE__", $share) | Set-Content -Path "$dir\drawer-agent.ps1" -Encoding UTF8
-Say "وكيل القاصة مثبت في $dir\drawer-agent.ps1 (المشاركة: $share)"
+Say "Cash-drawer agent installed at $dir\drawer-agent.ps1 (share: $share)"
 
 # ── 5) التشغيل مع إقلاع الجهاز + تشغيله الآن ────────────────────────────────
 $startupDir = "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp"
 "@echo off`r`nstart `"`" /min powershell -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$dir\drawer-agent.ps1`"" |
   Set-Content -Path "$startupDir\hail-drawer.cmd" -Encoding ASCII
-Say "أُضيف لبدء التشغيل التلقائي"
+Say "Added to Windows startup"
 
 Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" |
   Where-Object { $_.CommandLine -like "*drawer-agent.ps1*" } |
   ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 Start-Process powershell -WindowStyle Hidden -ArgumentList "-ExecutionPolicy Bypass -File `"$dir\drawer-agent.ps1`""
 Start-Sleep -Seconds 2
-Say "الوكيل يعمل الآن"
+Say "Agent is running"
 
 # ── 6) اختبار فتح الدرج ─────────────────────────────────────────────────────
 try {
   Invoke-WebRequest "http://127.0.0.1:9977/kick" -UseBasicParsing -TimeoutSec 6 | Out-Null
-  Say "أُرسلت نبضة الاختبار — إن انفتح الدرج الآن فكل شيء مضبوط 💰"
+  Say "TEST PULSE SENT >>> the cash drawer should OPEN NOW <<<"
 } catch {
-  Say "لم يستجب الوكيل للاختبار — أعد تشغيل الجهاز وجرّب http://127.0.0.1:9977/kick" $false
+  Say "Agent did not answer - restart the PC, then open http://127.0.0.1:9977/kick" $false
 }
 
 # ── 7) اختصار «كاشير هيل» بوضع الطباعة الصامتة ──────────────────────────
@@ -172,7 +173,7 @@ if ($browser) {
   $lnk.Arguments = "--app=$Url/orders --kiosk-printing --start-maximized --no-first-run"
   if ($ico -and (Test-Path $ico)) { $lnk.IconLocation = "$ico,0" } else { $lnk.IconLocation = "$browser,0" }
   $lnk.Save()
-  Say "اختصار «$StationName» (نافذة تطبيق نظيفة + أيقونة هيل + طباعة صامتة)"
+  Say "Desktop shortcut created (clean app window, HAIL icon, silent printing)"
 
   # ── يفتح الكاشير تلقائياً عند تشغيل ويندوز (نسخة من الاختصار في مجلد بدء التشغيل) ──
   $startupLnk = $ws.CreateShortcut("$startupDir\$StationName.lnk")
@@ -180,24 +181,24 @@ if ($browser) {
   $startupLnk.Arguments   = $lnk.Arguments
   $startupLnk.IconLocation = $lnk.IconLocation
   $startupLnk.Save()
-  Say "الكاشير سيفتح تلقائياً عند بدء تشغيل ويندوز 🚀"
+  Say "The register screen will open automatically at Windows startup"
 } else {
-  Say "لم أجد Chrome أو Edge — ثبّت أحدهما ثم أعد التشغيل" $false
+  Say "Chrome or Edge not found - install one, then re-run." $false
 }
 
 Write-Host ""
-Write-Host "══════ اكتمل الإعداد ══════"
-Write-Host "الجهاز: $StationName"
-Write-Host "الطابعة: $($chosen.Name)  |  المشاركة: $share  |  وكيل الدرج: 127.0.0.1:9977"
-Write-Host "الرابط: $Url/orders"
+Write-Host "====== SETUP COMPLETE ======"
+Write-Host "This computer: $StationLatin"
+Write-Host "Printer: $($chosen.Name)  |  Share: $share  |  Drawer agent: 127.0.0.1:9977"
+Write-Host "Link: $Url/orders"
 Write-Host ""
-Write-Host "الشاشة + وكيل الدرج يبدآن تلقائياً عند تشغيل ويندوز (بعد تسجيل الدخول)."
-Write-Host "المتبقي عليك مرة واحدة:"
-Write-Host "  1) افتح الاختصار، اختر «$StationName»، وسجّل الدخول بحساب هذا الكاشير."
-Write-Host "  2) داخل الشاشة فعّل: 🖨️ الطباعة التلقائية  و  💰 فتح القاصة عند الدفع."
+Write-Host "Screen + drawer agent both start automatically with Windows."
+Write-Host "ONE-TIME steps left for you:"
+Write-Host "  1) Open the desktop shortcut, pick your register, sign in."
+Write-Host "  2) Inside the screen switch ON: auto-print  AND  open-drawer-on-payment."
 Write-Host ""
-Write-Host "اختياري — لتشغيل غير مراقَب تماماً (بلا كتابة كلمة سر ويندوز عند الإقلاع):"
-Write-Host "  شغّل  netplwiz  ← ألغِ تحديد «يجب على المستخدمين إدخال اسم وكلمة مرور» ← أدخل كلمة السر مرة."
-Write-Host "  (هذا إعداد ويندوز يخصّك؛ يخزّن كلمة السر محلياً — فعّله فقط على جهاز الكاشير المخصّص.)"
+Write-Host "Optional - fully unattended boot (no Windows password prompt):"
+Write-Host "  Run  netplwiz  > untick 'Users must enter a user name and password' > type it once."
+Write-Host "  (Windows setting, stores the password locally - only on a dedicated register PC.)"
 Write-Host ""
 Read-Host "اضغط Enter للإغلاق"
