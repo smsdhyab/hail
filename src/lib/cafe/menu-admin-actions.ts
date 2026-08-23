@@ -20,6 +20,10 @@ export type AdminItem = {
   sort: number;
   sold_by: "piece" | "weight";
   unit_label: string | null;
+  /** رمز الصنف داخل الميزان — ملصق الميزان يحمله لا اسم الصنف */
+  plu: number | null;
+  /** باركود المصنع للمنتجات الجاهزة */
+  barcode: string | null;
   variants: AdminVariant[];
 };
 export type AdminCategory = {
@@ -42,7 +46,7 @@ export async function listMenuAdmin(): Promise<AdminCategory[]> {
   const svc = createSupabaseServiceClient();
   const [{ data: cats }, { data: items }, { data: vars }] = await Promise.all([
     svc.from("categories").select("id, name_ar, sort, is_active, station_id").order("sort"),
-    svc.from("menu_items").select("id, category_id, name_ar, description_ar, image_url, price, cost, flavors, is_active, sort, sold_by, unit_label").order("sort"),
+    svc.from("menu_items").select("id, category_id, name_ar, description_ar, image_url, price, cost, flavors, is_active, sort, sold_by, unit_label, plu, barcode").order("sort"),
     svc.from("item_variants").select("id, item_id, name_ar, price_override, kind, sort").order("sort"),
   ]);
 
@@ -90,6 +94,8 @@ export type ItemInput = {
   sort?: number;
   sold_by?: "piece" | "weight";
   unit_label?: string | null;
+  plu?: number | null;
+  barcode?: string | null;
 };
 
 export async function upsertItem(input: ItemInput) {
@@ -110,6 +116,9 @@ export async function upsertItem(input: ItemInput) {
     sold_by: input.sold_by === "weight" ? ("weight" as const) : ("piece" as const),
     // «كغم» ضمنية للموزون؛ الحقل لمن يبيع بوحدة أخرى (علبة، لتر…)
     unit_label: input.unit_label?.trim() || null,
+    // فارغ لا صفر: الصفر رمز صالح في الميزان، والفهرس الفريد يرفض تكراره
+    plu: Number.isFinite(input.plu as number) && (input.plu as number) > 0 ? Math.round(input.plu as number) : null,
+    barcode: input.barcode?.trim() || null,
   };
   const { error } = input.id
     ? await svc.from("menu_items").update(row).eq("id", input.id)

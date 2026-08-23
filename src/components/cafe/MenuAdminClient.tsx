@@ -210,6 +210,8 @@ function ItemForm({ editing, categories, onClose }: { editing: Editing; categori
   const [price, setPrice] = useState<number>(it?.price ?? 0);
   const [soldBy, setSoldBy] = useState<"piece" | "weight">(it?.sold_by ?? "piece");
   const [unitLabel, setUnitLabel] = useState(it?.unit_label ?? "");
+  const [plu, setPlu] = useState(it?.plu ? String(it.plu) : "");
+  const [barcode, setBarcode] = useState(it?.barcode ?? "");
   const [cost, setCost] = useState(String(it?.cost ?? ""));
   const [flavors, setFlavors] = useState((it?.flavors ?? []).join("، "));
   const [description, setDescription] = useState(it?.description_ar ?? "");
@@ -251,6 +253,8 @@ function ItemForm({ editing, categories, onClose }: { editing: Editing; categori
       price: Number(price) || 0,
       sold_by: soldBy,
       unit_label: unitLabel,
+      plu: plu.trim() ? Number(plu.replace(/[^\d]/g, "")) : null,
+      barcode: barcode.trim() || null,
       cost: Number(cost) || 0,
       flavors: flavors.split(/[،,]/).map((s) => s.trim()).filter(Boolean),
       is_active: it?.is_active ?? true,
@@ -346,6 +350,35 @@ function ItemForm({ editing, categories, onClose }: { editing: Editing; categori
           <label className="space-y-1 text-sm">
             <span className="text-muted-foreground">{soldBy === "weight" ? "كلفة الكيلو (د.ع) — لحساب الأرباح" : "الكلفة (د.ع) — لحساب الأرباح"}</span>
             <input type="number" min={0} value={cost} onChange={(e) => setCost(e.target.value)} dir="ltr" className="w-full rounded-lg border border-input bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring" />
+          </label>
+          <label className="space-y-1 text-sm">
+            <span className="text-muted-foreground">
+              {soldBy === "weight" ? "رمز الصنف في الميزان (PLU)" : "رمز الميزان (للموزون فقط)"}
+            </span>
+            <input
+              value={plu}
+              onChange={(e) => setPlu(e.target.value.replace(/[^\d]/g, ""))}
+              inputMode="numeric"
+              dir="ltr"
+              placeholder="50007"
+              disabled={soldBy !== "weight"}
+              className="w-full rounded-lg border border-input bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring disabled:opacity-40"
+            />
+            {soldBy === "weight" && (
+              <span className="block text-xs text-muted-foreground">
+                نفس الرقم الظاهر في خانة <b>Code</b> على ملصق الميزان.
+              </span>
+            )}
+          </label>
+          <label className="space-y-1 text-sm">
+            <span className="text-muted-foreground">باركود المصنع (للمنتجات الجاهزة)</span>
+            <input
+              value={barcode}
+              onChange={(e) => setBarcode(e.target.value.trim())}
+              dir="ltr"
+              placeholder="6221031492018"
+              className="w-full rounded-lg border border-input bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring"
+            />
           </label>
           <label className="space-y-1 text-sm sm:col-span-2">
             <span className="text-muted-foreground">النكهات (افصل بفاصلة): كراميل، فانيلا…</span>
