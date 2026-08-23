@@ -178,8 +178,10 @@ export async function cashierCheckout(input: {
 }): Promise<CheckoutResult> {
   const staff = await requireStaff();
   if (!input.lines?.length) return { ok: false, error: "لا توجد أصناف في الطلب." };
+  // صندوق «الكل» يقبض للقسمين، فلا قسم واحد يُنسب إليه القبض: تُمرَّر null
+  // وتنسب القاعدة كل طلب إلى قسمه هو — فيبقى عمود «مَن قبض» صادقاً.
+  if (!staff.till) return { ok: false, error: "اختر الكاشير الذي تعمل عليه أولاً." };
   const till = staff.station;
-  if (!till) return { ok: false, error: "اختر الكاشير الذي تعمل عليه أولاً." };
 
   if (isLocalDb()) {
     const placed = placeOrderLocal({ channel: "cashier", lines: input.lines, table: input.table, note: input.note, cashierId: staff.employeeId });
@@ -188,7 +190,7 @@ export async function cashierCheckout(input: {
       discount: input.discount,
       extra: input.extra,
       extraNote: input.extraNote,
-      collectedBy: till,
+      collectedBy: till ?? "pastry",
       cashierId: staff.employeeId,
     });
     if ("error" in paid) return { ok: false, error: paid.error };
@@ -224,13 +226,13 @@ export async function cashierCheckout(input: {
 /** Accept & pay an existing pending order — settles the WHOLE ticket. */
 export async function payPendingOrder(orderId: string, discount = 0, customerId: string | null = null) {
   const staff = await requireStaff();
+  if (!staff.till) return { ok: false as const, error: "اختر الكاشير الذي تعمل عليه أولاً." };
   const till = staff.station;
-  if (!till) return { ok: false as const, error: "اختر الكاشير الذي تعمل عليه أولاً." };
 
   if (isLocalDb()) {
     const order = listPendingLocal(null).find((o) => o.id === orderId);
     if (!order) return { ok: false as const, error: "الطلب غير موجود." };
-    const paid = payGroupLocal(order.group_no, { discount, collectedBy: till, cashierId: staff.employeeId });
+    const paid = payGroupLocal(order.group_no, { discount, collectedBy: till ?? "pastry", cashierId: staff.employeeId });
     if ("error" in paid) return { ok: false as const, error: paid.error };
     revalidatePath("/orders");
     revalidatePath("/dashboard");
@@ -247,7 +249,7 @@ export async function payPendingOrder(orderId: string, discount = 0, customerId:
 /** Shared Supabase path: settle one group and prorate it across the registers. */
 async function payGroup(
   groupNo: number,
-  collectedBy: StationSlug,
+  collectedBy: StationSlug | null,
   opts: { discount: number; extra: number; extraNote: string | null; customerId: string | null },
 ): Promise<CheckoutResult> {
   const supabase = await createSupabaseServerClient();

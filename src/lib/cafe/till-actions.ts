@@ -2,8 +2,8 @@
 
 import { cookies } from "next/headers";
 import { getStaff, requireStaff } from "./auth";
-import { stationName, type StationSlug } from "./hail-menu";
-import { TILL_COOKIE } from "./till";
+import { stationName } from "./hail-menu";
+import { TILL_ALL, TILL_COOKIE, type TillChoice } from "./till";
 
 /**
  * Opening a register.
@@ -21,20 +21,24 @@ import { TILL_COOKIE } from "./till";
  * choice never leaves a usable session behind.
  */
 export async function openTill(
-  station: StationSlug,
+  choice: TillChoice,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const staff = await requireStaff();
 
-  // حساب بلا قسم = كاشير موحّد يبيع القسمين من صندوق واحد. القفل يبقى سارياً
-  // على من له قسم محدّد: حساب المعجنات لا يفتح صندوق الكافيه.
-  if (staff.role !== "admin" && staff.station !== null && staff.station !== station) {
+  // موظف مربوط بقسم لا يفتح غيره — ولا يفتح «الكل». القفل الذي مُنع به حساب
+  // المعجنات من صندوق الكافيه يبقى كما هو؛ «الكل» لمن لا قسم له وحده.
+  const bound = staff.role !== "admin" && staff.station !== null;
+  if (bound && choice !== staff.station) {
     return {
       ok: false,
-      error: `هذا الحساب يعمل على ${stationName(staff.station)} فقط — لا يمكنه فتح ${stationName(station)}.`,
+      error:
+        choice === TILL_ALL
+          ? `هذا الحساب يعمل على ${stationName(staff.station)} فقط — لا يمكنه فتح صندوق القسمين.`
+          : `هذا الحساب يعمل على ${stationName(staff.station)} فقط — لا يمكنه فتح ${stationName(choice)}.`,
     };
   }
 
-  (await cookies()).set(TILL_COOKIE, station, {
+  (await cookies()).set(TILL_COOKIE, choice, {
     httpOnly: true,
     sameSite: "lax",
     path: "/",

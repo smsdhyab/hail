@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { getServerUser, createSupabaseServiceClient } from "@/lib/supabase/server";
 import type { StationSlug } from "./hail-menu";
 import { employeeById, isLocalDb, LOCAL_STAFF_COOKIE } from "./local-db";
-import { TILL_COOKIE } from "./till";
+import { TILL_ALL, TILL_COOKIE, isTillChoice, type TillChoice } from "./till";
 
 /** Resolved staff identity. Server-only. */
 export type StaffRole = "admin" | "cashier";
@@ -13,8 +13,10 @@ export type Staff = {
   name: string;
   email: string | null;
   role: StaffRole | null;
-  /** the register this session is working — null only for an unassigned admin */
+  /** the register this session is working — null when the till serves both */
   station: StationSlug | null;
+  /** ما فُتح فعلاً: قسم بعينه أو «الكل». null = لم يُفتح صندوق بعد */
+  till: TillChoice | null;
 };
 
 /**
@@ -47,10 +49,13 @@ export const getStaff = cache(async function getStaff(): Promise<Staff | null> {
   // A cashier IS their register — the till cookie can never move them. Only a
   // manager (who owns no register) works whichever till they opened.
   const own = (one(emp.stations)?.slug as StationSlug | undefined) ?? null;
-  const till = ((await cookies()).get(TILL_COOKIE)?.value as StationSlug | undefined) ?? null;
-  const station = own ?? (till === "pastry" || till === "cafe" ? till : null);
+  const raw = (await cookies()).get(TILL_COOKIE)?.value;
+  const till: TillChoice | null = isTillChoice(raw) ? raw : null;
+  // موظف له قسم هو قسمه مهما فتح. ومن لا قسم له يتبع ما فتحه — و«الكل» يبقيه
+  // بلا قسم، أي يرى القسمين ويبيعهما.
+  const station = own ?? (till && till !== TILL_ALL ? till : null);
 
-  return { userId: user.id, employeeId: emp.id, name: emp.name_ar, email: user.email ?? null, role, station };
+  return { userId: user.id, employeeId: emp.id, name: emp.name_ar, email: user.email ?? null, role, station, till };
 });
 
 /** Local (no-DB) session: an httpOnly cookie holding `<employeeId>:<station>`. */
@@ -68,6 +73,7 @@ async function getLocalStaff(): Promise<Staff | null> {
     role: emp.role,
     // an admin works whichever register they signed into
     station: (emp.station ?? (station as StationSlug)) || null,
+    till: isTillChoice(station) ? station : null,
   };
 }
 

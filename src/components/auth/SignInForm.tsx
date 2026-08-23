@@ -6,7 +6,8 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useCafeUI } from "@/components/CafeUIProvider";
 import { HailMark } from "@/components/cafe/Logo";
 import { StationIcon } from "@/components/cafe/StationIcon";
-import { STATIONS, type StationSlug } from "@/lib/cafe/hail-menu";
+import { STATIONS } from "@/lib/cafe/hail-menu";
+import { TILL_ALL, type TillChoice } from "@/lib/cafe/till";
 import { SYSTEM } from "@/lib/cafe/branding";
 import { signInLocal } from "@/lib/cafe/local-auth";
 import { hasStaffSession, openTill } from "@/lib/cafe/till-actions";
@@ -20,7 +21,7 @@ export function SignInForm({ redirectTo, localMode }: { redirectTo: string; loca
   const { t } = useCafeUI();
   const router = useRouter();
 
-  const [station, setStation] = useState<StationSlug | null>(null);
+  const [station, setStation] = useState<TillChoice | null>(null);
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -60,7 +61,8 @@ export function SignInForm({ redirectTo, localMode }: { redirectTo: string; loca
     setError(null);
     try {
       if (localMode) {
-        const res = await signInLocal(login, password, station);
+        // الوضع المحلي للتجربة وحده ولا يعرف «الكل» — يُفتح على المعجنات
+        const res = await signInLocal(login, password, station === TILL_ALL ? "pastry" : station);
         if (!res.ok) {
           setError(res.error);
           return;
@@ -123,12 +125,29 @@ export function SignInForm({ redirectTo, localMode }: { redirectTo: string; loca
               <span className="text-lg font-extrabold text-primary">{s.name_ar}</span>
             </button>
           ))}
+
+          {/* صندوق واحد يبيع القسمين. الدفتران يبقيان منفصلين — الفصل بالصنف
+              لا بالصندوق. ومن له قسم محدَّد يُرفَض عند الدخول لا هنا، لأن الهوية
+              لم تُعرَف بعد في هذه الخطوة. */}
+          <button
+            type="button"
+            onClick={() => setStation(TILL_ALL)}
+            className="flex flex-col items-center gap-2 rounded-2xl border-2 border-primary/40 bg-primary/5 p-6 transition hover:border-primary hover:bg-primary/10 active:scale-95 sm:col-span-2"
+          >
+            <div className="flex items-center gap-2">
+              {STATIONS.map((s) => (
+                <StationIcon key={s.slug} station={s.slug} className="size-10 text-accent" />
+              ))}
+            </div>
+            <span className="text-lg font-extrabold text-primary">الكل — الكافيه والمعجنات</span>
+            <span className="text-xs text-muted-foreground">صندوق واحد يبيع القسمين — وحساباهما يبقيان منفصلين</span>
+          </button>
         </div>
       </div>
     );
   }
 
-  const chosen = STATIONS.find((s) => s.slug === station)!;
+  const chosen = STATIONS.find((s) => s.slug === station) ?? null;
 
   // step 2 — who is opening it?
   return (
@@ -144,8 +163,16 @@ export function SignInForm({ redirectTo, localMode }: { redirectTo: string; loca
           }}
           className="mx-auto flex items-center gap-2 rounded-full bg-accent/15 px-4 py-1.5 text-sm font-bold text-primary transition hover:bg-accent/25"
         >
-          <StationIcon station={chosen.slug} className="size-5" />
-          <span>{chosen.name_ar}</span>
+          {chosen ? (
+            <StationIcon station={chosen.slug} className="size-5" />
+          ) : (
+            <div className="flex items-center gap-1">
+              {STATIONS.map((s) => (
+                <StationIcon key={s.slug} station={s.slug} className="size-5" />
+              ))}
+            </div>
+          )}
+          <span>{chosen ? chosen.name_ar : "الكافيه والمعجنات"}</span>
           <span className="text-xs font-normal text-muted-foreground">— تغيير</span>
         </button>
       </div>
