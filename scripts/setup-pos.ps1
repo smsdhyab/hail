@@ -57,10 +57,43 @@ Write-Host ""
 
 # ── 1) اكتشاف طابعة الفواتير ────────────────────────────────────────────────
 $pat = "POS|-80|80mm|58|Receipt|Thermal|BIXOLON|EPSON TM|TM-|XP-|Xprinter|SAM4S|Citizen|POSBANK|SEWOO|Rongta|GP-|SPRT|HPRT"
-$all = @(Get-Printer | Where-Object { $_.Name -notmatch "OneNote|PDF|XPS|Fax" })
+# The Print Spooler has to be up or Get-Printer returns nothing at all, which
+# looks exactly like "no printer" and sends people hunting for a driver.
+$spooler = Get-Service Spooler -ErrorAction SilentlyContinue
+if ($spooler -and $spooler.Status -ne "Running") {
+  Say "Print Spooler service was stopped - starting it" $false
+  try { Start-Service Spooler -ErrorAction Stop; Start-Sleep -Seconds 2 } catch {}
+}
+
+$every = @(Get-Printer -ErrorAction SilentlyContinue)
+$all = @($every | Where-Object { $_.Name -notmatch "OneNote|PDF|XPS|Fax" })
+
 if (-not $all) {
-  Say "No printer installed. Install the receipt printer driver first, then re-run." $false
-  Read-Host "اضغط Enter للإغلاق"
+  Say "No receipt printer found." $false
+  Write-Host ""
+  Write-Host "Windows currently sees these printers:"
+  if ($every) { $every | Format-Table Name, DriverName, PortName -AutoSize | Out-String | Write-Host }
+  else { Write-Host "  (none at all)" }
+
+  # A USB device that Windows can see but has no driver shows up here, which
+  # tells you the cable is fine and only the driver is missing.
+  $usb = @(Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue |
+           Where-Object { $_.Class -in @("Printer", "USB") -and $_.FriendlyName -match "print|POS|thermal|USB Printing" })
+  if ($usb) {
+    Write-Host "USB devices that look like a printer:"
+    $usb | Format-Table FriendlyName, Status -AutoSize | Out-String | Write-Host
+  }
+
+  Write-Host "CHECK, in this order:"
+  Write-Host "  1) Printer power ON and the light is steady (not blinking)?"
+  Write-Host "  2) USB cable seated at BOTH ends? try another USB port."
+  Write-Host "  3) Paper roll loaded? press FEED - paper should come out."
+  Write-Host "  4) Driver installed? Settings > Bluetooth & devices > Printers"
+  Write-Host "     > Add device. If it does not appear, download the driver for"
+  Write-Host "     your printer model from the maker's site and install it."
+  Write-Host "  5) Then run this installer again."
+  Write-Host ""
+  Read-Host "Press Enter to close"
   exit 1
 }
 $defaultName = (Get-CimInstance Win32_Printer | Where-Object { $_.Default }).Name
@@ -70,7 +103,23 @@ if ($defaultName -and ($cands | Where-Object { $_.Name -eq $defaultName })) { $c
 elseif ($cands) { $chosen = $cands | Select-Object -First 1 }
 elseif ($defaultName) { $chosen = $all | Where-Object { $_.Name -eq $defaultName } | Select-Object -First 1 }
 else { $chosen = $all | Select-Object -First 1 }
-Say "Receipt printer found: $($chosen.Name)"
+
+# More than one candidate (an A4 office printer sitting next to the receipt
+# printer) - ask rather than guess, because sharing the wrong one silently
+# means receipts print on A4 all day.
+if ($all.Count -gt 1) {
+  Write-Host ""
+  Write-Host "More than one printer is installed:"
+  for ($i = 0; $i -lt $all.Count; $i++) {
+    $mark = if ($all[$i].Name -eq $chosen.Name) { "<= receipt printer?" } else { "" }
+    Write-Host ("  {0}) {1}  {2}" -f ($i + 1), $all[$i].Name, $mark)
+  }
+  $ans = Read-Host ("Press Enter to accept [{0}], or type its number" -f $chosen.Name)
+  if ($ans -match '^\d+$' -and [int]$ans -ge 1 -and [int]$ans -le $all.Count) {
+    $chosen = $all[[int]$ans - 1]
+  }
+}
+Say "Receipt printer: $($chosen.Name)"
 
 # ── 2) مشاركة الطابعة (أو استخدام مشاركتها الحالية) ────────────────────────
 try { Start-Service LanmanServer -ErrorAction Stop } catch {}
