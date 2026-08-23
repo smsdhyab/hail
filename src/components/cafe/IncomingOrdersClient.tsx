@@ -58,9 +58,10 @@ export function IncomingOrdersClient() {
   const drawerKickRef = useRef(false);
   const kickBusyRef = useRef(false);
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time read of persisted device settings
     // «0» وحدها تُطفئ — الغياب يعني جهازاً جديداً، وافتراضه التشغيل
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time read of persisted device settings
     setAutoPrint(localStorage.getItem("hail-autoprint") !== "0");
+     
     setDrawerKick(localStorage.getItem("hail-drawer") !== "0");
   }, []);
   useEffect(() => {
