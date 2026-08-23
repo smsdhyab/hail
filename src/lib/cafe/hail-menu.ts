@@ -35,6 +35,10 @@ export type HailItem = {
   /** false → seeded but hidden from the menu (price not set yet) */
   active?: boolean;
   description?: string;
+  /** «weight» → السعر أعلاه سعر الكيلو، والكاشير يُدخل الوزن. يُضبط من «إدارة
+   *  المنيو» لا من هنا: أي معجّنة قد تتحوّل بين القطعة والوزن حسب الموسم. */
+  sold_by?: "piece" | "weight";
+  unit_label?: string;
 };
 
 export type HailCategory = {

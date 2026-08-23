@@ -9,6 +9,7 @@ import { CombosSection, OFFERS_CAT } from "./CombosSection";
 import { DeliveryForm, deliveryError, emptyDelivery, type DeliveryDetails, type DeliveryField } from "./DeliveryForm";
 import { DELIVERY_AREA_AR } from "@/lib/cafe/branding";
 import { formatIqdLabel } from "@/lib/cafe/money";
+import { formatQty, lineTotal } from "@/lib/cafe/order";
 import { submitOrder, type OrderLineInput, type OrderSplitPart } from "@/lib/cafe/order-actions";
 import { useCart } from "./use-cart";
 import { MenuIcon } from "./MenuIcon";
@@ -66,6 +67,7 @@ export function TabletMenuClient({
   table = null,
   channel = "qr",
   offers = {},
+  deliveryFee = 0,
 }: {
   menu: MenuCategoryView[];
   combos?: ComboView[];
@@ -73,6 +75,8 @@ export function TabletMenuClient({
   channel?: "qr" | "kiosk" | "delivery";
   /** item_id → today's offer price (0 = مجاناً) set by management */
   offers?: Record<string, number>;
+  /** أجرة التوصيل السارية — يضبطها المدير من لوحة التحكم */
+  deliveryFee?: number;
 }) {
   const [activeCat, setActiveCat] = useState(menu[0]?.name_ar ?? "");
   const mainRef = useRef<HTMLElement>(null);
@@ -97,6 +101,8 @@ export function TabletMenuClient({
   const [modalItem, setModalItem] = useState<MenuItemView | null>(null);
   const [modalVariant, setModalVariant] = useState<string | null>(null);
   const [crossSel, setCrossSel] = useState<Set<string>>(new Set()); // selected cross-sell pastries
+  // الأصناف الموزونة تُطلب بوزن مختار لا بعدد — نصف كيلو افتراضاً
+  const [modalGrams, setModalGrams] = useState(500);
 
   const showOffers = activeCat === OFFERS_CAT && combos.length > 0;
   const cat = menu.find((c) => c.name_ar === activeCat) ?? menu[0];
@@ -113,11 +119,11 @@ export function TabletMenuClient({
     setActiveCat(name);
     mainRef.current?.scrollTo({ top: 0 });
   }
-  function add(it: MenuItemView, variantId: string | null, unitPrice: number) {
+  function add(it: MenuItemView, variantId: string | null, unitPrice: number, qty?: number) {
     const v = it.variants.find((x) => x.id === variantId);
     const key = `${it.id}|${variantId ?? ""}`;
     const name = it.name_ar + (v ? ` — ${v.name_ar}` : "");
-    dispatch({ type: "add", line: { key, itemId: it.id, name, variantId, flavor: null, unitPrice } });
+    dispatch({ type: "add", line: { key, itemId: it.id, name, variantId, flavor: null, unitPrice, soldBy: it.sold_by, qty } });
   }
   const priceOf = (it: MenuItemView) => offers[it.id] ?? it.price; // apply today's offer if any
   function toggleCross(id: string) {
@@ -139,10 +145,11 @@ export function TabletMenuClient({
 
   function onPlus(it: MenuItemView) {
     // size choice OR a drink we can pair a pastry with → open the modal
-    if (it.variants.length > 0 || crossSell) {
+    if (it.variants.length > 0 || crossSell || it.sold_by === "weight") {
       setModalItem(it);
       setModalVariant(it.variants[0]?.id ?? null);
       setCrossSel(new Set());
+      setModalGrams(500);
     } else {
       add(it, null, priceOf(it));
     }
@@ -159,14 +166,20 @@ export function TabletMenuClient({
   const comboAdjust = liveCombos.reduce((sum, c) => sum + (c.price - c.list_total), 0);
   // أصناف داخل عرض: سعرها الفردي لا يُعرض، لأن سعر العرض هو الساري عليها
   const comboItemIds = new Set(liveCombos.flatMap((c) => c.item_ids));
-  const dueTotal = Math.max(0, total + comboAdjust);
+  // الأجرة تُضاف لطلبات التوصيل وحدها، وتُعرض سطراً مستقلاً: مبلغ يظهر في
+  // الإجمالي بلا اسم يقرؤه الزبون كزيادة مجهولة
+  const fee = isDelivery ? Math.max(0, deliveryFee) : 0;
+  const dueTotal = Math.max(0, total + comboAdjust) + fee;
 
   const modalPrice = modalItem ? (modalItem.variants.find((v) => v.id === modalVariant)?.price ?? priceOf(modalItem)) : 0;
   const crossTotal = [...crossSel].reduce((s, id) => {
     const p = pastries.find((x) => x.id === id);
     return s + (p ? priceOf(p) : 0);
   }, 0);
-  const grandTotal = modalPrice + crossTotal;
+  // للموزون، «السعر» هو سعر الكيلو — والمعروض يجب أن يكون ثمن الوزن المختار
+  const modalIsWeight = modalItem?.sold_by === "weight";
+  const modalLine = modalIsWeight ? lineTotal(modalPrice, modalGrams / 1000, "weight") : modalPrice;
+  const grandTotal = modalLine + crossTotal;
 
   async function checkout() {
     if (!lines.length || busy) return;
@@ -280,7 +293,12 @@ export function TabletMenuClient({
                   </div>
                   <div className="px-3 py-2.5 text-right">
                     <p className="line-clamp-2 min-h-[2.4em] text-[15px] font-bold leading-tight">{it.name_ar}</p>
-                    <p className="mt-1 whitespace-nowrap text-lg font-extrabold tabular-nums text-[var(--accent)]">{formatIqdLabel(priceOf(it))}</p>
+                    <p className="mt-1 whitespace-nowrap text-lg font-extrabold tabular-nums text-[var(--accent)]">
+                      {formatIqdLabel(priceOf(it))}
+                      {it.sold_by === "weight" && (
+                        <span className="text-xs font-bold"> / {it.unit_label || "كغم"}</span>
+                      )}
+                    </p>
                   </div>
                 </article>
               );
@@ -345,6 +363,30 @@ export function TabletMenuClient({
               </div>
             </div>
 
+            {modalIsWeight && (
+              <div className="mb-4">
+                <p className="mb-2 text-sm font-bold text-[var(--muted)]">
+                  الوزن · {formatIqdLabel(modalPrice)} / {modalItem.unit_label || "كغم"}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {[250, 500, 750, 1000, 1500, 2000].map((g) => (
+                    <button
+                      key={g}
+                      onClick={() => setModalGrams(g)}
+                      className={`rounded-xl border px-4 py-2.5 font-bold transition ${
+                        modalGrams === g ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--activeink)]" : "border-[var(--line)]"
+                      }`}
+                    >
+                      {formatQty(g / 1000, "weight", modalItem.unit_label)}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-sm text-[var(--muted)]">
+                  الوزن النهائي يُضبط على الميزان عند التحضير، والسعر يُحسب عليه.
+                </p>
+              </div>
+            )}
+
             {modalItem.variants.length > 0 && (
               <div className="mb-4">
                 <h3 className="mb-2 text-sm font-bold text-[var(--muted)]">اختر الحجم</h3>
@@ -401,7 +443,7 @@ export function TabletMenuClient({
 
             <button
               onClick={() => {
-                add(modalItem, modalVariant, modalPrice);
+                add(modalItem, modalVariant, modalPrice, modalIsWeight ? modalGrams / 1000 : undefined);
                 crossSel.forEach((id) => {
                   const p = pastries.find((x) => x.id === id);
                   if (p) add(p, null, priceOf(p));
@@ -440,12 +482,19 @@ export function TabletMenuClient({
                         )}
                       </p>
                     ) : (
-                      <p className="text-sm tabular-nums text-[var(--accent)]">{formatIqdLabel(l.unitPrice * l.qty)}</p>
+                      <p className="text-sm tabular-nums text-[var(--accent)]">
+                        {formatIqdLabel(lineTotal(l.unitPrice, l.qty, l.soldBy))}
+                        {l.soldBy === "weight" && (
+                          <span className="text-[var(--muted)]"> · {formatIqdLabel(l.unitPrice)}/كغم</span>
+                        )}
+                      </p>
                     )}
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <button onClick={() => dispatch({ type: "dec", key: l.key })} aria-label="إنقاص" className="rounded-full border border-[var(--line)] p-1.5"><Minus className="size-4" /></button>
-                    <span className="w-6 text-center font-bold tabular-nums">{l.qty}</span>
+                    <span className="min-w-[3.5rem] text-center font-bold tabular-nums">
+                      {formatQty(l.qty, l.soldBy)}
+                    </span>
                     <button onClick={() => dispatch({ type: "inc", key: l.key })} aria-label="زيادة" className="rounded-full border border-[var(--line)] p-1.5"><Plus className="size-4" /></button>
                   </div>
                 </li>
@@ -479,6 +528,12 @@ export function TabletMenuClient({
                     <span className="shrink-0 tabular-nums">{formatIqdLabel(c.price)}</span>
                   </div>
                 ))}
+              </div>
+            )}
+            {fee > 0 && (
+              <div className="mt-3 flex items-center justify-between gap-2 border-t border-[var(--line)] pt-3 text-sm">
+                <span className="text-[var(--muted)]">أجرة التوصيل داخل الرمادي</span>
+                <span className="shrink-0 font-bold tabular-nums">{formatIqdLabel(fee)}</span>
               </div>
             )}
             <div className="mt-3 flex items-center justify-between border-t border-[var(--line)] pt-3">

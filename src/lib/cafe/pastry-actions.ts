@@ -312,3 +312,22 @@ export async function listComboPickerItems(): Promise<{ category: string; items:
 function revalidateMenus() {
   for (const p of ["/pastries", "/menu", "/delivery", "/cashier"]) revalidatePath(p);
 }
+
+// ── إعدادات يضبطها المدير ───────────────────────────────────────────────────
+
+/** أجرة التوصيل السارية. عامة — صفحة التوصيل تعرضها قبل الطلب. */
+export async function getDeliveryFee(): Promise<number> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.from("app_settings").select("value").eq("key", "delivery_fee").maybeSingle();
+  return data?.value ?? 0;
+}
+
+export async function setDeliveryFee(fee: number) {
+  await requireStaff();
+  const svc = createSupabaseServiceClient();
+  const { error } = await svc.rpc("set_setting", { p_key: "delivery_fee", p_value: Math.max(0, Math.round(fee)) });
+  if (error) return { ok: false as const, error: error.message };
+  revalidateMenus();
+  revalidatePath("/dashboard");
+  return { ok: true as const };
+}

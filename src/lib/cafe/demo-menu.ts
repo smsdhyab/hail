@@ -19,6 +19,8 @@ export const DEMO_MENU: MenuCategoryView[] = HAIL_MENU.map((c) => ({
       description: i.description ?? null,
       image_url: null,
       price: i.price,
+      sold_by: i.sold_by ?? "piece",
+      unit_label: i.unit_label ?? (i.sold_by === "weight" ? "كغم" : "قطعة"),
       flavors: i.flavors ?? [],
       variants: (i.variants ?? []).map(([n, p]) => ({ id: `${i.id}-${p}`, name_ar: n, price: p })),
     })),

@@ -72,14 +72,17 @@ export type Database = {
         Row: Timestamped & {
           category_id: string; name_ar: string; description_ar: string | null; image_url: string | null;
           price: number; cost: number; flavors: string[]; is_active: boolean; sort: number;
+          sold_by: "piece" | "weight"; unit_label: string | null;
         };
         Insert: {
           id?: string; category_id: string; name_ar: string; description_ar?: string | null; image_url?: string | null;
           price?: number; cost?: number; flavors?: string[]; is_active?: boolean; sort?: number; created_at?: string;
+          sold_by?: "piece" | "weight"; unit_label?: string | null;
         };
         Update: Partial<{
           category_id: string; name_ar: string; description_ar: string | null; image_url: string | null;
           price: number; cost: number; flavors: string[]; is_active: boolean; sort: number;
+          sold_by: "piece" | "weight"; unit_label: string | null;
         }>;
         Relationships: [];
       };
@@ -134,6 +137,12 @@ export type Database = {
         Update: Partial<{ title: string; description: string | null; active: boolean; ends_on: string | null }>;
         Relationships: [];
       };
+      app_settings: {
+        Row: { key: string; value: number; updated_at: string };
+        Insert: { key: string; value?: number; updated_at?: string };
+        Update: Partial<{ value: number; updated_at: string }>;
+        Relationships: [];
+      };
       combos: {
         Row: Timestamped & { slug: string; title_ar: string; price: number; is_active: boolean; sort: number };
         Insert: { id?: string; slug: string; title_ar: string; price: number; is_active?: boolean; sort?: number; created_at?: string };
@@ -184,8 +193,8 @@ export type Database = {
           promo_adjust: number;
           subtotal: number; cost_total: number; discount: number; extra: number; extra_note: string | null;
           table_no: string | null; floor: number | null; note: string | null;
-          /** delivery only */
-          address: string | null; geo: string | null; deliver_at: string | null;
+          /** delivery only — the fee is central money, not either station's sales */
+          address: string | null; geo: string | null; deliver_at: string | null; delivery_fee: number;
           customer_id: string | null; cashier_id: string | null; paid_at: string | null;
         };
         Insert: {
@@ -203,7 +212,9 @@ export type Database = {
       order_items: {
         Row: Timestamped & {
           order_id: string; item_id: string | null; variant_id: string | null; name_ar: string; flavor_ar: string | null;
+          /** كسرية للأصناف الموزونة: ٠٫٣٥٠ = ٣٥٠ غم */
           qty: number; unit_price: number; unit_cost: number; line_total: number;
+          sold_by: "piece" | "weight";
         };
         Insert: {
           id?: string; order_id: string; item_id?: string | null; variant_id?: string | null; name_ar: string; flavor_ar?: string | null;
@@ -234,6 +245,7 @@ export type Database = {
         Row: {
           id: string; category_id: string; name_ar: string; description_ar: string | null; image_url: string | null;
           price: number; flavors: string[]; sort: number;
+          sold_by: "piece" | "weight"; unit_label: string;
           category_name: string; category_image: string | null; category_sort: number;
           /** the register that owns this category — drives order routing */
           station_slug: "pastry" | "cafe" | null;
@@ -301,9 +313,10 @@ export type Database = {
         Args: { p_from: string; p_to: string; p_station?: string | null };
         Returns: {
           day: string; sales: number; orders_count: number; profit: number;
-          expenses: number; net: number; promo: number; collected: number;
+          expenses: number; net: number; promo: number; delivery: number; collected: number;
         }[];
       };
+      set_setting: { Args: { p_key: string; p_value: number }; Returns: number };
     };
     Enums: {
       order_channel: OrderChannel;

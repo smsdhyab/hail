@@ -556,6 +556,7 @@ function ModernCard({
       variantId,
       flavor,
       unitPrice,
+      soldBy: item.sold_by,
     });
   }
 

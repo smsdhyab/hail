@@ -9,14 +9,21 @@ import { businessDay } from "./time";
 
 export type DaySummary = {
   day: string;
+  /** بيع الأقسام وحده — لا يشمل العروض ولا أجرة التوصيل */
   sales: number;
   orders_count: number;
   profit: number;
   expenses: number;
   net: number;
+  /** فرق العروض عن مجموع القائمة (سالب = خصم يتحمّله المحل) */
+  promo: number;
+  /** أجرة التوصيل المقبوضة */
+  delivery: number;
+  /** ما دخل الدرج فعلاً = sales + promo + delivery */
+  collected: number;
 };
 
-const EMPTY = (day: string): DaySummary => ({ day, sales: 0, orders_count: 0, profit: 0, expenses: 0, net: 0 });
+const EMPTY = (day: string): DaySummary => ({ day, sales: 0, orders_count: 0, profit: 0, expenses: 0, net: 0, promo: 0, delivery: 0, collected: 0 });
 
 /**
  * Cost and profit stay management-only — the DB revokes those columns from
@@ -46,7 +53,7 @@ export async function getRangeSummary(from: string, to: string): Promise<DaySumm
 
   if (isLocalDb()) {
     return forViewer(
-      summaryLocal(from, to, scope).map((d) => ({ ...d, profit: 0, expenses: 0, net: 0 })),
+      summaryLocal(from, to, scope).map((d) => ({ ...d, profit: 0, expenses: 0, net: 0, promo: 0, delivery: 0, collected: d.sales })),
       staff,
     );
   }
@@ -89,7 +96,8 @@ export async function getTodaySinceReset(): Promise<DaySummary> {
   const day = businessDay();
 
   if (isLocalDb()) {
-    return forViewer([{ ...(summaryLocal(day, day, scope)[0] ?? EMPTY(day)), profit: 0, expenses: 0, net: 0 }], staff)[0];
+    const local = summaryLocal(day, day, scope)[0] ?? EMPTY(day);
+    return forViewer([{ ...local, profit: 0, expenses: 0, net: 0, promo: 0, delivery: 0, collected: local.sales }], staff)[0];
   }
 
   const svc = createSupabaseServiceClient();
@@ -103,7 +111,11 @@ export async function getTodaySinceReset(): Promise<DaySummary> {
   const cutoff = resets?.[0]?.reset_at ?? dayStart;
 
   const stationId = scope ? await stationIdOf(scope) : null;
-  let q = svc.from("orders").select("subtotal, cost_total, discount, extra, group_no").eq("status", "paid").gte("paid_at", cutoff);
+  let q = svc
+    .from("orders")
+    .select("subtotal, cost_total, discount, extra, promo_adjust, delivery_fee, group_no")
+    .eq("status", "paid")
+    .gte("paid_at", cutoff);
   if (stationId) q = q.eq("station_id", stationId);
   const { data: orders } = await q;
 
@@ -117,8 +129,15 @@ export async function getTodaySinceReset(): Promise<DaySummary> {
   const { data: exps } = await eq;
   const expenses = (exps ?? []).reduce((s, e) => s + (e.amount ?? 0), 0);
 
+  // العروض وأجرة التوصيل مال مركزي: يدخل الدرج ولا يُنسب لبيع أي قسم
+  const promo = (orders ?? []).reduce((s, o) => s + (o.promo_adjust ?? 0), 0);
+  const delivery = (orders ?? []).reduce((s, o) => s + (o.delivery_fee ?? 0), 0);
+
   const profit = sales - cost;
-  return forViewer([{ day, sales, orders_count, profit, expenses, net: profit - expenses }], staff)[0];
+  return forViewer(
+    [{ day, sales, orders_count, profit, expenses, net: profit - expenses, promo, delivery, collected: sales + promo + delivery }],
+    staff,
+  )[0];
 }
 
 async function stationIdOf(slug: StationSlug): Promise<string | null> {

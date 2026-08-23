@@ -1,5 +1,5 @@
 import { getActiveCombos, getPublicMenu } from "@/lib/cafe/menu-data";
-import { getActiveItemOffers } from "@/lib/cafe/pastry-actions";
+import { getActiveItemOffers, getDeliveryFee } from "@/lib/cafe/pastry-actions";
 import { TabletMenuClient } from "@/components/cafe/TabletMenuClient";
 import { DELIVERY_AREA_AR, SHOP } from "@/lib/cafe/branding";
 
@@ -25,10 +25,13 @@ export const metadata = {
  * a third counter.
  */
 export default async function DeliveryPage() {
-  const [menu, offers, combos] = await Promise.all([
+  const [menu, offers, combos, fee] = await Promise.all([
     getPublicMenu(),
     getActiveItemOffers().catch(() => ({})),
     getActiveCombos().catch(() => []),
+    getDeliveryFee().catch(() => 0),
   ]);
-  return <TabletMenuClient menu={menu} combos={combos} table={null} channel="delivery" offers={offers} />;
+  return (
+    <TabletMenuClient menu={menu} combos={combos} table={null} channel="delivery" offers={offers} deliveryFee={fee} />
+  );
 }

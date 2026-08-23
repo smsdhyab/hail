@@ -11,6 +11,7 @@ import {
   type PendingOrder,
 } from "@/lib/cafe/cashier-actions";
 import { Receipt, type ReceiptData } from "./Receipt";
+import { formatQty } from "@/lib/cafe/order";
 
 
 function ageMinutes(iso: string) {
@@ -30,10 +31,13 @@ function ticketFor(o: PendingOrder, heading?: string): ReceiptData {
     geo: o.geo,
     deliverAt: o.deliver_at,
     note: o.note,
-    lines: o.items.map((it) => ({ name: it.name_ar, flavor: it.flavor_ar, qty: it.qty, unitPrice: it.unit_price })),
+    lines: o.items.map((it) => ({ name: it.name_ar, flavor: it.flavor_ar, qty: it.qty, unitPrice: it.unit_price, soldBy: it.sold_by })),
     subtotal: o.subtotal,
     discount: 0,
-    total: o.subtotal,
+    deliveryFee: o.delivery_fee,
+    // ما يُطبع هو ما يدفعه الزبون: مجموع القسم وحده كان يُسقط أجرة التوصيل
+    // وحصة القسم الآخر، فيخرج وصل بمبلغ أقلّ من المقبوض
+    total: o.groupTotal,
     dateTime: new Date().toLocaleString("en-GB", { timeZone: "Asia/Baghdad", hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }),
   };
 }
@@ -173,11 +177,14 @@ export function IncomingOrdersClient() {
                     </span>
                   ) : null}
                 </div>
-                {o.otherStations.length > 0 && (
-                  // the same ticket is also being prepared next door — say so, and
-                  // show the FULL amount, because the customer pays once
+                {o.groupTotal !== o.subtotal && (
+                  // ما يدفعه الزبون يخالف مبلغ هذا القسم — إمّا لأن التذكرة
+                  // مشتركة مع القسم الآخر، أو لأن عليها أجرة توصيل أو عرضاً.
+                  // الشرط على الفرق نفسه لا على وجود قسم آخر: طلب توصيل من قسم
+                  // واحد كان يعرض مبلغه هو، فيُقبض أقلّ من المستحق.
                   <p className="mt-2 rounded-lg border border-accent/60 bg-accent/10 px-2.5 py-1.5 text-xs font-bold">
-                    🔗 طلب مشترك مع {o.otherStations.join("، ")} — المطلوب من الزبون {formatIqdLabel(o.groupTotal)}
+                    {o.otherStations.length > 0 && `طلب مشترك مع ${o.otherStations.join("، ")} — `}
+                    المطلوب من الزبون {formatIqdLabel(o.groupTotal)}
                   </p>
                 )}
                 <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
@@ -206,7 +213,9 @@ export function IncomingOrdersClient() {
                         {it.name_ar}
                         {it.flavor_ar ? ` (${it.flavor_ar})` : ""}
                       </span>
-                      <span className="font-semibold text-muted-foreground">×{it.qty}</span>
+                      <span className="font-semibold text-muted-foreground">
+                        {it.sold_by === "weight" ? formatQty(it.qty, "weight") : `×${it.qty}`}
+                      </span>
                     </li>
                   ))}
                 </ul>

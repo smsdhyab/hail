@@ -1,13 +1,16 @@
 import { formatIqd } from "@/lib/cafe/money";
+import { formatQty, lineTotal, type SoldBy } from "@/lib/cafe/order";
 import { SYSTEM } from "@/lib/cafe/branding";
 
 export type ReceiptData = {
   orderNumber: string;
-  lines: { name: string; flavor?: string | null; qty: number; unitPrice: number }[];
+  lines: { name: string; flavor?: string | null; qty: number; unitPrice: number; soldBy?: SoldBy }[];
   subtotal: number;
   discount: number;
   /** itemized surcharges (extra shot, syrup…) */
   extras?: { name: string; price: number }[];
+  /** أجرة التوصيل — تُطبع سطراً مستقلاً كي يرى الزبون سبب الفرق */
+  deliveryFee?: number;
   total: number;
   dateTime: string;
   /** table number for incoming self-order tickets */
@@ -70,9 +73,17 @@ export function Receipt({ data }: { data: ReceiptData }) {
             <tr key={i}>
               <td style={{ padding: "2px 0" }}>
                 {l.name}
-                {l.flavor ? ` (${l.flavor})` : ""} ×{l.qty}
+                {l.flavor ? ` (${l.flavor})` : ""}{" "}
+                {l.soldBy === "weight" ? (
+                  // الوزن وسعر الكيلو معاً: بلا سعر الكيلو يبدو المبلغ اعتباطياً
+                  <>
+                    {formatQty(l.qty, "weight")} × {formatIqd(l.unitPrice)}/كغم
+                  </>
+                ) : (
+                  <>×{l.qty}</>
+                )}
               </td>
-              <td style={{ textAlign: "left", whiteSpace: "nowrap" }}>{formatIqd(l.unitPrice * l.qty)}</td>
+              <td style={{ textAlign: "left", whiteSpace: "nowrap" }}>{formatIqd(lineTotal(l.unitPrice, l.qty, l.soldBy))}</td>
             </tr>
           ))}
         </tbody>
@@ -97,6 +108,12 @@ export function Receipt({ data }: { data: ReceiptData }) {
             </div>
           ))}
         </>
+      )}
+      {(data.deliveryFee ?? 0) > 0 && (
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px" }}>
+          <span>أجرة التوصيل</span>
+          <span>{formatIqd(data.deliveryFee!)} د.ع</span>
+        </div>
       )}
       {data.discount > 0 && (
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px" }}>

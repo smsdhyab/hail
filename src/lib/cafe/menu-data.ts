@@ -1,5 +1,6 @@
 import { isDemoServer } from "./demo";
 import type { StationSlug } from "./hail-menu";
+import type { SoldBy } from "./order";
 import { DEMO_MENU } from "./demo-menu";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -9,7 +10,11 @@ export type MenuItemView = {
   name_ar: string;
   description: string | null;
   image_url: string | null;
+  /** سعر القطعة — أو سعر الكيلو حين يكون sold_by = "weight" */
   price: number;
+  sold_by: SoldBy;
+  /** «كغم» / «قطعة» — ما يُكتب بعد السعر وفي السلة */
+  unit_label: string;
   flavors: string[];
   variants: MenuVariantView[];
 };
@@ -60,6 +65,8 @@ export async function getPublicMenu(): Promise<MenuCategoryView[]> {
       description: r.description_ar,
       image_url: r.image_url,
       price: r.price,
+      sold_by: (r.sold_by ?? "piece") as SoldBy,
+      unit_label: r.unit_label ?? "قطعة",
       flavors: r.flavors ?? [],
       variants: varsByItem.get(r.id) ?? [],
     });

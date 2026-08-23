@@ -3,6 +3,9 @@ import { getMonthlyCosts } from "@/lib/cafe/expense-actions";
 import { getTotalOutstanding } from "@/lib/cafe/debt-actions";
 import { lastNDays, businessDay } from "@/lib/cafe/time";
 import { DashboardClient } from "@/components/cafe/DashboardClient";
+import { SettingsCard } from "@/components/cafe/SettingsCard";
+import { getDeliveryFee } from "@/lib/cafe/pastry-actions";
+import { getStaff } from "@/lib/cafe/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +47,9 @@ export default async function DashboardPage({
     safe<DaySummary | null>(getDaySummary(yesterday), null),
     safe(getScopeLabel(), { station: null, label: "" }),
   ]);
+  // الإعدادات للمدير وحده — الكاشير لا يغيّر أجرة التوصيل
+  const staff = await safe(getStaff(), null);
+  const deliveryFee = staff?.role === "admin" ? await safe(getDeliveryFee(), 0) : 0;
   summary = s;
   recent = r;
   monthlyCosts = mc.reduce((t, c) => t + c.amount, 0);
@@ -54,5 +60,10 @@ export default async function DashboardPage({
   yesterdaySummary = ys;
   scopeLabel = scope.label;
 
-  return <DashboardClient days={days} summary={summary} recent={recent} monthlyCosts={monthlyCosts} guestsToday={guestsToday} guestsRange={guestsRange} todayReset={todayReset} outstandingDebts={outstandingDebts} todayDate={today} yesterday={yesterday} yesterdaySummary={yesterdaySummary} scopeLabel={scopeLabel} />;
+  return (
+    <div className="space-y-4">
+      <DashboardClient days={days} summary={summary} recent={recent} monthlyCosts={monthlyCosts} guestsToday={guestsToday} guestsRange={guestsRange} todayReset={todayReset} outstandingDebts={outstandingDebts} todayDate={today} yesterday={yesterday} yesterdaySummary={yesterdaySummary} scopeLabel={scopeLabel} />
+      {staff?.role === "admin" && <SettingsCard deliveryFee={deliveryFee} />}
+    </div>
+  );
 }

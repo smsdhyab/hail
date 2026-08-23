@@ -153,7 +153,12 @@ export function MenuAdminClient({ categories }: { categories: AdminCategory[] })
                         </div>
                       </div>
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2">{formatIqdLabel(it.price)}</td>
+                    <td className="whitespace-nowrap px-3 py-2">
+                      {formatIqdLabel(it.price)}
+                      {it.sold_by === "weight" && (
+                        <span className="text-xs font-bold text-primary"> / {it.unit_label || "كغم"}</span>
+                      )}
+                    </td>
                     <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">{formatIqdLabel(it.cost)}</td>
                     <td className="px-3 py-2">
                       <button
@@ -203,6 +208,8 @@ function ItemForm({ editing, categories, onClose }: { editing: Editing; categori
   const [name, setName] = useState(it?.name_ar ?? "");
   const [categoryId, setCategoryId] = useState(editing.categoryId);
   const [price, setPrice] = useState<number>(it?.price ?? 0);
+  const [soldBy, setSoldBy] = useState<"piece" | "weight">(it?.sold_by ?? "piece");
+  const [unitLabel, setUnitLabel] = useState(it?.unit_label ?? "");
   const [cost, setCost] = useState(String(it?.cost ?? ""));
   const [flavors, setFlavors] = useState((it?.flavors ?? []).join("، "));
   const [description, setDescription] = useState(it?.description_ar ?? "");
@@ -242,6 +249,8 @@ function ItemForm({ editing, categories, onClose }: { editing: Editing; categori
       description_ar: description || null,
       image_url: imageUrl || null,
       price: Number(price) || 0,
+      sold_by: soldBy,
+      unit_label: unitLabel,
       cost: Number(cost) || 0,
       flavors: flavors.split(/[،,]/).map((s) => s.trim()).filter(Boolean),
       is_active: it?.is_active ?? true,
@@ -302,12 +311,40 @@ function ItemForm({ editing, categories, onClose }: { editing: Editing; categori
             <span className="text-muted-foreground">الترتيب</span>
             <input type="number" value={sort} onChange={(e) => setSort(e.target.value)} dir="ltr" className="w-full rounded-lg border border-input bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring" />
           </label>
+          <div className="space-y-1 text-sm sm:col-span-2">
+            <span className="text-muted-foreground">طريقة البيع</span>
+            <div className="flex gap-2">
+              {([["piece", "بالقطعة"], ["weight", "بالوزن"]] as const).map(([v, label]) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setSoldBy(v)}
+                  className={`flex-1 rounded-lg border px-3 py-2 font-bold transition ${
+                    soldBy === v ? "border-primary bg-primary/10 text-primary" : "border-input text-muted-foreground"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {soldBy === "weight" && (
+              <p className="text-xs text-muted-foreground">
+                السعر أدناه يصير <b>سعر الكيلو</b>، والكاشير يُدخل الوزن بالغرام عند البيع.
+              </p>
+            )}
+          </div>
           <label className="space-y-1 text-sm">
-            <span className="text-muted-foreground">سعر البيع (د.ع) *</span>
+            <span className="text-muted-foreground">{soldBy === "weight" ? "سعر الكيلو (د.ع) *" : "سعر البيع (د.ع) *"}</span>
             <PriceInput value={price} onChange={setPrice} />
           </label>
+          {soldBy === "weight" && (
+            <label className="space-y-1 text-sm">
+              <span className="text-muted-foreground">الوحدة (افتراضياً كغم)</span>
+              <input value={unitLabel} onChange={(e) => setUnitLabel(e.target.value)} placeholder="كغم" className="w-full rounded-lg border border-input bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring" />
+            </label>
+          )}
           <label className="space-y-1 text-sm">
-            <span className="text-muted-foreground">الكلفة (د.ع) — لحساب الأرباح</span>
+            <span className="text-muted-foreground">{soldBy === "weight" ? "كلفة الكيلو (د.ع) — لحساب الأرباح" : "الكلفة (د.ع) — لحساب الأرباح"}</span>
             <input type="number" min={0} value={cost} onChange={(e) => setCost(e.target.value)} dir="ltr" className="w-full rounded-lg border border-input bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring" />
           </label>
           <label className="space-y-1 text-sm sm:col-span-2">

@@ -17,8 +17,9 @@ import {
   placeOrderLocal,
 } from "./local-db";
 import type { OrderLineInput } from "./order-actions";
+import type { SoldBy } from "./order";
 
-export type PendingItem = { name_ar: string; flavor_ar: string | null; qty: number; unit_price: number; line_total: number };
+export type PendingItem = { name_ar: string; flavor_ar: string | null; qty: number; unit_price: number; line_total: number; sold_by: SoldBy };
 
 /**
  * One register's view of a customer order. `items`/`subtotal` are THIS
@@ -36,6 +37,8 @@ export type PendingOrder = {
   channel: string;
   subtotal: number;
   groupTotal: number;
+  /** أجرة التوصيل على هذه التذكرة — مال المحل لا مبيعات القسم */
+  delivery_fee: number;
   otherStations: string[];
   table_no: string | null;
   floor: number | null;
@@ -63,6 +66,7 @@ export async function listPendingOrders(): Promise<PendingOrder[]> {
         station: o.station,
         channel: o.channel,
         subtotal: o.subtotal,
+        delivery_fee: 0, // النسخة المحلية للتجربة — بلا توصيل
         groupTotal: group.reduce((s, g) => s + g.subtotal, 0),
         otherStations: group.filter((g) => g.station !== o.station).map((g) => stationName(g.station)),
         table_no: o.table_no,
@@ -78,6 +82,7 @@ export async function listPendingOrders(): Promise<PendingOrder[]> {
           qty: i.qty,
           unit_price: i.unit_price,
           line_total: i.qty * i.unit_price,
+          sold_by: "piece" as SoldBy, // النسخة المحلية للتجربة فقط — بلا وزن
         })),
       };
     });
@@ -94,7 +99,7 @@ export async function listPendingOrders(): Promise<PendingOrder[]> {
   // would undercharge every mixed order.
   const { data: allPending } = await supabase
     .from("orders")
-    .select("id, order_seq, group_no, station_id, channel, subtotal, promo_adjust, table_no, floor, note, address, geo, deliver_at, created_at")
+    .select("id, order_seq, group_no, station_id, channel, subtotal, promo_adjust, delivery_fee, table_no, floor, note, address, geo, deliver_at, created_at")
     .eq("status", "pending")
     .order("created_at", { ascending: true });
   if (!allPending?.length) return [];
@@ -106,20 +111,23 @@ export async function listPendingOrders(): Promise<PendingOrder[]> {
   const ids = orders.map((o) => o.id);
   const { data: items } = await supabase
     .from("order_items")
-    .select("order_id, name_ar, flavor_ar, qty, unit_price, line_total")
+    .select("order_id, name_ar, flavor_ar, qty, unit_price, line_total, sold_by")
     .in("order_id", ids);
 
   const byOrder = new Map<string, PendingItem[]>();
   for (const it of items ?? []) {
     const arr = byOrder.get(it.order_id) ?? [];
-    arr.push({ name_ar: it.name_ar, flavor_ar: it.flavor_ar, qty: it.qty, unit_price: it.unit_price, line_total: it.line_total });
+    arr.push({ name_ar: it.name_ar, flavor_ar: it.flavor_ar, qty: it.qty, unit_price: it.unit_price, line_total: it.line_total, sold_by: (it.sold_by ?? "piece") as SoldBy });
     byOrder.set(it.order_id, arr);
   }
   // group totals from the FULL queue so the cashier collects the whole ticket,
   // not just their half. Combo tickets are worth their combo price.
   const totalByGroup = new Map<number, number>();
   for (const o of allPending) {
-    totalByGroup.set(o.group_no, (totalByGroup.get(o.group_no) ?? 0) + o.subtotal + (o.promo_adjust ?? 0));
+    totalByGroup.set(
+      o.group_no,
+      (totalByGroup.get(o.group_no) ?? 0) + o.subtotal + (o.promo_adjust ?? 0) + (o.delivery_fee ?? 0),
+    );
   }
 
   return orders.map((o) => {
@@ -131,6 +139,7 @@ export async function listPendingOrders(): Promise<PendingOrder[]> {
       station: slug,
       channel: o.channel,
       subtotal: o.subtotal,
+      delivery_fee: o.delivery_fee ?? 0,
       groupTotal: totalByGroup.get(o.group_no) ?? o.subtotal,
       otherStations: allPending
         .filter((x) => x.group_no === o.group_no && x.id !== o.id)
@@ -244,7 +253,7 @@ async function payGroup(
   const supabase = await createSupabaseServerClient();
   const { data: rows } = await supabase
     .from("orders")
-    .select("subtotal, promo_adjust, customer_id")
+    .select("subtotal, promo_adjust, delivery_fee, customer_id")
     .eq("group_no", groupNo)
     .eq("status", "pending");
   const gross = (rows ?? []).reduce((s, r) => s + r.subtotal, 0);
@@ -252,9 +261,11 @@ async function payGroup(
   // and the gap lives here. It is NOT prorated across the stations — the shop
   // carries the offer — but the customer must be charged it.
   const promo = (rows ?? []).reduce((s, r) => s + (r.promo_adjust ?? 0), 0);
+  // أجرة التوصيل تُقبض مع التذكرة ولا تُوزَّع على الأقسام — ليست بيع أيٍّ منهما
+  const fee = (rows ?? []).reduce((s, r) => s + (r.delivery_fee ?? 0), 0);
   const disc = Math.min(Math.max(0, Math.round(opts.discount)), gross + promo);
   const ext = Math.max(0, Math.round(opts.extra));
-  const net = gross + promo - disc + ext;
+  const net = gross + promo + fee - disc + ext;
 
   const cfg = loyaltyConfig();
   const beneficiary = opts.customerId ?? rows?.find((r) => r.customer_id)?.customer_id ?? null;

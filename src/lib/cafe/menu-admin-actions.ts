@@ -12,11 +12,14 @@ export type AdminItem = {
   name_ar: string;
   description_ar: string | null;
   image_url: string | null;
+  /** سعر القطعة — أو سعر الكيلو حين sold_by = "weight" */
   price: number;
   cost: number;
   flavors: string[];
   is_active: boolean;
   sort: number;
+  sold_by: "piece" | "weight";
+  unit_label: string | null;
   variants: AdminVariant[];
 };
 export type AdminCategory = {
@@ -39,7 +42,7 @@ export async function listMenuAdmin(): Promise<AdminCategory[]> {
   const svc = createSupabaseServiceClient();
   const [{ data: cats }, { data: items }, { data: vars }] = await Promise.all([
     svc.from("categories").select("id, name_ar, sort, is_active, station_id").order("sort"),
-    svc.from("menu_items").select("id, category_id, name_ar, description_ar, image_url, price, cost, flavors, is_active, sort").order("sort"),
+    svc.from("menu_items").select("id, category_id, name_ar, description_ar, image_url, price, cost, flavors, is_active, sort, sold_by, unit_label").order("sort"),
     svc.from("item_variants").select("id, item_id, name_ar, price_override, kind, sort").order("sort"),
   ]);
 
@@ -85,6 +88,8 @@ export type ItemInput = {
   flavors?: string[];
   is_active?: boolean;
   sort?: number;
+  sold_by?: "piece" | "weight";
+  unit_label?: string | null;
 };
 
 export async function upsertItem(input: ItemInput) {
@@ -102,6 +107,9 @@ export async function upsertItem(input: ItemInput) {
     flavors: (input.flavors ?? []).map((f) => f.trim()).filter(Boolean),
     is_active: input.is_active ?? true,
     sort: Math.round(input.sort ?? 0),
+    sold_by: input.sold_by === "weight" ? ("weight" as const) : ("piece" as const),
+    // «كغم» ضمنية للموزون؛ الحقل لمن يبيع بوحدة أخرى (علبة، لتر…)
+    unit_label: input.unit_label?.trim() || null,
   };
   const { error } = input.id
     ? await svc.from("menu_items").update(row).eq("id", input.id)

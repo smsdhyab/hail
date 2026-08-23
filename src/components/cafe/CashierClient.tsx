@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "r
 import { Check, Minus, Plus, Printer, QrCode, Trash2 } from "lucide-react";
 import type { MenuCategoryView, MenuItemView } from "@/lib/cafe/menu-data";
 import { formatIqdLabel } from "@/lib/cafe/money";
+import { lineTotal, qtyMin, qtyStep, roundQty, type SoldBy } from "@/lib/cafe/order";
 import { cashierCheckout } from "@/lib/cafe/cashier-actions";
 import { findCard, redeemReward, type Card } from "@/lib/cafe/loyalty-actions";
 import { QrScanner } from "./QrScanner";
@@ -18,31 +19,54 @@ type Line = {
   name: string;
   variantId: string | null;
   flavor: string | null;
+  /** سعر القطعة — أو سعر الكيلو حين soldBy = "weight" */
   unitPrice: number;
   qty: number;
+  soldBy: SoldBy;
 };
 type Cart = Record<string, Line>;
-type CartAction = { type: "add"; line: Omit<Line, "qty"> } | { type: "inc"; key: string } | { type: "dec"; key: string } | { type: "clear" };
+type CartAction =
+  | { type: "add"; line: Omit<Line, "qty">; qty?: number }
+  | { type: "inc"; key: string }
+  | { type: "dec"; key: string }
+  | { type: "setQty"; key: string; qty: number }
+  | { type: "clear" };
 
 function cartReducer(state: Cart, action: CartAction): Cart {
   switch (action.type) {
     case "add": {
       const ex = state[action.line.key];
-      return { ...state, [action.line.key]: { ...action.line, qty: (ex?.qty ?? 0) + 1 } };
+      const add = action.qty ?? qtyStep(action.line.soldBy);
+      return {
+        ...state,
+        [action.line.key]: { ...action.line, qty: roundQty((ex?.qty ?? 0) + add, action.line.soldBy) },
+      };
     }
     case "inc": {
       const l = state[action.key];
-      return l ? { ...state, [action.key]: { ...l, qty: l.qty + 1 } } : state;
+      return l ? { ...state, [action.key]: { ...l, qty: roundQty(l.qty + qtyStep(l.soldBy), l.soldBy) } } : state;
     }
     case "dec": {
       const l = state[action.key];
       if (!l) return state;
-      if (l.qty <= 1) {
+      const next = roundQty(l.qty - qtyStep(l.soldBy), l.soldBy);
+      if (next < qtyMin(l.soldBy)) {
         const n = { ...state };
         delete n[action.key];
         return n;
       }
-      return { ...state, [action.key]: { ...l, qty: l.qty - 1 } };
+      return { ...state, [action.key]: { ...l, qty: next } };
+    }
+    case "setQty": {
+      const l = state[action.key];
+      if (!l) return state;
+      const qty = roundQty(Math.max(0, action.qty), l.soldBy);
+      if (qty < qtyMin(l.soldBy)) {
+        const n = { ...state };
+        delete n[action.key];
+        return n;
+      }
+      return { ...state, [action.key]: { ...l, qty } };
     }
     case "clear":
       return {};
@@ -97,7 +121,7 @@ export function CashierClient({ menu, tables }: { menu: MenuCategoryView[]; tabl
   }, [receipt]);
 
   const lines = Object.values(cart);
-  const subtotal = useMemo(() => lines.reduce((s, l) => s + l.unitPrice * l.qty, 0), [lines]);
+  const subtotal = useMemo(() => lines.reduce((s, l) => s + lineTotal(l.unitPrice, l.qty, l.soldBy), 0), [lines]);
   const extraTotal = useMemo(() => extras.reduce((s, x) => s + x.price, 0), [extras]);
   const total = Math.max(0, subtotal - discount + extraTotal);
 
@@ -170,7 +194,7 @@ export function CashierClient({ menu, tables }: { menu: MenuCategoryView[]; tabl
         // one payment, but the ticket shows what each register earned
         splits: res.perStation,
         note: orderNote.trim() || null,
-        lines: lines.map((l) => ({ name: l.name, flavor: l.flavor, qty: l.qty, unitPrice: l.unitPrice })),
+        lines: lines.map((l) => ({ name: l.name, flavor: l.flavor, qty: l.qty, unitPrice: l.unitPrice, soldBy: l.soldBy })),
         subtotal,
         discount,
         extras,
@@ -245,17 +269,37 @@ export function CashierClient({ menu, tables }: { menu: MenuCategoryView[]; tabl
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{l.name}</p>
                   {l.flavor && <p className="text-xs text-muted-foreground">{l.flavor}</p>}
-                  <p className="text-xs text-muted-foreground">{formatIqdLabel(l.unitPrice)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatIqdLabel(l.unitPrice)}
+                    {l.soldBy === "weight" && " / كغم"}
+                    {l.soldBy === "weight" && (
+                      <b className="text-foreground"> ← {formatIqdLabel(lineTotal(l.unitPrice, l.qty, l.soldBy))}</b>
+                    )}
+                  </p>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <button onClick={() => dispatch({ type: "dec", key: l.key })} aria-label="إنقاص" className="rounded-full border border-border p-1 hover:bg-secondary">
-                    <Minus className="size-3.5" />
-                  </button>
-                  <span className="w-5 text-center text-sm font-semibold">{l.qty}</span>
-                  <button onClick={() => dispatch({ type: "inc", key: l.key })} aria-label="زيادة" className="rounded-full border border-border p-1 hover:bg-secondary">
-                    <Plus className="size-3.5" />
-                  </button>
-                </div>
+                {l.soldBy === "weight" ? (
+                  // الميزان يعطي غرامات — فيُكتب الرقم كما هو بلا حساب ذهني
+                  <div className="flex shrink-0 items-center gap-1">
+                    <input
+                      inputMode="numeric"
+                      value={Math.round(l.qty * 1000)}
+                      onChange={(e) => dispatch({ type: "setQty", key: l.key, qty: (Number(e.target.value.replace(/[^\d]/g, "")) || 0) / 1000 })}
+                      dir="ltr"
+                      className="w-16 rounded-lg border border-input bg-background px-2 py-1 text-center text-sm font-bold outline-none focus:ring-2 focus:ring-ring"
+                    />
+                    <span className="text-xs text-muted-foreground">غم</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <button onClick={() => dispatch({ type: "dec", key: l.key })} aria-label="إنقاص" className="rounded-full border border-border p-1 hover:bg-secondary">
+                      <Minus className="size-3.5" />
+                    </button>
+                    <span className="w-5 text-center text-sm font-semibold">{l.qty}</span>
+                    <button onClick={() => dispatch({ type: "inc", key: l.key })} aria-label="زيادة" className="rounded-full border border-border p-1 hover:bg-secondary">
+                      <Plus className="size-3.5" />
+                    </button>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
@@ -470,6 +514,7 @@ function CashierItem({ item, category, onAdd }: { item: MenuItemView; category?:
       variantId,
       flavor,
       unitPrice,
+      soldBy: item.sold_by,
     });
   }
 
@@ -480,7 +525,10 @@ function CashierItem({ item, category, onAdd }: { item: MenuItemView; category?:
           <MenuIcon name={item.name_ar} category={category} className="size-8 shrink-0 text-primary/80" />
           <p className="font-semibold leading-tight">{item.name_ar}</p>
         </div>
-        <p className="mt-0.5 text-sm font-bold text-primary">{formatIqdLabel(unitPrice)}</p>
+        <p className="mt-0.5 text-sm font-bold text-primary">
+          {formatIqdLabel(unitPrice)}
+          {item.sold_by === "weight" && <span className="text-xs"> / {item.unit_label || "كغم"}</span>}
+        </p>
       </button>
       {item.variants.length > 0 && (
         <div className="mt-1.5 flex flex-wrap gap-1">
