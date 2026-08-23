@@ -3,10 +3,10 @@
 import { useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import Link from "next/link";
-import { Check, LogIn, Minus, Plus, ShoppingCart, X } from "lucide-react";
+import { Check, LogIn, Minus, Plus, ShoppingCart, Sparkles, X } from "lucide-react";
 import type { ComboView, MenuCategoryView, MenuItemView } from "@/lib/cafe/menu-data";
-import { CombosStrip } from "./CombosStrip";
-import { DeliveryForm, deliveryError, emptyDelivery, type DeliveryDetails } from "./DeliveryForm";
+import { CombosSection, OFFERS_CAT } from "./CombosSection";
+import { DeliveryForm, deliveryError, emptyDelivery, type DeliveryDetails, type DeliveryField } from "./DeliveryForm";
 import { DELIVERY_AREA_AR } from "@/lib/cafe/branding";
 import { formatIqdLabel } from "@/lib/cafe/money";
 import { submitOrder, type OrderLineInput, type OrderSplitPart } from "@/lib/cafe/order-actions";
@@ -86,6 +86,7 @@ export function TabletMenuClient({
   // delivery mode: no table, and the driver needs a name, phone and address
   const isDelivery = channel === "delivery";
   const [delivery, setDelivery] = useState<DeliveryDetails>(emptyDelivery);
+  const [badField, setBadField] = useState<DeliveryField | null>(null);
   const [confirmed, setConfirmed] = useState<string | null>(null);
   // when an order spans both registers, tell the customer who is preparing what
   const [confirmedParts, setConfirmedParts] = useState<OrderSplitPart[]>([]);
@@ -97,6 +98,7 @@ export function TabletMenuClient({
   const [modalVariant, setModalVariant] = useState<string | null>(null);
   const [crossSel, setCrossSel] = useState<Set<string>>(new Set()); // selected cross-sell pastries
 
+  const showOffers = activeCat === OFFERS_CAT && combos.length > 0;
   const cat = menu.find((c) => c.name_ar === activeCat) ?? menu[0];
   const effect = effectFor(cat);
   // Cross-sell pulls from the OTHER register: order a drink, get offered
@@ -155,6 +157,8 @@ export function TabletMenuClient({
   // the gap between the offers' prices and their parts' list prices; the cart
   // must show what the customer will actually be asked to pay
   const comboAdjust = liveCombos.reduce((sum, c) => sum + (c.price - c.list_total), 0);
+  // أصناف داخل عرض: سعرها الفردي لا يُعرض، لأن سعر العرض هو الساري عليها
+  const comboItemIds = new Set(liveCombos.flatMap((c) => c.item_ids));
   const dueTotal = Math.max(0, total + comboAdjust);
 
   const modalPrice = modalItem ? (modalItem.variants.find((v) => v.id === modalVariant)?.price ?? priceOf(modalItem)) : 0;
@@ -168,10 +172,14 @@ export function TabletMenuClient({
     if (!lines.length || busy) return;
     if (isDelivery) {
       const bad = deliveryError(delivery);
-      if (bad) return setErr(bad);
+      if (bad) {
+        setBadField(bad.field);
+        return setErr(bad.msg);
+      }
     }
     setBusy(true);
     setErr(null);
+    setBadField(null);
     const payload: OrderLineInput[] = lines.map((l) => ({ item_id: l.itemId, variant_id: l.variantId, flavor: l.flavor, qty: l.qty }));
     const res = await submitOrder({
       channel,
@@ -208,11 +216,11 @@ export function TabletMenuClient({
         </div>
         {isDelivery ? (
           <span className="rounded-full border border-[var(--accent2)] bg-[var(--accent2)]/10 px-4 py-1.5 text-center text-[13px] font-extrabold text-[var(--accent2)]">
-            🛵 {DELIVERY_AREA_AR}
+            {DELIVERY_AREA_AR}
           </span>
         ) : table ? (
           <span className="rounded-full border border-[var(--accent)] bg-[var(--accent)]/10 px-4 py-1.5 text-sm font-extrabold text-[var(--accent)]">
-            🍽️ طاولة {table}
+            طاولة {table}
           </span>
         ) : (
           <h1 className="text-base font-bold text-[var(--muted)]">المنيو</h1>
@@ -230,7 +238,10 @@ export function TabletMenuClient({
       <div className="flex min-h-0 flex-1 flex-row-reverse">
         {/* product grid — LEFT */}
         <main ref={mainRef} className="min-w-0 flex-1 overflow-y-auto p-4 pb-24">
-          <CombosStrip combos={combos} menu={menu} onPick={pickCombo} />
+          {showOffers ? (
+            <CombosSection combos={combos} menu={menu} onPick={pickCombo} />
+          ) : (
+          <>
           <h2 className="mb-3 px-1 text-xl font-extrabold text-[var(--accent)]">{cat?.name_ar}</h2>
           <div className="grid grid-cols-2 gap-3 xl:grid-cols-3">
             {(cat?.items ?? []).map((it) => {
@@ -275,10 +286,25 @@ export function TabletMenuClient({
               );
             })}
           </div>
+          </>
+          )}
         </main>
 
         {/* category rail — RIGHT */}
         <aside className="w-[132px] shrink-0 overflow-y-auto border-l border-[var(--line)] bg-[var(--panelsoft)]/60 py-2 sm:w-[184px]">
+          {combos.length > 0 && (
+            <button
+              aria-label={OFFERS_CAT}
+              onClick={() => selectCat(OFFERS_CAT)}
+              className={`flex w-full flex-col items-center gap-1.5 px-2 py-3.5 text-center text-[var(--activeink)] transition ${showOffers ? "bg-[var(--accent)]" : "hail-offers-pulse"}`}
+            >
+              <Sparkles className="size-8" />
+              <span className="text-[13px] font-extrabold leading-tight">
+                <span className="block">عروض</span>
+                <span className="block">اليوم</span>
+              </span>
+            </button>
+          )}
           {menu.map((c) => {
             const on = c.name_ar === activeCat;
             return (
@@ -404,7 +430,18 @@ export function TabletMenuClient({
                 <li key={l.key} className="flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3">
                   <div className="min-w-0">
                     <p className="truncate font-bold">{l.name}</p>
-                    <p className="text-sm tabular-nums text-[var(--accent)]">{formatIqdLabel(l.unitPrice * l.qty)}</p>
+                    {comboItemIds.has(l.itemId) ? (
+                      <p className="text-sm text-[var(--accent2)]">
+                        ضمن عرض اليوم
+                        {l.qty > 1 && (
+                          <span className="tabular-nums text-[var(--muted)]">
+                            {" "}+ {l.qty - 1} إضافي · {formatIqdLabel(l.unitPrice * (l.qty - 1))}
+                          </span>
+                        )}
+                      </p>
+                    ) : (
+                      <p className="text-sm tabular-nums text-[var(--accent)]">{formatIqdLabel(l.unitPrice * l.qty)}</p>
+                    )}
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <button onClick={() => dispatch({ type: "dec", key: l.key })} aria-label="إنقاص" className="rounded-full border border-[var(--line)] p-1.5"><Minus className="size-4" /></button>
@@ -416,24 +453,30 @@ export function TabletMenuClient({
             </ul>
             <div className="mt-3 space-y-2">
               {isDelivery ? (
-                <DeliveryForm value={delivery} onChange={setDelivery} />
+                <DeliveryForm
+                  value={delivery}
+                  invalid={badField}
+                  onChange={(d) => {
+                    setDelivery(d);
+                    setBadField(null); // التصحيح يزيل الاحمرار فوراً
+                    setErr(null);
+                  }}
+                />
               ) : (
                 <input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" placeholder="رقم الهاتف (اختياري — لجمع نقاط الولاء)" dir="ltr" className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none" />
               )}
               <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="ملاحظة (سكر قليل، بدون ثلج…)" className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none" />
             </div>
-            {err && <p className="mt-2 text-sm text-red-400">{err}</p>}
+            {err && <p className="mt-2 text-sm font-semibold text-destructive">{err}</p>}
             {liveCombos.length > 0 && (
-              // spell the offer out — a total that differs from the sum of the
-              // lines above it looks like a bug unless the gap is named
+              // سعر العرض نفسه، لا الفرق عن مجموع القائمة. عرْض «+١٬٥٠٠» كان
+              // يقرأ كزيادة على الزبون بينما هو ثمن حصة أكبر — والزبون اختار
+              // العرض بسعره المعلن، فهو ما يجب أن يراه.
               <div className="mt-3 space-y-1 border-t border-[var(--line)] pt-3 text-sm">
                 {liveCombos.map((c) => (
-                  <div key={c.slug} className="flex items-center justify-between gap-2 text-[var(--accent2)]">
-                    <span className="line-clamp-1">🎁 {c.title_ar}</span>
-                    <span className="shrink-0 tabular-nums">
-                      {c.price >= c.list_total ? "+" : ""}
-                      {formatIqdLabel(c.price - c.list_total)}
-                    </span>
+                  <div key={c.slug} className="flex items-center justify-between gap-2 font-bold text-[var(--accent2)]">
+                    <span className="line-clamp-1">عرض اليوم — {c.title_ar}</span>
+                    <span className="shrink-0 tabular-nums">{formatIqdLabel(c.price)}</span>
                   </div>
                 ))}
               </div>

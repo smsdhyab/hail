@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Clock, MapPin, Phone, User } from "lucide-react";
 
 export type DeliveryDetails = {
@@ -13,13 +13,19 @@ export type DeliveryDetails = {
 
 export const emptyDelivery: DeliveryDetails = { name: "", phone: "", address: "", geo: "", deliverAt: "الآن" };
 
+export type DeliveryField = "name" | "phone" | "address";
+
 /** Phone must be usable by a driver, not merely non-empty. Iraqi mobiles are
- *  11 digits starting 07; also accept +964 / 00964 forms. */
-export function deliveryError(d: DeliveryDetails): string | null {
-  if (!d.name.trim()) return "اكتب اسمك.";
+ *  11 digits starting 07; also accept +964 / 00964 forms.
+ *
+ *  Returns WHICH field is wrong, not just the text: the message shows at the
+ *  bottom of the cart sheet, and the offending field is often scrolled out of
+ *  sight — «اكتب اسمك» beside a note field reads like a bug, not an error. */
+export function deliveryError(d: DeliveryDetails): { field: DeliveryField; msg: string } | null {
+  if (!d.name.trim()) return { field: "name", msg: "اكتب اسمك." };
   const digits = d.phone.replace(/[^\d]/g, "").replace(/^00964/, "0").replace(/^964/, "0");
-  if (!/^07\d{9}$/.test(digits)) return "رقم الهاتف غير صحيح — مثال: 07701234567";
-  if (d.address.trim().length < 10) return "اكتب العنوان بتفصيل أكثر (الحي، الشارع، أقرب نقطة دالة).";
+  if (!/^07\d{9}$/.test(digits)) return { field: "phone", msg: "رقم الهاتف غير صحيح — مثال: 07701234567" };
+  if (d.address.trim().length < 10) return { field: "address", msg: "اكتب العنوان بتفصيل أكثر (الحي، الشارع، أقرب نقطة دالة)." };
   return null;
 }
 
@@ -35,10 +41,22 @@ const TIMES = ["الآن", "خلال ساعة", "خلال ساعتين", "أحد
 export function DeliveryForm({
   value,
   onChange,
+  invalid = null,
 }: {
   value: DeliveryDetails;
   onChange: (d: DeliveryDetails) => void;
+  /** الحقل الذي رفضه التحقّق — يُلوَّن بالأحمر ويُنقل إليه المؤشّر */
+  invalid?: DeliveryField | null;
 }) {
+  // ثلاثة مراجع منفصلة لا كائن واحد: قراءة مرجع من كائن أثناء الرسم يمنعها ESLint
+  const nameRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
+  const addressRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    if (invalid === "name") nameRef.current?.focus();
+    else if (invalid === "phone") phoneRef.current?.focus();
+    else if (invalid === "address") addressRef.current?.focus();
+  }, [invalid]);
   const [locating, setLocating] = useState(false);
   const [locMsg, setLocMsg] = useState<string | null>(null);
   const set = (patch: Partial<DeliveryDetails>) => onChange({ ...value, ...patch });
@@ -55,7 +73,7 @@ export function DeliveryForm({
         const { latitude: la, longitude: lo } = pos.coords;
         set({ geo: `https://maps.google.com/?q=${la.toFixed(6)},${lo.toFixed(6)}` });
         setLocating(false);
-        setLocMsg("✓ تم إرفاق موقعك");
+        setLocMsg("تم إرفاق موقعك");
       },
       () => {
         setLocating(false);
@@ -65,35 +83,41 @@ export function DeliveryForm({
     );
   }
 
-  const field = "w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none";
+  const base = "w-full rounded-lg border bg-[var(--panel)] px-3 py-2.5 text-sm outline-none";
+  const field = (name: DeliveryField) =>
+    `${base} ${invalid === name ? "border-2 border-destructive bg-destructive/5" : "border-[var(--line)]"}`;
 
   return (
     <div className="space-y-2">
       <label className="flex items-center gap-2">
-        <User className="size-4 shrink-0 text-[var(--accent)]" />
-        <input value={value.name} onChange={(e) => set({ name: e.target.value })} placeholder="الاسم" className={field} />
+        <User className={`size-4 shrink-0 ${invalid === "name" ? "text-destructive" : "text-[var(--accent)]"}`} />
+        <input ref={nameRef} value={value.name} onChange={(e) => set({ name: e.target.value })} placeholder="الاسم" className={field("name")} aria-invalid={invalid === "name"} />
       </label>
 
       <label className="flex items-center gap-2">
-        <Phone className="size-4 shrink-0 text-[var(--accent)]" />
+        <Phone className={`size-4 shrink-0 ${invalid === "phone" ? "text-destructive" : "text-[var(--accent)]"}`} />
         <input
+          ref={phoneRef}
           value={value.phone}
           onChange={(e) => set({ phone: e.target.value })}
           inputMode="tel"
           dir="ltr"
           placeholder="07701234567"
-          className={field}
+          className={field("phone")}
+          aria-invalid={invalid === "phone"}
         />
       </label>
 
       <label className="flex items-start gap-2">
-        <MapPin className="mt-3 size-4 shrink-0 text-[var(--accent)]" />
+        <MapPin className={`mt-3 size-4 shrink-0 ${invalid === "address" ? "text-destructive" : "text-[var(--accent)]"}`} />
         <textarea
+          ref={addressRef}
           value={value.address}
           onChange={(e) => set({ address: e.target.value })}
           rows={2}
           placeholder="العنوان: الحي، الشارع، أقرب نقطة دالة"
-          className={`${field} resize-none`}
+          className={`${field("address")} resize-none`}
+          aria-invalid={invalid === "address"}
         />
       </label>
 
@@ -108,7 +132,7 @@ export function DeliveryForm({
         }`}
       >
         <MapPin className="size-4" />
-        {locating ? "جارٍ تحديد الموقع…" : value.geo ? "تم إرفاق موقعك ✓" : "📍 أرسل موقعي (يسهّل الوصول)"}
+        {locating ? "جارٍ تحديد الموقع…" : value.geo ? "تم إرفاق موقعك" : "أرسل موقعي (يسهّل الوصول)"}
       </button>
       {locMsg && <p className="text-xs text-[var(--muted)]">{locMsg}</p>}
 

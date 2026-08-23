@@ -57,7 +57,7 @@ export function Receipt({ data }: { data: ReceiptData }) {
       {data.address && (
         // the driver reads this off the paper — give it room, not a footnote
         <div style={{ border: "1px solid #000", padding: "4px 6px", margin: "4px 0" }}>
-          <div style={{ fontWeight: 800, fontSize: "13px" }}>🛵 توصيل</div>
+          <div style={{ fontWeight: 800, fontSize: "13px" }}>توصيل</div>
           <div style={{ fontSize: "12px", lineHeight: 1.5 }}>{data.address}</div>
           {data.deliverAt && <div style={{ fontSize: "11px" }}>الوقت: {data.deliverAt}</div>}
           {data.geo && <div style={{ fontSize: "10px", wordBreak: "break-all" }}>{data.geo}</div>}

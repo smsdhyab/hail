@@ -39,7 +39,7 @@ export const CHANNEL_AR: Record<string, string> = {
   qr: "موبايل QR",
   kiosk: "لوحي",
   cashier: "كاشير",
-  delivery: "توصيل 🛵",
+  delivery: "توصيل",
 } as const;
 
 export const channelName = (c: string) => CHANNEL_AR[c] ?? c;

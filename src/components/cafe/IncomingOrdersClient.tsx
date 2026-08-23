@@ -166,7 +166,7 @@ export function IncomingOrdersClient() {
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-2xl font-extrabold text-primary">#{String(o.group_no).padStart(3, "0")}</span>
                   {o.address ? (
-                    <span className="rounded-full bg-accent px-3 py-1 text-sm font-bold text-accent-foreground">🛵 توصيل</span>
+                    <span className="rounded-full bg-accent px-3 py-1 text-sm font-bold text-accent-foreground">توصيل</span>
                   ) : o.table_no ? (
                     <span className="rounded-full bg-primary px-3 py-1 text-sm font-bold text-primary-foreground">
                       طاولة {o.table_no}{o.floor ? ` · طابق ${o.floor}` : ""}

@@ -98,8 +98,13 @@
   --font-sans: var(--font-tajawal), "Tajawal", ui-sans-serif, system-ui, sans-serif;
 }
 
-* {
-  border-color: var(--border);
+/* داخل @layer base وإلا هزم كل صنف لون حدود في المشروع: القاعدة غير المطبَّقة
+   في طبقة تتقدّم على طبقة utilities مهما كانت الأولوية — فكان border-red-500
+   وborder-destructive وغيرهما لا تلوّن شيئاً. */
+@layer base {
+  * {
+    border-color: var(--border);
+  }
 }
 
 body {
@@ -131,6 +136,17 @@ body {
 @keyframes hail-float {
   0%, 100% { transform: translateY(0); }
   50%      { transform: translateY(-6px); }
+}
+
+/* «عروض اليوم» — يلفت النظر بألوان الهوية وحدها (البرتقالي ↔ الأخضر) بلا ألوان
+   دخيلة. ويتوقّف لمن يطلب تقليل الحركة. */
+@keyframes hail-glow {
+  0%, 100% { background-color: var(--accent);  box-shadow: 0 0 0 0 color-mix(in oklch, var(--accent) 55%, transparent); }
+  50%      { background-color: var(--accent2); box-shadow: 0 0 0 7px transparent; }
+}
+.hail-offers-pulse { animation: hail-glow 2.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .hail-offers-pulse { animation: none; background-color: var(--accent); }
 }
 
 /* ── Thermal receipt printing (80mm) ───────────────────────────────────────

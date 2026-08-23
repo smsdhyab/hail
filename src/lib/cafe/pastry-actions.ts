@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient, createSupabaseServiceClient } from "@/lib/supabase/server";
 import { requireStaff } from "./auth";
 import { businessDay } from "./time";
+import { getPublicMenu } from "./menu-data";
 
 export type BatchState = "fresh" | "soon" | "expired";
 export type PastryBatch = {
@@ -197,4 +198,117 @@ export async function listTodayItemOffers(): Promise<ItemOffer[]> {
   const { data: items } = await svc.from("menu_items").select("id, name_ar, price").in("id", ids);
   const byId = new Map((items ?? []).map((i) => [i.id, i]));
   return data.map((d) => ({ item_id: d.item_id, name_ar: byId.get(d.item_id)?.name_ar ?? "؟", price: byId.get(d.item_id)?.price ?? 0, offer_price: d.offer_price }));
+}
+
+// ── صانع العروض ─────────────────────────────────────────────────────────────
+//
+// عرض = صنفان أو أكثر بسعر واحد. الأصناف تأتي من القسمين (مشروب + معجّنة) فلا
+// يقتصر المنتقي على المعجنات.
+//
+// السعر يُخزَّن هنا ويُقرأ في place_order من قاعدة البيانات لا من المتصفح —
+// وإلا استطاع أي زبون إرسال سعر عرض من عنده.
+
+export type ComboAdmin = {
+  id: string;
+  title_ar: string;
+  price: number;
+  is_active: boolean;
+  items: { id: string; name_ar: string; price: number }[];
+  /** مجموع أسعار القائمة — الفرق عنه هو ما يتحمّله المحل */
+  list_total: number;
+};
+
+export async function listCombosAdmin(): Promise<ComboAdmin[]> {
+  await requireStaff();
+  const svc = createSupabaseServiceClient();
+  const { data: combos } = await svc.from("combos").select("id, title_ar, price, is_active, sort").order("sort").order("created_at");
+  if (!combos?.length) return [];
+
+  const { data: links } = await svc.from("combo_items").select("combo_id, item_id").in("combo_id", combos.map((c) => c.id));
+  const ids = [...new Set((links ?? []).map((l) => l.item_id))];
+  const { data: items } = ids.length
+    ? await svc.from("menu_items").select("id, name_ar, price").in("id", ids)
+    : { data: [] as { id: string; name_ar: string; price: number }[] };
+  const byId = new Map((items ?? []).map((i) => [i.id, i]));
+
+  return combos.map((c) => {
+    const parts = (links ?? [])
+      .filter((l) => l.combo_id === c.id)
+      .map((l) => byId.get(l.item_id))
+      .filter((i): i is { id: string; name_ar: string; price: number } => Boolean(i));
+    return {
+      id: c.id,
+      title_ar: c.title_ar,
+      price: c.price,
+      is_active: c.is_active,
+      items: parts,
+      list_total: parts.reduce((s, i) => s + i.price, 0),
+    };
+  });
+}
+
+/** إنشاء عرض أو تعديله. صنفان على الأقل — عرض بصنف واحد هو تغيير سعر لا عرض. */
+export async function saveCombo(input: { id?: string; title_ar: string; price: number; item_ids: string[] }) {
+  await requireStaff();
+  const title = input.title_ar.trim();
+  const itemIds = [...new Set(input.item_ids.filter(Boolean))];
+  if (!title) return { ok: false as const, error: "اكتب عنوان العرض." };
+  if (itemIds.length < 2) return { ok: false as const, error: "اختر صنفين على الأقل." };
+  const price = Math.max(0, Math.round(input.price));
+
+  const svc = createSupabaseServiceClient();
+
+  // الأصناف تُتحقّق من القاعدة: عرض على صنف موقوف يظهر في المنيو ثم يفشل عند الدفع
+  const { data: found } = await svc.from("menu_items").select("id").in("id", itemIds).eq("is_active", true);
+  if ((found?.length ?? 0) !== itemIds.length) {
+    return { ok: false as const, error: "أحد الأصناف غير موجود أو موقوف." };
+  }
+
+  let comboId = input.id;
+  if (comboId) {
+    const { error } = await svc.from("combos").update({ title_ar: title, price }).eq("id", comboId);
+    if (error) return { ok: false as const, error: error.message };
+    await svc.from("combo_items").delete().eq("combo_id", comboId);
+  } else {
+    const { data, error } = await svc
+      .from("combos")
+      .insert({ slug: `combo-${crypto.randomUUID().slice(0, 8)}`, title_ar: title, price })
+      .select("id")
+      .single();
+    if (error || !data) return { ok: false as const, error: error?.message ?? "تعذّر الحفظ." };
+    comboId = data.id;
+  }
+
+  const { error: linkErr } = await svc.from("combo_items").insert(itemIds.map((item_id) => ({ combo_id: comboId!, item_id })));
+  if (linkErr) return { ok: false as const, error: linkErr.message };
+
+  revalidateMenus();
+  return { ok: true as const };
+}
+
+export async function toggleCombo(id: string, is_active: boolean) {
+  await requireStaff();
+  await createSupabaseServiceClient().from("combos").update({ is_active }).eq("id", id);
+  revalidateMenus();
+  return { ok: true as const };
+}
+
+export async function deleteCombo(id: string) {
+  await requireStaff();
+  await createSupabaseServiceClient().from("combos").delete().eq("id", id); // combo_items تُحذف تلقائياً
+  revalidateMenus();
+  return { ok: true as const };
+}
+
+/** كل الأصناف المفعّلة مجمّعة بالقسم — لمنتقي صانع العروض. */
+export async function listComboPickerItems(): Promise<{ category: string; items: { id: string; name_ar: string; price: number }[] }[]> {
+  await requireStaff();
+  const menu = await getPublicMenu();
+  return menu
+    .map((c) => ({ category: c.name_ar, items: c.items.map((i) => ({ id: i.id, name_ar: i.name_ar, price: i.price })) }))
+    .filter((c) => c.items.length > 0);
+}
+
+function revalidateMenus() {
+  for (const p of ["/pastries", "/menu", "/delivery", "/cashier"]) revalidatePath(p);
 }

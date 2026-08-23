@@ -134,6 +134,18 @@ export type Database = {
         Update: Partial<{ title: string; description: string | null; active: boolean; ends_on: string | null }>;
         Relationships: [];
       };
+      combos: {
+        Row: Timestamped & { slug: string; title_ar: string; price: number; is_active: boolean; sort: number };
+        Insert: { id?: string; slug: string; title_ar: string; price: number; is_active?: boolean; sort?: number; created_at?: string };
+        Update: Partial<{ slug: string; title_ar: string; price: number; is_active: boolean; sort: number }>;
+        Relationships: [];
+      };
+      combo_items: {
+        Row: { combo_id: string; item_id: string };
+        Insert: { combo_id: string; item_id: string };
+        Update: Partial<{ combo_id: string; item_id: string }>;
+        Relationships: [];
+      };
       cafe_tables: {
         Row: { name: string; kind: string; floor: number; active: boolean; pos_x: number; pos_y: number; sort: number; updated_at: string };
         Insert: { name: string; kind?: string; floor?: number; active?: boolean; pos_x?: number; pos_y?: number; sort?: number; updated_at?: string };
