@@ -97,6 +97,38 @@ export default async function SetupPage() {
         </ol>
       </section>
 
+      {/* ── أسماء الطابعات: يحتاجها توجيه الطباعة بين الطابقين ── */}
+      <section className="rounded-2xl border border-border bg-card p-4 text-sm leading-relaxed">
+        <h2 className="mb-2 font-extrabold text-primary">معرفة أسماء الطابعات</h2>
+        <p className="mb-3 text-muted-foreground">
+          لازمة عندما يكون في المحل طابعتان (واحدة للمعجنات وأخرى للكافيه) — بها يعرف النظام أيّهما يطبع ماذا.
+        </p>
+        <ol className="mb-3 space-y-1.5 text-muted-foreground">
+          <li>
+            <b className="text-foreground">١)</b> زر ابدأ ← اكتب{" "}
+            <code dir="ltr" className="rounded bg-foreground/10 px-1.5 py-0.5">powershell</code> ← اضغط Enter (بلا
+            صلاحيات مدير هذه المرة).
+          </li>
+          <li>
+            <b className="text-foreground">٢)</b> انسخ الأمر أدناه والصقه ← Enter.
+          </li>
+          <li>
+            <b className="text-foreground">٣)</b> صوّر الجدول الذي يظهر وأرسله.
+          </li>
+        </ol>
+        <CopyBox
+          title="أمر عرض الطابعات"
+          hint="ينسخ أسماء الطابعات وحالتها"
+          value="Get-Printer | Select-Object Name, PortName, Default | Format-Table -AutoSize"
+        />
+        <p className="mt-3 text-xs text-muted-foreground">
+          إن ظهر اسمان متطابقان (نفس الموديل)، أعد تسميتهما ليتميّزا: لوحة التحكم ← الأجهزة والطابعات ← كليك يمين على
+          الطابعة ← <b className="text-foreground">Printer properties</b> ← غيّر الاسم إلى{" "}
+          <code dir="ltr" className="rounded bg-foreground/10 px-1 text-[12px]">HAIL-Pastry</code> و
+          <code dir="ltr" className="rounded bg-foreground/10 px-1 text-[12px]">HAIL-Cafe</code>.
+        </p>
+      </section>
+
       {/* ── حالة الجهازين، إن رجعتم إليها ── */}
       <details className="rounded-2xl border border-border bg-card p-4 text-sm">
         <summary className="cursor-pointer font-extrabold text-primary">إن أردت جهازين منفصلين لاحقاً</summary>

@@ -6,6 +6,7 @@ import { Armchair, Settings2 } from "lucide-react";
 import { listTableStatus } from "@/lib/cafe/table-actions";
 import { SEATED_MINUTES, tableLabel, type CafeTable, type TableStatus } from "@/lib/cafe/tables";
 import { TableLayoutEditor } from "./TableLayoutEditor";
+import { floorLabel } from "@/lib/cafe/hail-menu";
 
 const stateColor: Record<string, string> = {
   pending: "border-destructive bg-destructive/10 text-destructive",
@@ -98,7 +99,7 @@ export function TablesClient() {
         // positioned floor map, one per storey
         <div key={floor} className="relative h-[64vh] min-h-[400px] w-full overflow-hidden rounded-2xl border-2 border-border bg-secondary/20 p-2">
           <span className="pointer-events-none absolute right-3 top-2 text-xs text-muted-foreground">
-            {floors.length > 1 ? `🏢 الطابق ${floor}` : "🚪 واجهة المحل"}
+            {floors.length > 1 ? floorLabel(floor) : "واجهة المحل"}
           </span>
           {activeLayout.filter((lt) => (lt.floor ?? 1) === floor).map((lt) => {
             const s = statusByName.get(lt.name);

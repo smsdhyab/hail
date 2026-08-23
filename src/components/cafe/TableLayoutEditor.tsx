@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { saveTables } from "@/lib/cafe/table-actions";
 import { tableLabel, type CafeTable } from "@/lib/cafe/tables";
+import { floorLabel } from "@/lib/cafe/hail-menu";
 
 const clamp = (n: number) => Math.max(4, Math.min(96, n));
 const TAP_SLOP = 6; // px of finger jitter still counts as a tap, not a drag
@@ -33,6 +34,9 @@ export function TableLayoutEditor({
   const [editFloor, setEditFloor] = useState(1);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  // الطاولة المختارة: الضغطة صارت تفتح لوحة تعديل بدل أن تفعّل/تعطّل مباشرة،
+  // لأن التسمية وتغيير النوع يحتاجان مكاناً
+  const [sel, setSel] = useState<string | null>(null);
 
   const areaRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ name: string; dx: number; dy: number; startX: number; startY: number; moved: boolean } | null>(null);
@@ -82,13 +86,34 @@ export function TableLayoutEditor({
   function onUp(name: string) {
     const d = drag.current;
     drag.current = null;
-    if (d && !d.moved) setTables((ts) => ts.map((t) => (t.name === name ? { ...t, active: !t.active } : t))); // tap toggles active
+    if (d && !d.moved) setSel((cur) => (cur === name ? null : name)); // tap selects → edit panel below
   }
+  const selected = tables.find((t) => t.name === sel) ?? null;
+
+  function patch(name: string, fields: Partial<CafeTable>) {
+    setTables((ts) => ts.map((t) => (t.name === name ? { ...t, ...fields } : t)));
+  }
+
+  /** الاسم هو مفتاح الطاولة في القاعدة وعلى الطلبات، فتكراره يجعل إحداهما
+   *  تدهس الأخرى عند الحفظ — يُتحقّق منه قبل الحفظ لا أثناء الكتابة. */
+  function rename(oldName: string, raw: string) {
+    const name = raw.slice(0, 24);
+    setSel(name);
+    setTables((ts) => ts.map((t) => (t.name === oldName ? { ...t, name } : t)));
+  }
+
   function onDragCancel() {
     drag.current = null; // interrupted drag (system gesture / lost capture) — drop stale state
   }
 
   async function save() {
+    // الاسم مفتاح الطاولة: اسمان متطابقان يجعلان إحداهما تدهس الأخرى عند الحفظ،
+    // واسم فارغ يجعل الطاولة غير قابلة للطلب. يُمنع الحفظ قبل أن يحدث ذلك.
+    const names = tables.map((t) => t.name.trim());
+    if (names.some((n) => !n)) return setMsg("لا يمكن ترك اسم طاولة فارغاً.");
+    const dup = names.find((n, i) => names.indexOf(n) !== i);
+    if (dup) return setMsg(`الاسم «${dup}» مكرّر — لكل طاولة اسم واحد.`);
+
     setBusy(true);
     setMsg(null);
     const res = await saveTables(tables);
@@ -123,7 +148,7 @@ export function TableLayoutEditor({
                 onClick={() => setEditFloor(f)}
                 className={`rounded-lg px-3 py-2 text-sm font-bold transition ${editFloor === f ? "bg-primary text-primary-foreground" : "bg-secondary hover:opacity-90"}`}
               >
-                الطابق {f}
+                {floorLabel(f)}
               </button>
             ))}
           </div>
@@ -131,9 +156,60 @@ export function TableLayoutEditor({
       </div>
 
       <p className="text-xs text-muted-foreground">
-        اسحب الطاولة لتضعها في مكانها كما في المحل. اضغط على الطاولة ضغطة واحدة لتفعيلها/تعطيلها (المعطّلة رمادية ولا تظهر للطلب).
-        {floorCount > 1 ? " بدّل الطابق من الأزرار أعلاه — رقم الطابق يظهر على وصل الطلب ليعرف العامل أين يوصّل." : ""}
+        اسحب الطاولة لتضعها في مكانها كما في المحل، واضغط عليها لتغيير اسمها أو نوعها أو تعطيلها.
+        {floorCount > 1 ? " وطابق الطاولة هو من يحدّد أي طابعة تطبع طلبها." : ""}
       </p>
+
+      {/* لوحة تعديل الطاولة المختارة */}
+      {selected && (
+        <div className="flex flex-wrap items-end gap-3 rounded-2xl border-2 border-primary/40 bg-primary/5 p-4">
+          <label className="space-y-1 text-sm">
+            <span className="text-muted-foreground">اسم الطاولة</span>
+            <input
+              value={selected.name}
+              onChange={(e) => rename(selected.name, e.target.value)}
+              placeholder="مثال: طاولة الشبّاك"
+              className="w-48 rounded-lg border border-input bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring"
+            />
+          </label>
+          <label className="space-y-1 text-sm">
+            <span className="text-muted-foreground">الموقع</span>
+            <select
+              value={selected.kind}
+              onChange={(e) => patch(selected.name, { kind: e.target.value as "indoor" | "outdoor" })}
+              className="rounded-lg border border-input bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="indoor">داخلي</option>
+              <option value="outdoor">خارجي</option>
+            </select>
+          </label>
+          {floorCount > 1 && (
+            <label className="space-y-1 text-sm">
+              <span className="text-muted-foreground">الطابق</span>
+              <select
+                value={selected.floor ?? 1}
+                onChange={(e) => patch(selected.name, { floor: Number(e.target.value) })}
+                className="rounded-lg border border-input bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring"
+              >
+                {Array.from({ length: floorCount }, (_, i) => i + 1).map((f) => (
+                  <option key={f} value={f}>
+                    {floorLabel(f)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <button
+            onClick={() => patch(selected.name, { active: !selected.active })}
+            className={`rounded-lg px-4 py-2 text-sm font-bold ${selected.active ? "bg-secondary" : "bg-destructive/10 text-destructive"}`}
+          >
+            {selected.active ? "مفعّلة — اضغط للتعطيل" : "معطّلة — اضغط للتفعيل"}
+          </button>
+          <button onClick={() => setSel(null)} className="rounded-lg border border-border px-4 py-2 text-sm font-semibold">
+            إغلاق
+          </button>
+        </div>
+      )}
 
       <div
         ref={areaRef}
@@ -141,7 +217,7 @@ export function TableLayoutEditor({
         className="relative h-[62vh] min-h-[380px] w-full touch-none overflow-hidden rounded-2xl border-2 border-dashed border-border bg-secondary/30"
       >
         <span className="pointer-events-none absolute right-3 top-2 text-xs text-muted-foreground">
-          {floorCount > 1 ? `🏢 الطابق ${editFloor}` : "🚪 واجهة المحل"}
+          {floorCount > 1 ? floorLabel(editFloor) : "واجهة المحل"}
         </span>
         {tables.filter((t) => (t.floor ?? 1) === editFloor).map((t) => (
           <button
@@ -152,6 +228,8 @@ export function TableLayoutEditor({
             onLostPointerCapture={onDragCancel}
             style={{ left: `${t.x}%`, top: `${t.y}%`, transform: "translate(-50%, -50%)" }}
             className={`absolute flex size-16 touch-none flex-col items-center justify-center rounded-xl border-2 text-center text-xs font-bold shadow transition ${
+              sel === t.name ? "ring-4 ring-primary/40 " : ""
+            }${
               t.active
                 ? t.kind === "outdoor"
                   ? "border-amber-500 bg-amber-500/15 text-amber-700 dark:text-amber-300"

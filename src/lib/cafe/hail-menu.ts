@@ -23,6 +23,22 @@ export const STATIONS: { slug: StationSlug; name_ar: string; short_ar: string; e
 export const stationName = (slug: StationSlug | null | undefined) =>
   STATIONS.find((s) => s.slug === slug)?.name_ar ?? "—";
 
+/**
+ * الطابق إلى القسم.
+ *
+ * الأرضي للمعجنات والعلوي للكافيه — وهذا ما يحدّد أين يُطبَع وصل الزبون حين
+ * يأتي الطلب من طاولة: لا جهاز وراءه يُسأل «أين أنت؟»، فالطاولة نفسها تقول الموقع.
+ */
+export const FLOOR_STATION: Record<number, StationSlug> = { 1: "pastry", 2: "cafe" };
+export const stationOfFloor = (floor: number | null | undefined): StationSlug =>
+  FLOOR_STATION[floor ?? 1] ?? "pastry";
+
+/** «الأرضي — المعجنات» · «العلوي — الكافيه» */
+export const floorLabel = (floor: number): string =>
+  floor === 1 ? "الأرضي — المعجنات" : floor === 2 ? "العلوي — الكافيه" : `الطابق ${floor}`;
+export const floorShort = (floor: number): string =>
+  floor === 1 ? "المعجنات" : floor === 2 ? "الكافيه" : `طابق ${floor}`;
+
 export type HailItem = {
   /** stable slug — also the id in demo/local mode */
   id: string;
