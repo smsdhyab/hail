@@ -215,40 +215,78 @@ const CAFE: HailCategory[] = [
     ],
   },
   {
-    // Retail bags of specialty beans. The design boards show every crop with a
-    // «00.000 IQD» placeholder — no real prices exist yet, so all are seeded
-    // INACTIVE. Price them in «إدارة المنتجات» and they appear on the menu.
-    slug: "crops",
-    name_ar: "المحاصيل المتوفرة",
+    // Retail bags of specialty beans, transcribed from the two design boards
+    // (design/xd/board-2-long.webp and board-1-long.webp).
+    //
+    // The split is BY BOARD, not by processing method: the infusion board also
+    // carries a washed lot (صواع) and three anaerobic-soak ones (روفيرا،
+    // ارسيلا، لابراديرا). Deriving the split from the process badge would put
+    // four crops on the wrong page.
+    //
+    // Every board price reads «00.000 IQD», so all are seeded INACTIVE at 0.
+    // Price them in «إدارة المنيو» and they appear on the menu.
+    //
+    // Several crops share a title — «موجيانا برازيلي» appears three times and
+    // «تروبيكال» three times — so each name carries its roaster. Two items with
+    // the same name_ar would also collide in scripts/import-menu-images.mjs.
+    slug: "crops-dried",
+    name_ar: "المحاصيل المجففة",
     station: "cafe",
     items: [
-      { id: "crop-sidamo-bombe", name_ar: "سيدامو بومبي اثيوبي", price: 0, active: false, description: "محمصة سويل — معالجة مجففة · توت اسود، مانجو، ياسمين" },
-      { id: "crop-el-salvador", name_ar: "مارتن — سلفادور", price: 0, active: false, description: "محمصة ممتد — معالجة مجففة · شوكولاته، بندق، جوز، كراميل، فراولة" },
-      { id: "crop-shalsheli", name_ar: "شلشلي", price: 0, active: false, description: "محمصة اكتوبر — معالجة مجففة · كرز، خوخ، ياسمين" },
-      { id: "crop-mogiana-coda", name_ar: "موجيانا برازيلي — كودا", price: 0, active: false, description: "محمصة كودا — معالجة مجففة · الجوز المحمص، حلاوة قصب السكر" },
-      { id: "crop-costa-rica", name_ar: "ريفنسيلا نافينتي — كوستريكي", price: 0, active: false, description: "محمصة دريب اون — معالجة مجففة · الفاكهة الحلوة، البابايا، الاناناس" },
-      { id: "crop-mogiana-breehant", name_ar: "موجيانا برازيلي — بريهانت", price: 0, active: false, description: "محمصة بريهانت — معالجة مجففة · فانيلا، كراميل، عسل، بندق" },
-      { id: "crop-yemen-indonesia", name_ar: "مزيج يمني واندنوسي", price: 0, active: false, description: "محمصة بيت التحميص · تيراميسو، شوكلاتة داكنة، كاكو" },
-      { id: "crop-mirinda", name_ar: "ميرندا", price: 0, active: false, description: "محمصة اويو فاخرة — معالجة انفيوجن · ميرندا، يوسفي، حلاوة، عطري" },
-      { id: "crop-tropical-oyo", name_ar: "تروبيكال", price: 0, active: false, description: "محمصة اويو فاخرة — معالجة انفيوجن · اناناس، حلاوة عسلية" },
-      { id: "crop-luka", name_ar: "مزيج لوكا", price: 0, active: false, description: "محمصة اويو فاخرة — معالجة انفيوز · عسل، حلاوة كراميل" },
-      { id: "crop-colombia-sawa", name_ar: "كولمبي — صواع", price: 0, active: false, description: "محمصة صواع — معالجة مغسولة · مشمش، توت اسود، زبيب احمر، كراميل" },
-      { id: "crop-colombia-olala", name_ar: "كولمبيا كوكنت — اولالا", price: 0, active: false, description: "محمصة اولالا — معالجة انفيوجن · كوكنت، جوز الهند" },
-      { id: "crop-brazil-vimto", name_ar: "برازيل فيمتو", price: 0, active: false, description: "محمصة دريب اون — معالجة انفيوجن · فيمتو" },
-      { id: "crop-kof-tropical", name_ar: "كوف تروبيكال", price: 0, active: false, description: "محمصة كوف — معالجة انفيوز · فواكه استوائية فاخرة" },
-      { id: "crop-marvina", name_ar: "مارفينا كوكنت", price: 0, active: false, description: "محمصة سويل مارفينا فاخرة — معالجة انفيوجن · كوكنت جوز الهند" },
-      { id: "crop-la-pradera", name_ar: "لابراديرا", price: 0, active: false, description: "محمصة سويل فاخرة — تنقيع لا هوائي · عسلية، حلاوة" },
-      { id: "crop-rovira", name_ar: "روفيرا", price: 0, active: false, description: "محمصة سويل فاخرة — تنقيع لا هوائي · توت اسود، عنب، نبيذ" },
-      { id: "crop-arsila", name_ar: "ارسيلا", price: 0, active: false, description: "محمصة سويل فاخرة — تنقيع لا هوائي · موز، حلاوة" },
-      { id: "crop-roaster-project", name_ar: "البيلا اثيوبيا — روستر", price: 0, active: false, description: "محمصة روستر — معالجة مجففة · توت ازرق، فراولة، خوخ، عطريه" },
-      { id: "crop-de-frutos", name_ar: "دي فروتس كولمبي كولينا", price: 0, active: false, description: "محمصة نيردز — معالجة مجففة · فراولة، حلاوة، فواكه مجففة" },
-      { id: "crop-gomez", name_ar: "قوميز — كولمبي", price: 0, active: false, description: "محمصة اولالا — معالجة مجففة · تفاح، فاكهية، حلاوة واضحة" },
-      { id: "crop-exit-13", name_ar: "مخرج 13 — كواتيمالا واثيوبي واندنوسي", price: 0, active: false, description: "محمصة سلالات — معالجة مجففة · كاكو فاخر، عبق الحطب، العود" },
+      { id: "crop-sidamo-bombe", name_ar: "سيدامو بومبي اثيوبي", price: 0, active: false, description: "محمصة سويل · معالجة مجففة · توت اسود، مانجو، ياسمين" },
+      { id: "crop-el-salvador", name_ar: "مارتن — سلفادور", price: 0, active: false, description: "محمصة ممتد · معالجة مجففة · شوكلاته، بندق، جوز، كراميل، فراولة" },
+      { id: "crop-shalsheli", name_ar: "شلشلي", price: 0, active: false, description: "محمصة اكتوبر · معالجة مجففة · كرز، خوخ، ياسمين" },
+      { id: "crop-mogiana-coda", name_ar: "موجيانا برازيلي — كودا", price: 0, active: false, description: "محمصة كودا · معالجة مجففة · الجوز المحمص، حلاوة قصب السكر" },
+      { id: "crop-costa-rica", name_ar: "ريفنسيلا نافينتي — كوستريكي", price: 0, active: false, description: "محمصة دريب اون · معالجة مجففة · الفاكهة الحلوة، البابايا، الفواكه الاستوائية، الاناناس" },
+      { id: "crop-mogiana-breehant", name_ar: "موجيانا برازيلي — بريهانت", price: 0, active: false, description: "محمصة بريهانت · معالجة مجففة · فانيلا، كراميل، عسل، بندق" },
+      { id: "crop-roaster-project", name_ar: "البيلا اثيوبيا — روستر", price: 0, active: false, description: "محمصة روستر · معالجة مجففة · توت ازرق، فراولة، خوخ، عطريه" },
+      { id: "crop-de-frutos", name_ar: "دي فروتس كولمبي كولينا", price: 0, active: false, description: "محمصة نيردز · معالجة مجففة · فراولة، حلاوة، فواكه مجففة" },
+      { id: "crop-mogiana-nerds", name_ar: "موجيانا برازيلي — نيردز", price: 0, active: false, description: "محمصة نيردز · معالجة مجففة · مكسرات، كاكو، كراميل" },
+      { id: "crop-gomez", name_ar: "قوميز — كولمبي", price: 0, active: false, description: "محمصة اولالا · معالجة مجففة · تفاح، فاكهية، حلاوة واضحة" },
+      { id: "crop-exit-13", name_ar: "مخرج 13 — كواتيمالا واثيوبي واندنوسي", price: 0, active: false, description: "محمصة سلالات · معالجة مجففة · كاكو فاخر، عبق الحطب، العود" },
+    ],
+  },
+  {
+    slug: "crops-infusion",
+    name_ar: "محاصيل انفيوجن",
+    station: "cafe",
+    items: [
+      { id: "crop-colombia-olala", name_ar: "كولمبيا كوكنت — اولالا", price: 0, active: false, description: "محمصة اولالا · معالجة انفيوجن · كوكنت، جوز الهند" },
+      { id: "crop-brazil-vimto", name_ar: "برازيل فيمتو", price: 0, active: false, description: "محمصة دريب اون · معالجة انفيوجن · فيمتو" },
+      { id: "crop-kof-tropical", name_ar: "تروبيكال — كوف", price: 0, active: false, description: "محمصة كوف · معالجة انفيوز · فواكه استوائية فاخرة" },
+      { id: "crop-yemen-indonesia", name_ar: "مزيج يمني واندنوسي", price: 0, active: false, description: "محمصة بيت التحميص · معالجات عديدة · تيراميسو، شوكلاتة داكنة، كاكو" },
+      { id: "crop-mirinda", name_ar: "ميرندا", price: 0, active: false, description: "محمصة اويو فاخرة · معالجة انفيوجن · ميرندا، يوسفي، حلاوة، عطري" },
+      { id: "crop-tropical-oyo", name_ar: "تروبيكال — اويو", price: 0, active: false, description: "محمصة اويو فاخرة · معالجة انفيوجن · اناناس، حلاوة عسلية" },
+      { id: "crop-luka", name_ar: "مزيج لوكا", price: 0, active: false, description: "محمصة اويو فاخرة · معالجة انفيوز · عسل، حلاوة كراميل" },
+      { id: "crop-colombia-sawa", name_ar: "كولمبي — صواع", price: 0, active: false, description: "محمصة صواع · معالجة مغسولة · مشمش، توت اسود، زبيب احمر، كراميل" },
+      { id: "crop-marvina", name_ar: "مارفينا كوكنت", price: 0, active: false, description: "محمصة سويل مارفينا فاخرة · معالجة انفيوجن · كوكنت جوز الهند" },
+      { id: "crop-la-pradera", name_ar: "تروبيكال — لابراديرا", price: 0, active: false, description: "محمصة سويل لابراديرا فاخرة · معالجة تنقيع لا هوائي · عسلية، حلاوة" },
+      { id: "crop-rovira", name_ar: "روفيرا", price: 0, active: false, description: "محمصة سويل فاخرة · معالجة تنقيع لا هوائي · توت اسود، عنب، نبيذ" },
+      { id: "crop-arsila", name_ar: "ارسيلا", price: 0, active: false, description: "محمصة سويل فاخرة · معالجة تنقيع لا هوائي · موز، حلاوة" },
     ],
   },
 ];
 
 export const HAIL_MENU: HailCategory[] = [...PASTRY, ...CAFE];
+
+/**
+ * «عروض اليوم» — the drink + pastry pairings from the design's «محتار شنو
+ * تطلب؟ خلينا نساعدك» screen.
+ *
+ * A combo spans BOTH registers, so ordering one still splits normally and each
+ * station books its own list price. The gap between the combo price and the sum
+ * of those list prices is recorded once, centrally, as orders.promo_adjust —
+ * the shop carries the marketing decision, not the two sets of books.
+ *
+ * The price is read from the database at order time (combo_public), never from
+ * the client, exactly like item prices.
+ */
+export const HAIL_COMBOS: { slug: string; title_ar: string; price: number; items: string[] }[] = [
+  { slug: "combo-spanish-cake", title_ar: "سبانيش لاتيه ايس + كيك", price: 6000, items: ["ice-spanish-latte", "cake-slice"] },
+  { slug: "combo-icechoc-donut", title_ar: "ايس تشوكليت + دونات", price: 7000, items: ["ice-chocolate", "donut"] },
+  { slug: "combo-mojito-cinnamon", title_ar: "موهيتو بلو باشن + سينابون رول", price: 8000, items: ["mojito-blue-passion", "cinnamon-roll"] },
+  { slug: "combo-americano-cookies", title_ar: "ايس امريكانو + كوكيز", price: 9000, items: ["ice-americano", "choc-chunk-cookie"] },
+];
 
 /** item id → its station, resolved through the owning category. */
 export const ITEM_STATION: Record<string, StationSlug> = Object.fromEntries(

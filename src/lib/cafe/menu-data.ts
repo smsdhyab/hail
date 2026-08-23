@@ -69,3 +69,27 @@ export async function getPublicMenu(): Promise<MenuCategoryView[]> {
   if (result.length > 0) _menuCache = { at: Date.now(), data: result };
   return result;
 }
+
+export type ComboView = {
+  slug: string;
+  title_ar: string;
+  price: number;
+  /** Σ of the parts' list prices — shown struck through when the combo is cheaper */
+  list_total: number;
+  item_ids: string[];
+  item_names: string[];
+};
+
+/**
+ * «عروض اليوم» — the drink + pastry pairings.
+ *
+ * Read from the `combo_public` view, which already filters to active combos
+ * whose items are all still active: an offer whose pastry was disabled would
+ * otherwise sit on the menu and fail at checkout.
+ */
+export async function getActiveCombos(): Promise<ComboView[]> {
+  if (isDemoServer()) return [];
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.from("combo_public").select("*").order("sort");
+  return (data ?? []) as ComboView[];
+}

@@ -1,4 +1,4 @@
-import { getPublicMenu } from "@/lib/cafe/menu-data";
+import { getActiveCombos, getPublicMenu } from "@/lib/cafe/menu-data";
 import { getActiveItemOffers } from "@/lib/cafe/pastry-actions";
 import { TabletMenuClient } from "@/components/cafe/TabletMenuClient";
 
@@ -12,6 +12,10 @@ export default async function MenuPage({
   searchParams: Promise<{ t?: string }>;
 }) {
   const sp = await searchParams;
-  const [menu, offers] = await Promise.all([getPublicMenu(), getActiveItemOffers().catch(() => ({}))]);
-  return <TabletMenuClient menu={menu} table={sp.t ?? null} channel="qr" offers={offers} />;
+  const [menu, offers, combos] = await Promise.all([
+    getPublicMenu(),
+    getActiveItemOffers().catch(() => ({})),
+    getActiveCombos().catch(() => []),
+  ]);
+  return <TabletMenuClient menu={menu} combos={combos} table={sp.t ?? null} channel="qr" offers={offers} />;
 }

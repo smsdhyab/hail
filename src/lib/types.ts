@@ -168,6 +168,8 @@ export type Database = {
         Row: Timestamped & {
           business_day: string; order_seq: number; channel: OrderChannel; status: OrderStatus;
           station_id: string; group_no: number; collected_by_station_id: string | null;
+          /** combo price − Σ list prices; recorded once per ticket, on the shop */
+          promo_adjust: number;
           subtotal: number; cost_total: number; discount: number; extra: number; extra_note: string | null;
           table_no: string | null; floor: number | null; note: string | null;
           customer_id: string | null; cashier_id: string | null; paid_at: string | null;
@@ -175,6 +177,7 @@ export type Database = {
         Insert: {
           id?: string; business_day?: string; order_seq: number; channel: OrderChannel; status?: OrderStatus;
           station_id: string; group_no: number; collected_by_station_id?: string | null;
+          promo_adjust?: number;
           subtotal?: number; cost_total?: number; discount?: number; extra?: number; extra_note?: string | null;
           table_no?: string | null; floor?: number | null; note?: string | null;
           customer_id?: string | null; cashier_id?: string | null; paid_at?: string | null; created_at?: string;
@@ -234,6 +237,13 @@ export type Database = {
         Row: { item_id: string; offer_price: number };
         Relationships: [];
       };
+      combo_public: {
+        Row: {
+          id: string; slug: string; title_ar: string; price: number; sort: number;
+          item_ids: string[]; item_names: string[]; list_total: number;
+        };
+        Relationships: [];
+      };
       debtor_balances: {
         Row: { customer_name: string; phone: string | null; total_debt: number; total_paid: number; balance: number; last_activity: string };
         Relationships: [];
@@ -242,7 +252,10 @@ export type Database = {
     Functions: {
       /** Splits the lines by station → one order row per station, all sharing group_no. */
       place_order: {
-        Args: { p_channel: OrderChannel; p_lines: Json; p_customer?: string | null; p_table?: string | null; p_note?: string | null };
+        Args: {
+          p_channel: OrderChannel; p_lines: Json; p_customer?: string | null;
+          p_table?: string | null; p_note?: string | null; p_combos?: Json;
+        };
         Returns: { order_id: string; order_seq: number; group_no: number; station_slug: StationSlug }[];
       };
       mark_order_paid: {
@@ -270,7 +283,10 @@ export type Database = {
       guest_estimate: { Args: { p_from: string; p_to: string }; Returns: number };
       range_summary: {
         Args: { p_from: string; p_to: string; p_station?: string | null };
-        Returns: { day: string; sales: number; orders_count: number; profit: number; expenses: number; net: number }[];
+        Returns: {
+          day: string; sales: number; orders_count: number; profit: number;
+          expenses: number; net: number; promo: number; collected: number;
+        }[];
       };
     };
     Enums: {

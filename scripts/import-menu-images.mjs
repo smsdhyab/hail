@@ -72,10 +72,19 @@ async function publish(item, src) {
   const url = `${URL_}/storage/v1/object/public/menu/${base}.webp?v=${Date.now()}`;
   const patch = await fetch(`${URL_}/rest/v1/menu_items?name_ar=eq.${encodeURIComponent(item.name_ar)}`, {
     method: "PATCH",
-    headers: { ...H, "Content-Type": "application/json", Prefer: "return=minimal" },
+    headers: { ...H, "Content-Type": "application/json", Prefer: "return=representation" },
     body: JSON.stringify({ image_url: url }),
   });
   if (!patch.ok) throw new Error(`link ${patch.status}: ${(await patch.text()).slice(0, 120)}`);
+
+  // The item is matched by name, so verify EXACTLY one row moved. Zero means the
+  // name drifted (renamed in «إدارة المنيو») and the picture went nowhere; more
+  // than one means two items share a name and both just got the same photo.
+  // Either way a silent ✓ would be a lie.
+  const rows = await patch.json();
+  if (!Array.isArray(rows) || rows.length !== 1) {
+    throw new Error(`«${item.name_ar}» طابق ${Array.isArray(rows) ? rows.length : "?"} صنفاً في القاعدة — المتوقع صنف واحد`);
+  }
 }
 
 // ── single item: fix one photo without touching its folder ────────────────

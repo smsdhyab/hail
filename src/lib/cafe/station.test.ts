@@ -26,6 +26,16 @@ describe("splitByStation", () => {
     const ids = HAIL_MENU.flatMap((c) => c.items.map((i) => i.id));
     expect(new Set(ids).size).toBe(ids.length);
   });
+
+  it("has no duplicate item NAMES either", () => {
+    // scripts/import-menu-images.mjs links a photo to its item by name_ar —
+    // two items sharing a name would both be given the same picture. Three
+    // crops are titled «موجيانا برازيلي» on the design board, so each name
+    // carries its roaster.
+    const names = HAIL_MENU.flatMap((c) => c.items.map((i) => i.name_ar));
+    const dupes = names.filter((n, i) => names.indexOf(n) !== i);
+    expect(dupes).toEqual([]);
+  });
 });
 
 describe("prorate", () => {

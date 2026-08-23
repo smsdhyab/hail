@@ -4,7 +4,8 @@ import { useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import { Check, LogIn, Minus, Plus, ShoppingCart, X } from "lucide-react";
-import type { MenuCategoryView, MenuItemView } from "@/lib/cafe/menu-data";
+import type { ComboView, MenuCategoryView, MenuItemView } from "@/lib/cafe/menu-data";
+import { CombosStrip } from "./CombosStrip";
 import { formatIqdLabel } from "@/lib/cafe/money";
 import { submitOrder, type OrderLineInput, type OrderSplitPart } from "@/lib/cafe/order-actions";
 import { useCart } from "./use-cart";
@@ -59,11 +60,13 @@ const DROPS = [
 
 export function TabletMenuClient({
   menu,
+  combos = [],
   table = null,
   channel = "qr",
   offers = {},
 }: {
   menu: MenuCategoryView[];
+  combos?: ComboView[];
   table?: string | null;
   channel?: "qr" | "kiosk";
   /** item_id → today's offer price (0 = مجاناً) set by management */
@@ -76,6 +79,8 @@ export function TabletMenuClient({
   const [busy, setBusy] = useState(false);
   const [phone, setPhone] = useState("");
   const [note, setNote] = useState("");
+  // combos taken this visit — sent with the order so the server can price them
+  const [pickedCombos, setPickedCombos] = useState<string[]>([]);
   const [confirmed, setConfirmed] = useState<string | null>(null);
   // when an order spans both registers, tell the customer who is preparing what
   const [confirmedParts, setConfirmedParts] = useState<OrderSplitPart[]>([]);
@@ -116,6 +121,15 @@ export function TabletMenuClient({
       return n;
     });
   }
+  function pickCombo(combo: ComboView) {
+    const byId = new Map(menu.flatMap((c) => c.items).map((i) => [i.id, i]));
+    for (const id of combo.item_ids) {
+      const it = byId.get(id);
+      if (it) add(it, null, priceOf(it));
+    }
+    setPickedCombos((c) => [...c, combo.slug]);
+  }
+
   function onPlus(it: MenuItemView) {
     // size choice OR a drink we can pair a pastry with → open the modal
     if (it.variants.length > 0 || crossSell) {
@@ -126,6 +140,18 @@ export function TabletMenuClient({
       add(it, null, priceOf(it));
     }
   }
+  // A combo only still applies while ALL of its items are in the cart — remove
+  // the cake and you are no longer buying the offer, so its price must not be
+  // charged. Derived rather than stored, so it can never go stale.
+  const inCart = new Set(lines.map((l) => l.itemId));
+  const liveCombos = combos.filter(
+    (c) => pickedCombos.includes(c.slug) && c.item_ids.every((id) => inCart.has(id)),
+  );
+  // the gap between the offers' prices and their parts' list prices; the cart
+  // must show what the customer will actually be asked to pay
+  const comboAdjust = liveCombos.reduce((sum, c) => sum + (c.price - c.list_total), 0);
+  const dueTotal = Math.max(0, total + comboAdjust);
+
   const modalPrice = modalItem ? (modalItem.variants.find((v) => v.id === modalVariant)?.price ?? priceOf(modalItem)) : 0;
   const crossTotal = [...crossSel].reduce((s, id) => {
     const p = pastries.find((x) => x.id === id);
@@ -138,10 +164,19 @@ export function TabletMenuClient({
     setBusy(true);
     setErr(null);
     const payload: OrderLineInput[] = lines.map((l) => ({ item_id: l.itemId, variant_id: l.variantId, flavor: l.flavor, qty: l.qty }));
-    const res = await submitOrder({ channel, table: table ?? null, lines: payload, name: null, phone: phone.trim() || null, note: note.trim() || null });
+    const res = await submitOrder({
+      channel,
+      table: table ?? null,
+      lines: payload,
+      name: null,
+      phone: phone.trim() || null,
+      note: note.trim() || null,
+      combos: liveCombos.map((c) => c.slug),
+    });
     setBusy(false);
     if (!res.ok) return setErr(res.error);
     dispatch({ type: "clear" });
+    setPickedCombos([]);
     setNote("");
     setPhone("");
     setCartOpen(false);
@@ -178,6 +213,7 @@ export function TabletMenuClient({
       <div className="flex min-h-0 flex-1 flex-row-reverse">
         {/* product grid — LEFT */}
         <main ref={mainRef} className="min-w-0 flex-1 overflow-y-auto p-4 pb-24">
+          <CombosStrip combos={combos} menu={menu} onPick={pickCombo} />
           <h2 className="mb-3 px-1 text-xl font-extrabold text-[var(--accent)]">{cat?.name_ar}</h2>
           <div className="grid grid-cols-2 gap-3 xl:grid-cols-3">
             {(cat?.items ?? []).map((it) => {
@@ -246,7 +282,7 @@ export function TabletMenuClient({
       {count > 0 && !cartOpen && !confirmed && !modalItem && (
         <button onClick={() => setCartOpen(true)} className="fixed inset-x-0 bottom-0 z-30 mx-auto flex max-w-5xl items-center justify-between gap-3 bg-[var(--accent2)] px-5 py-4 font-extrabold text-[#22301a] shadow-lg">
           <span className="flex items-center gap-2"><ShoppingCart className="size-5" /> عرض السلة ({count})</span>
-          <span className="tabular-nums">{formatIqdLabel(total)}</span>
+          <span className="tabular-nums">{formatIqdLabel(dueTotal)}</span>
         </button>
       )}
 
@@ -366,9 +402,24 @@ export function TabletMenuClient({
               <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="ملاحظة (سكر قليل، بدون ثلج…)" className="w-full rounded-lg border border-[var(--line)] bg-[var(--panel)] px-3 py-2.5 text-sm outline-none" />
             </div>
             {err && <p className="mt-2 text-sm text-red-400">{err}</p>}
+            {liveCombos.length > 0 && (
+              // spell the offer out — a total that differs from the sum of the
+              // lines above it looks like a bug unless the gap is named
+              <div className="mt-3 space-y-1 border-t border-[var(--line)] pt-3 text-sm">
+                {liveCombos.map((c) => (
+                  <div key={c.slug} className="flex items-center justify-between gap-2 text-[var(--accent2)]">
+                    <span className="line-clamp-1">🎁 {c.title_ar}</span>
+                    <span className="shrink-0 tabular-nums">
+                      {c.price >= c.list_total ? "+" : ""}
+                      {formatIqdLabel(c.price - c.list_total)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="mt-3 flex items-center justify-between border-t border-[var(--line)] pt-3">
               <span className="text-[var(--muted)]">الإجمالي</span>
-              <span className="text-xl font-extrabold tabular-nums text-[var(--accent)]">{formatIqdLabel(total)}</span>
+              <span className="text-xl font-extrabold tabular-nums text-[var(--accent)]">{formatIqdLabel(dueTotal)}</span>
             </div>
             <button onClick={checkout} disabled={busy} className="mt-3 w-full rounded-2xl bg-[var(--accent)] py-4 text-lg font-extrabold text-[var(--activeink)] transition active:scale-[0.99] disabled:opacity-60">
               {busy ? "جارٍ الإرسال…" : "إتمام الطلب"}

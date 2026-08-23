@@ -23,6 +23,8 @@ export type SubmitOrderInput = {
   phone?: string | null;
   /** free-text order note («سكر قليل، بدون سكر…») */
   note?: string | null;
+  /** «عروض اليوم» slugs taken with this order — priced server-side, never here */
+  combos?: string[];
 };
 
 /** One customer order can land on both registers — the confirmation tells them
@@ -102,6 +104,7 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
     p_customer: customerId,
     p_table: input.table?.trim() || null,
     p_note: input.note?.trim() || null,
+    p_combos: (input.combos ?? []) as unknown as Json,
   });
   if (error || !data?.[0]) return { ok: false, error: "تعذّر إرسال الطلب، حاول مجدداً." };
   // alert subscribed staff devices even when the app is closed (never throws)

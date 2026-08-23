@@ -83,7 +83,7 @@ export async function listPendingOrders(): Promise<PendingOrder[]> {
 
   let q = supabase
     .from("orders")
-    .select("id, order_seq, group_no, station_id, channel, subtotal, table_no, floor, note, created_at")
+    .select("id, order_seq, group_no, station_id, channel, subtotal, promo_adjust, table_no, floor, note, created_at")
     .eq("status", "pending")
     .order("created_at", { ascending: true });
   const scopeId = scope ? idOf.get(scope) : undefined;
@@ -105,7 +105,10 @@ export async function listPendingOrders(): Promise<PendingOrder[]> {
   }
   // group totals so the cashier collects the FULL ticket, not just their half
   const totalByGroup = new Map<number, number>();
-  for (const o of orders) totalByGroup.set(o.group_no, (totalByGroup.get(o.group_no) ?? 0) + o.subtotal);
+  for (const o of orders) {
+    // combo tickets are worth their combo price, not the sum of list prices
+    totalByGroup.set(o.group_no, (totalByGroup.get(o.group_no) ?? 0) + o.subtotal + (o.promo_adjust ?? 0));
+  }
 
   return orders.map((o) => {
     const slug = slugOf.get(o.station_id)!;
@@ -224,11 +227,19 @@ async function payGroup(
   opts: { discount: number; extra: number; extraNote: string | null; customerId: string | null },
 ): Promise<CheckoutResult> {
   const supabase = await createSupabaseServerClient();
-  const { data: rows } = await supabase.from("orders").select("subtotal, customer_id").eq("group_no", groupNo).eq("status", "pending");
+  const { data: rows } = await supabase
+    .from("orders")
+    .select("subtotal, promo_adjust, customer_id")
+    .eq("group_no", groupNo)
+    .eq("status", "pending");
   const gross = (rows ?? []).reduce((s, r) => s + r.subtotal, 0);
-  const disc = Math.min(Math.max(0, Math.round(opts.discount)), gross);
+  // A combo sets the ticket price; each station still books its own list price
+  // and the gap lives here. It is NOT prorated across the stations — the shop
+  // carries the offer — but the customer must be charged it.
+  const promo = (rows ?? []).reduce((s, r) => s + (r.promo_adjust ?? 0), 0);
+  const disc = Math.min(Math.max(0, Math.round(opts.discount)), gross + promo);
   const ext = Math.max(0, Math.round(opts.extra));
-  const net = gross - disc + ext;
+  const net = gross + promo - disc + ext;
 
   const cfg = loyaltyConfig();
   const beneficiary = opts.customerId ?? rows?.find((r) => r.customer_id)?.customer_id ?? null;

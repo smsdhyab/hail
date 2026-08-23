@@ -145,30 +145,35 @@ begin
   insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'سموذي توت', null, 5000, '{}'::text[], 4, true);
   insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'سموذي باشن فروت', null, 5000, '{}'::text[], 5, true);
 
-  -- المحاصيل المتوفرة → cafe
+  -- المحاصيل المجففة → cafe
   select id into v_station from public.stations where slug = 'cafe';
-  insert into public.categories(name_ar, sort, station_id) values ('المحاصيل المتوفرة', 13, v_station) returning id into v_cat;
-  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'سيدامو بومبي اثيوبي', 'محمصة سويل — معالجة مجففة · توت اسود، مانجو، ياسمين', 0, '{}'::text[], 1, false);
-  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'مارتن — سلفادور', 'محمصة ممتد — معالجة مجففة · شوكولاته، بندق، جوز، كراميل، فراولة', 0, '{}'::text[], 2, false);
-  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'شلشلي', 'محمصة اكتوبر — معالجة مجففة · كرز، خوخ، ياسمين', 0, '{}'::text[], 3, false);
-  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'موجيانا برازيلي — كودا', 'محمصة كودا — معالجة مجففة · الجوز المحمص، حلاوة قصب السكر', 0, '{}'::text[], 4, false);
-  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'ريفنسيلا نافينتي — كوستريكي', 'محمصة دريب اون — معالجة مجففة · الفاكهة الحلوة، البابايا، الاناناس', 0, '{}'::text[], 5, false);
-  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'موجيانا برازيلي — بريهانت', 'محمصة بريهانت — معالجة مجففة · فانيلا، كراميل، عسل، بندق', 0, '{}'::text[], 6, false);
-  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'مزيج يمني واندنوسي', 'محمصة بيت التحميص · تيراميسو، شوكلاتة داكنة، كاكو', 0, '{}'::text[], 7, false);
-  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'ميرندا', 'محمصة اويو فاخرة — معالجة انفيوجن · ميرندا، يوسفي، حلاوة، عطري', 0, '{}'::text[], 8, false);
-  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'تروبيكال', 'محمصة اويو فاخرة — معالجة انفيوجن · اناناس، حلاوة عسلية', 0, '{}'::text[], 9, false);
-  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'مزيج لوكا', 'محمصة اويو فاخرة — معالجة انفيوز · عسل، حلاوة كراميل', 0, '{}'::text[], 10, false);
-  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'كولمبي — صواع', 'محمصة صواع — معالجة مغسولة · مشمش، توت اسود، زبيب احمر، كراميل', 0, '{}'::text[], 11, false);
-  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'كولمبيا كوكنت — اولالا', 'محمصة اولالا — معالجة انفيوجن · كوكنت، جوز الهند', 0, '{}'::text[], 12, false);
-  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'برازيل فيمتو', 'محمصة دريب اون — معالجة انفيوجن · فيمتو', 0, '{}'::text[], 13, false);
-  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'كوف تروبيكال', 'محمصة كوف — معالجة انفيوز · فواكه استوائية فاخرة', 0, '{}'::text[], 14, false);
-  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'مارفينا كوكنت', 'محمصة سويل مارفينا فاخرة — معالجة انفيوجن · كوكنت جوز الهند', 0, '{}'::text[], 15, false);
-  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'لابراديرا', 'محمصة سويل فاخرة — تنقيع لا هوائي · عسلية، حلاوة', 0, '{}'::text[], 16, false);
-  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'روفيرا', 'محمصة سويل فاخرة — تنقيع لا هوائي · توت اسود، عنب، نبيذ', 0, '{}'::text[], 17, false);
-  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'ارسيلا', 'محمصة سويل فاخرة — تنقيع لا هوائي · موز، حلاوة', 0, '{}'::text[], 18, false);
-  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'البيلا اثيوبيا — روستر', 'محمصة روستر — معالجة مجففة · توت ازرق، فراولة، خوخ، عطريه', 0, '{}'::text[], 19, false);
-  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'دي فروتس كولمبي كولينا', 'محمصة نيردز — معالجة مجففة · فراولة، حلاوة، فواكه مجففة', 0, '{}'::text[], 20, false);
-  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'قوميز — كولمبي', 'محمصة اولالا — معالجة مجففة · تفاح، فاكهية، حلاوة واضحة', 0, '{}'::text[], 21, false);
-  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'مخرج 13 — كواتيمالا واثيوبي واندنوسي', 'محمصة سلالات — معالجة مجففة · كاكو فاخر، عبق الحطب، العود', 0, '{}'::text[], 22, false);
+  insert into public.categories(name_ar, sort, station_id) values ('المحاصيل المجففة', 13, v_station) returning id into v_cat;
+  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'سيدامو بومبي اثيوبي', 'محمصة سويل · معالجة مجففة · توت اسود، مانجو، ياسمين', 0, '{}'::text[], 1, false);
+  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'مارتن — سلفادور', 'محمصة ممتد · معالجة مجففة · شوكلاته، بندق، جوز، كراميل، فراولة', 0, '{}'::text[], 2, false);
+  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'شلشلي', 'محمصة اكتوبر · معالجة مجففة · كرز، خوخ، ياسمين', 0, '{}'::text[], 3, false);
+  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'موجيانا برازيلي — كودا', 'محمصة كودا · معالجة مجففة · الجوز المحمص، حلاوة قصب السكر', 0, '{}'::text[], 4, false);
+  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'ريفنسيلا نافينتي — كوستريكي', 'محمصة دريب اون · معالجة مجففة · الفاكهة الحلوة، البابايا، الفواكه الاستوائية، الاناناس', 0, '{}'::text[], 5, false);
+  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'موجيانا برازيلي — بريهانت', 'محمصة بريهانت · معالجة مجففة · فانيلا، كراميل، عسل، بندق', 0, '{}'::text[], 6, false);
+  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'البيلا اثيوبيا — روستر', 'محمصة روستر · معالجة مجففة · توت ازرق، فراولة، خوخ، عطريه', 0, '{}'::text[], 7, false);
+  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'دي فروتس كولمبي كولينا', 'محمصة نيردز · معالجة مجففة · فراولة، حلاوة، فواكه مجففة', 0, '{}'::text[], 8, false);
+  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'موجيانا برازيلي — نيردز', 'محمصة نيردز · معالجة مجففة · مكسرات، كاكو، كراميل', 0, '{}'::text[], 9, false);
+  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'قوميز — كولمبي', 'محمصة اولالا · معالجة مجففة · تفاح، فاكهية، حلاوة واضحة', 0, '{}'::text[], 10, false);
+  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'مخرج 13 — كواتيمالا واثيوبي واندنوسي', 'محمصة سلالات · معالجة مجففة · كاكو فاخر، عبق الحطب، العود', 0, '{}'::text[], 11, false);
+
+  -- محاصيل انفيوجن → cafe
+  select id into v_station from public.stations where slug = 'cafe';
+  insert into public.categories(name_ar, sort, station_id) values ('محاصيل انفيوجن', 14, v_station) returning id into v_cat;
+  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'كولمبيا كوكنت — اولالا', 'محمصة اولالا · معالجة انفيوجن · كوكنت، جوز الهند', 0, '{}'::text[], 1, false);
+  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'برازيل فيمتو', 'محمصة دريب اون · معالجة انفيوجن · فيمتو', 0, '{}'::text[], 2, false);
+  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'تروبيكال — كوف', 'محمصة كوف · معالجة انفيوز · فواكه استوائية فاخرة', 0, '{}'::text[], 3, false);
+  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'مزيج يمني واندنوسي', 'محمصة بيت التحميص · معالجات عديدة · تيراميسو، شوكلاتة داكنة، كاكو', 0, '{}'::text[], 4, false);
+  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'ميرندا', 'محمصة اويو فاخرة · معالجة انفيوجن · ميرندا، يوسفي، حلاوة، عطري', 0, '{}'::text[], 5, false);
+  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'تروبيكال — اويو', 'محمصة اويو فاخرة · معالجة انفيوجن · اناناس، حلاوة عسلية', 0, '{}'::text[], 6, false);
+  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'مزيج لوكا', 'محمصة اويو فاخرة · معالجة انفيوز · عسل، حلاوة كراميل', 0, '{}'::text[], 7, false);
+  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'كولمبي — صواع', 'محمصة صواع · معالجة مغسولة · مشمش، توت اسود، زبيب احمر، كراميل', 0, '{}'::text[], 8, false);
+  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'مارفينا كوكنت', 'محمصة سويل مارفينا فاخرة · معالجة انفيوجن · كوكنت جوز الهند', 0, '{}'::text[], 9, false);
+  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'تروبيكال — لابراديرا', 'محمصة سويل لابراديرا فاخرة · معالجة تنقيع لا هوائي · عسلية، حلاوة', 0, '{}'::text[], 10, false);
+  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'روفيرا', 'محمصة سويل فاخرة · معالجة تنقيع لا هوائي · توت اسود، عنب، نبيذ', 0, '{}'::text[], 11, false);
+  insert into public.menu_items(category_id, name_ar, description_ar, price, flavors, sort, is_active) values (v_cat, 'ارسيلا', 'محمصة سويل فاخرة · معالجة تنقيع لا هوائي · موز، حلاوة', 0, '{}'::text[], 12, false);
 
 end $$;
