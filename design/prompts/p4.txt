@@ -1,8 +1,11 @@
-# برومبت 4
-المشروبات الساخنة
+# برومبت 4 — المشروبات الساخنة
 
-STEP 1 — الصق هذا كاملاً وانتظر رد «جاهز»
-==========================================================
+10 برومبت مستقل. الصق واحداً ← صورة واحدة ← احفظها ← الصق التالي.
+لا تحتاج محادثة جديدة ولا خطوات تمهيدية — كل برومبت كامل بذاته.
+
+============================================================
+صورة 1 من 10  ·  اسبريسو دبل  ·  احفظها باسم 1.png
+============================================================
 
 HAIL Bakery & Cafe — product photography set.
 
@@ -30,44 +33,332 @@ STRICT RULES:
   sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
   picture, always.
 
-HOW WE WILL WORK:
-I will send you the items ONE AT A TIME, each in its own message.
-For every message you output EXACTLY ONE picture of that one item, following
-the style above to the letter, and nothing else — no text, no grid, no extras.
-Do not generate anything until I send the first item.
-Reply to this message with only: "جاهز"
+OUTPUT: exactly ONE picture, of the single item named below. Nothing else.
 
-==========================================================
-
-STEP 2 — الصق كل سطر وحده (10 صور)، واحفظ كل صورة برقم سطرها
-==========================================================
-
---- 1. اسبريسو دبل  (1.png) ---
+The item:
 a double espresso in a wide demitasse, deep crema
 
---- 2. فلات وايت  (2.png) ---
+
+============================================================
+صورة 2 من 10  ·  فلات وايت  ·  احفظها باسم 2.png
+============================================================
+
+HAIL Bakery & Cafe — product photography set.
+
+STYLE (identical in every image, this is one coherent set):
+• Square-ish PORTRAIT crop, aspect ratio 4:5.
+• One single product, centred, filling most of the frame.
+• Shot slightly above eye level, about a 30-degree angle.
+• Background: a smooth warm olive-green surface (#556f42) fading to deeper
+  olive at the edges, with a soft warm-orange (#f2924c) light bloom in the
+  upper right corner. Plain — no patterns, no props clutter, no table edges.
+• Lighting: soft warm daylight from the upper right, gentle shadow to the
+  lower left, no harsh reflections.
+• Palette must stay inside: olive green #556f42, warm orange #f2924c,
+  cream #f4f2ec, deep coffee brown #4a2c1e.
+• Photorealistic, appetising, clean, premium cafe menu quality.
+
+STRICT RULES:
+• NO text of any kind. No words, no letters, no Arabic, no English.
+• NO prices, NO item names, NO labels, NO menu cards, NO signage.
+• NO logos, NO watermarks, NO brand marks.
+• NO hands, NO people, NO faces.
+• NO borders or frames around the image.
+• NO numbers drawn anywhere on the picture.
+• NEVER put more than one item in a picture. No grids, no collages, no contact
+  sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
+  picture, always.
+
+OUTPUT: exactly ONE picture, of the single item named below. Nothing else.
+
+The item:
 a flat white in a small ceramic cup, velvety thin foam
 
---- 3. كورتادو  (3.png) ---
+
+============================================================
+صورة 3 من 10  ·  كورتادو  ·  احفظها باسم 3.png
+============================================================
+
+HAIL Bakery & Cafe — product photography set.
+
+STYLE (identical in every image, this is one coherent set):
+• Square-ish PORTRAIT crop, aspect ratio 4:5.
+• One single product, centred, filling most of the frame.
+• Shot slightly above eye level, about a 30-degree angle.
+• Background: a smooth warm olive-green surface (#556f42) fading to deeper
+  olive at the edges, with a soft warm-orange (#f2924c) light bloom in the
+  upper right corner. Plain — no patterns, no props clutter, no table edges.
+• Lighting: soft warm daylight from the upper right, gentle shadow to the
+  lower left, no harsh reflections.
+• Palette must stay inside: olive green #556f42, warm orange #f2924c,
+  cream #f4f2ec, deep coffee brown #4a2c1e.
+• Photorealistic, appetising, clean, premium cafe menu quality.
+
+STRICT RULES:
+• NO text of any kind. No words, no letters, no Arabic, no English.
+• NO prices, NO item names, NO labels, NO menu cards, NO signage.
+• NO logos, NO watermarks, NO brand marks.
+• NO hands, NO people, NO faces.
+• NO borders or frames around the image.
+• NO numbers drawn anywhere on the picture.
+• NEVER put more than one item in a picture. No grids, no collages, no contact
+  sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
+  picture, always.
+
+OUTPUT: exactly ONE picture, of the single item named below. Nothing else.
+
+The item:
 a cortado in a short clear glass, equal espresso and milk layers
 
---- 4. كابتشينو  (4.png) ---
+
+============================================================
+صورة 4 من 10  ·  كابتشينو  ·  احفظها باسم 4.png
+============================================================
+
+HAIL Bakery & Cafe — product photography set.
+
+STYLE (identical in every image, this is one coherent set):
+• Square-ish PORTRAIT crop, aspect ratio 4:5.
+• One single product, centred, filling most of the frame.
+• Shot slightly above eye level, about a 30-degree angle.
+• Background: a smooth warm olive-green surface (#556f42) fading to deeper
+  olive at the edges, with a soft warm-orange (#f2924c) light bloom in the
+  upper right corner. Plain — no patterns, no props clutter, no table edges.
+• Lighting: soft warm daylight from the upper right, gentle shadow to the
+  lower left, no harsh reflections.
+• Palette must stay inside: olive green #556f42, warm orange #f2924c,
+  cream #f4f2ec, deep coffee brown #4a2c1e.
+• Photorealistic, appetising, clean, premium cafe menu quality.
+
+STRICT RULES:
+• NO text of any kind. No words, no letters, no Arabic, no English.
+• NO prices, NO item names, NO labels, NO menu cards, NO signage.
+• NO logos, NO watermarks, NO brand marks.
+• NO hands, NO people, NO faces.
+• NO borders or frames around the image.
+• NO numbers drawn anywhere on the picture.
+• NEVER put more than one item in a picture. No grids, no collages, no contact
+  sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
+  picture, always.
+
+OUTPUT: exactly ONE picture, of the single item named below. Nothing else.
+
+The item:
 a cappuccino with a tall foam cap, light cocoa dusting
 
---- 5. نيسكافيه  (5.png) ---
+
+============================================================
+صورة 5 من 10  ·  نيسكافيه  ·  احفظها باسم 5.png
+============================================================
+
+HAIL Bakery & Cafe — product photography set.
+
+STYLE (identical in every image, this is one coherent set):
+• Square-ish PORTRAIT crop, aspect ratio 4:5.
+• One single product, centred, filling most of the frame.
+• Shot slightly above eye level, about a 30-degree angle.
+• Background: a smooth warm olive-green surface (#556f42) fading to deeper
+  olive at the edges, with a soft warm-orange (#f2924c) light bloom in the
+  upper right corner. Plain — no patterns, no props clutter, no table edges.
+• Lighting: soft warm daylight from the upper right, gentle shadow to the
+  lower left, no harsh reflections.
+• Palette must stay inside: olive green #556f42, warm orange #f2924c,
+  cream #f4f2ec, deep coffee brown #4a2c1e.
+• Photorealistic, appetising, clean, premium cafe menu quality.
+
+STRICT RULES:
+• NO text of any kind. No words, no letters, no Arabic, no English.
+• NO prices, NO item names, NO labels, NO menu cards, NO signage.
+• NO logos, NO watermarks, NO brand marks.
+• NO hands, NO people, NO faces.
+• NO borders or frames around the image.
+• NO numbers drawn anywhere on the picture.
+• NEVER put more than one item in a picture. No grids, no collages, no contact
+  sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
+  picture, always.
+
+OUTPUT: exactly ONE picture, of the single item named below. Nothing else.
+
+The item:
 a creamy instant coffee in a ceramic mug, soft foam top
 
---- 6. امريكانو  (6.png) ---
+
+============================================================
+صورة 6 من 10  ·  امريكانو  ·  احفظها باسم 6.png
+============================================================
+
+HAIL Bakery & Cafe — product photography set.
+
+STYLE (identical in every image, this is one coherent set):
+• Square-ish PORTRAIT crop, aspect ratio 4:5.
+• One single product, centred, filling most of the frame.
+• Shot slightly above eye level, about a 30-degree angle.
+• Background: a smooth warm olive-green surface (#556f42) fading to deeper
+  olive at the edges, with a soft warm-orange (#f2924c) light bloom in the
+  upper right corner. Plain — no patterns, no props clutter, no table edges.
+• Lighting: soft warm daylight from the upper right, gentle shadow to the
+  lower left, no harsh reflections.
+• Palette must stay inside: olive green #556f42, warm orange #f2924c,
+  cream #f4f2ec, deep coffee brown #4a2c1e.
+• Photorealistic, appetising, clean, premium cafe menu quality.
+
+STRICT RULES:
+• NO text of any kind. No words, no letters, no Arabic, no English.
+• NO prices, NO item names, NO labels, NO menu cards, NO signage.
+• NO logos, NO watermarks, NO brand marks.
+• NO hands, NO people, NO faces.
+• NO borders or frames around the image.
+• NO numbers drawn anywhere on the picture.
+• NEVER put more than one item in a picture. No grids, no collages, no contact
+  sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
+  picture, always.
+
+OUTPUT: exactly ONE picture, of the single item named below. Nothing else.
+
+The item:
 a hot americano in a clear glass, dark with a thin crema ring
 
---- 7. اسبريسو مكياتو  (7.png) ---
+
+============================================================
+صورة 7 من 10  ·  اسبريسو مكياتو  ·  احفظها باسم 7.png
+============================================================
+
+HAIL Bakery & Cafe — product photography set.
+
+STYLE (identical in every image, this is one coherent set):
+• Square-ish PORTRAIT crop, aspect ratio 4:5.
+• One single product, centred, filling most of the frame.
+• Shot slightly above eye level, about a 30-degree angle.
+• Background: a smooth warm olive-green surface (#556f42) fading to deeper
+  olive at the edges, with a soft warm-orange (#f2924c) light bloom in the
+  upper right corner. Plain — no patterns, no props clutter, no table edges.
+• Lighting: soft warm daylight from the upper right, gentle shadow to the
+  lower left, no harsh reflections.
+• Palette must stay inside: olive green #556f42, warm orange #f2924c,
+  cream #f4f2ec, deep coffee brown #4a2c1e.
+• Photorealistic, appetising, clean, premium cafe menu quality.
+
+STRICT RULES:
+• NO text of any kind. No words, no letters, no Arabic, no English.
+• NO prices, NO item names, NO labels, NO menu cards, NO signage.
+• NO logos, NO watermarks, NO brand marks.
+• NO hands, NO people, NO faces.
+• NO borders or frames around the image.
+• NO numbers drawn anywhere on the picture.
+• NEVER put more than one item in a picture. No grids, no collages, no contact
+  sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
+  picture, always.
+
+OUTPUT: exactly ONE picture, of the single item named below. Nothing else.
+
+The item:
 an espresso macchiato, a single spoon of foam on the shot
 
---- 8. قهوه تركيه سنقل  (8.png) ---
+
+============================================================
+صورة 8 من 10  ·  قهوه تركيه سنقل  ·  احفظها باسم 8.png
+============================================================
+
+HAIL Bakery & Cafe — product photography set.
+
+STYLE (identical in every image, this is one coherent set):
+• Square-ish PORTRAIT crop, aspect ratio 4:5.
+• One single product, centred, filling most of the frame.
+• Shot slightly above eye level, about a 30-degree angle.
+• Background: a smooth warm olive-green surface (#556f42) fading to deeper
+  olive at the edges, with a soft warm-orange (#f2924c) light bloom in the
+  upper right corner. Plain — no patterns, no props clutter, no table edges.
+• Lighting: soft warm daylight from the upper right, gentle shadow to the
+  lower left, no harsh reflections.
+• Palette must stay inside: olive green #556f42, warm orange #f2924c,
+  cream #f4f2ec, deep coffee brown #4a2c1e.
+• Photorealistic, appetising, clean, premium cafe menu quality.
+
+STRICT RULES:
+• NO text of any kind. No words, no letters, no Arabic, no English.
+• NO prices, NO item names, NO labels, NO menu cards, NO signage.
+• NO logos, NO watermarks, NO brand marks.
+• NO hands, NO people, NO faces.
+• NO borders or frames around the image.
+• NO numbers drawn anywhere on the picture.
+• NEVER put more than one item in a picture. No grids, no collages, no contact
+  sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
+  picture, always.
+
+OUTPUT: exactly ONE picture, of the single item named below. Nothing else.
+
+The item:
 a single Turkish coffee in a small cup beside a copper pot
 
---- 9. قهوه تركيه دبل  (9.png) ---
+
+============================================================
+صورة 9 من 10  ·  قهوه تركيه دبل  ·  احفظها باسم 9.png
+============================================================
+
+HAIL Bakery & Cafe — product photography set.
+
+STYLE (identical in every image, this is one coherent set):
+• Square-ish PORTRAIT crop, aspect ratio 4:5.
+• One single product, centred, filling most of the frame.
+• Shot slightly above eye level, about a 30-degree angle.
+• Background: a smooth warm olive-green surface (#556f42) fading to deeper
+  olive at the edges, with a soft warm-orange (#f2924c) light bloom in the
+  upper right corner. Plain — no patterns, no props clutter, no table edges.
+• Lighting: soft warm daylight from the upper right, gentle shadow to the
+  lower left, no harsh reflections.
+• Palette must stay inside: olive green #556f42, warm orange #f2924c,
+  cream #f4f2ec, deep coffee brown #4a2c1e.
+• Photorealistic, appetising, clean, premium cafe menu quality.
+
+STRICT RULES:
+• NO text of any kind. No words, no letters, no Arabic, no English.
+• NO prices, NO item names, NO labels, NO menu cards, NO signage.
+• NO logos, NO watermarks, NO brand marks.
+• NO hands, NO people, NO faces.
+• NO borders or frames around the image.
+• NO numbers drawn anywhere on the picture.
+• NEVER put more than one item in a picture. No grids, no collages, no contact
+  sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
+  picture, always.
+
+OUTPUT: exactly ONE picture, of the single item named below. Nothing else.
+
+The item:
 a double Turkish coffee in a cup with thick foam, copper pot behind
 
---- 10. هوت شوكليت  (10.png) ---
+
+============================================================
+صورة 10 من 10  ·  هوت شوكليت  ·  احفظها باسم 10.png
+============================================================
+
+HAIL Bakery & Cafe — product photography set.
+
+STYLE (identical in every image, this is one coherent set):
+• Square-ish PORTRAIT crop, aspect ratio 4:5.
+• One single product, centred, filling most of the frame.
+• Shot slightly above eye level, about a 30-degree angle.
+• Background: a smooth warm olive-green surface (#556f42) fading to deeper
+  olive at the edges, with a soft warm-orange (#f2924c) light bloom in the
+  upper right corner. Plain — no patterns, no props clutter, no table edges.
+• Lighting: soft warm daylight from the upper right, gentle shadow to the
+  lower left, no harsh reflections.
+• Palette must stay inside: olive green #556f42, warm orange #f2924c,
+  cream #f4f2ec, deep coffee brown #4a2c1e.
+• Photorealistic, appetising, clean, premium cafe menu quality.
+
+STRICT RULES:
+• NO text of any kind. No words, no letters, no Arabic, no English.
+• NO prices, NO item names, NO labels, NO menu cards, NO signage.
+• NO logos, NO watermarks, NO brand marks.
+• NO hands, NO people, NO faces.
+• NO borders or frames around the image.
+• NO numbers drawn anywhere on the picture.
+• NEVER put more than one item in a picture. No grids, no collages, no contact
+  sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
+  picture, always.
+
+OUTPUT: exactly ONE picture, of the single item named below. Nothing else.
+
+The item:
 a hot chocolate in a mug topped with whipped cream and cocoa
+

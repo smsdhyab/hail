@@ -74,12 +74,7 @@ STRICT RULES:
   sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
   picture, always.
 
-HOW WE WILL WORK:
-I will send you the items ONE AT A TIME, each in its own message.
-For every message you output EXACTLY ONE picture of that one item, following
-the style above to the letter, and nothing else — no text, no grid, no extras.
-Do not generate anything until I send the first item.
-Reply to this message with only: "جاهز"
+OUTPUT: exactly ONE picture, of the single item named below. Nothing else.
 
 1. an almond bread loaf, sliced almonds on top, dusted with powdered sugar
 2. a golden corn bread roll (samoon), soft crumb, rustic crust
@@ -126,12 +121,7 @@ STRICT RULES:
   sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
   picture, always.
 
-HOW WE WILL WORK:
-I will send you the items ONE AT A TIME, each in its own message.
-For every message you output EXACTLY ONE picture of that one item, following
-the style above to the letter, and nothing else — no text, no grid, no extras.
-Do not generate anything until I send the first item.
-Reply to this message with only: "جاهز"
+OUTPUT: exactly ONE picture, of the single item named below. Nothing else.
 
 1. a white Belgian chocolate praline, glossy dome
 2. a hazelnut Belgian chocolate praline, whole hazelnut on top
@@ -178,12 +168,7 @@ STRICT RULES:
   sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
   picture, always.
 
-HOW WE WILL WORK:
-I will send you the items ONE AT A TIME, each in its own message.
-For every message you output EXACTLY ONE picture of that one item, following
-the style above to the letter, and nothing else — no text, no grid, no extras.
-Do not generate anything until I send the first item.
-Reply to this message with only: "جاهز"
+OUTPUT: exactly ONE picture, of the single item named below. Nothing else.
 
 1. a glazed doughnut with chocolate drizzle and chopped nuts
 2. a cinnamon roll with cream-cheese icing, warm and spiralled
@@ -230,12 +215,7 @@ STRICT RULES:
   sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
   picture, always.
 
-HOW WE WILL WORK:
-I will send you the items ONE AT A TIME, each in its own message.
-For every message you output EXACTLY ONE picture of that one item, following
-the style above to the letter, and nothing else — no text, no grid, no extras.
-Do not generate anything until I send the first item.
-Reply to this message with only: "جاهز"
+OUTPUT: exactly ONE picture, of the single item named below. Nothing else.
 
 1. a double espresso in a wide demitasse, deep crema
 2. a flat white in a small ceramic cup, velvety thin foam
@@ -282,12 +262,7 @@ STRICT RULES:
   sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
   picture, always.
 
-HOW WE WILL WORK:
-I will send you the items ONE AT A TIME, each in its own message.
-For every message you output EXACTLY ONE picture of that one item, following
-the style above to the letter, and nothing else — no text, no grid, no extras.
-Do not generate anything until I send the first item.
-Reply to this message with only: "جاهز"
+OUTPUT: exactly ONE picture, of the single item named below. Nothing else.
 
 1. a hot dark mocha, chocolate and espresso layers, cream on top
 2. a hot white mocha, pale cream layers, white chocolate curls
@@ -334,12 +309,7 @@ STRICT RULES:
   sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
   picture, always.
 
-HOW WE WILL WORK:
-I will send you the items ONE AT A TIME, each in its own message.
-For every message you output EXACTLY ONE picture of that one item, following
-the style above to the letter, and nothing else — no text, no grid, no extras.
-Do not generate anything until I send the first item.
-Reply to this message with only: "جاهز"
+OUTPUT: exactly ONE picture, of the single item named below. Nothing else.
 
 1. an iced americano, clear dark coffee over large ice cubes
 2. an iced caramel macchiato, distinct layers and caramel crosshatch
@@ -386,12 +356,7 @@ STRICT RULES:
   sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
   picture, always.
 
-HOW WE WILL WORK:
-I will send you the items ONE AT A TIME, each in its own message.
-For every message you output EXACTLY ONE picture of that one item, following
-the style above to the letter, and nothing else — no text, no grid, no extras.
-Do not generate anything until I send the first item.
-Reply to this message with only: "جاهز"
+OUTPUT: exactly ONE picture, of the single item named below. Nothing else.
 
 1. a pomegranate mojito, deep red, mint leaves and pomegranate seeds
 2. a strawberry mojito, pink, fresh strawberry and mint
@@ -438,12 +403,7 @@ STRICT RULES:
   sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
   picture, always.
 
-HOW WE WILL WORK:
-I will send you the items ONE AT A TIME, each in its own message.
-For every message you output EXACTLY ONE picture of that one item, following
-the style above to the letter, and nothing else — no text, no grid, no extras.
-Do not generate anything until I send the first item.
-Reply to this message with only: "جاهز"
+OUTPUT: exactly ONE picture, of the single item named below. Nothing else.
 
 1. a thick mango smoothie in a tall glass, fresh mango cheek beside
 2. a thick pineapple smoothie, pineapple wedge on the rim

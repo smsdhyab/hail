@@ -27,4 +27,4 @@ STRICT RULES:
 OUTPUT: exactly ONE picture, of the single item named below. Nothing else.
 
 The item:
-two or three Iraqi coconut macaroons piled together, piped rounds with craggy ridged peaks, deep caramelised golden-brown crust, visible shredded coconut texture, crisp outside and soft inside
+an iced caramel latte, caramel ribbons down the glass

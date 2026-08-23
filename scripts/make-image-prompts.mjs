@@ -122,12 +122,7 @@ STRICT RULES:
   sheets, no multi-panel layouts, no side-by-side comparisons. ONE product per
   picture, always.
 
-HOW WE WILL WORK:
-I will send you the items ONE AT A TIME, each in its own message.
-For every message you output EXACTLY ONE picture of that one item, following
-the style above to the letter, and nothing else — no text, no grid, no extras.
-Do not generate anything until I send the first item.
-Reply to this message with only: "جاهز"`;
+OUTPUT: exactly ONE picture, of the single item named below. Nothing else.`;
 
 const active = HAIL_MENU.flatMap((c) => c.items.filter((i) => i.active !== false).map((i) => ({ ...i, cat: c.name_ar })));
 const missing = active.filter((i) => !EN[i.name_ar]);
@@ -204,25 +199,44 @@ groups.forEach((g, gi) => {
 
 mkdirSync(join(root, "design", "prompts"), { recursive: true });
 
-// One file per prompt, in the order it gets pasted: the identity block first,
-// then the items one line at a time. Ten items in a single message keeps
-// collapsing into a grid; one message per item never does.
-const RULE = "".padEnd(58, "=");
+// ONE standalone prompt per item: identity + that item + "one picture".
+// Nothing to set up, nothing to remember between messages — paste, get one
+// image, paste the next. Ten items in a single message collapses into a grid;
+// a two-step handshake was fiddly. One self-contained prompt per image is the
+// only shape that has never failed.
 groups.forEach((g, gi) => {
-  const lines = [
-    `# برومبت ${gi + 1}`,
-    `${[...new Set(g.map((i) => i.cat))].join(" | ")}`,
-    "",
-    "STEP 1 — الصق هذا كاملاً وانتظر رد «جاهز»",
-    RULE, "", IDENTITY, "", RULE, "",
-    `STEP 2 — الصق كل سطر وحده (${g.length} صور)، واحفظ كل صورة برقم سطرها`,
-    RULE, "",
-  ];
-  g.forEach((item, i) => lines.push(`--- ${i + 1}. ${item.name_ar}  (${i + 1}.png) ---`, EN[item.name_ar], ""));
-  writeFileSync(join(root, "design", "prompts", `p${gi + 1}.txt`), lines.join("\n"), "utf8");
+  const all = [];
+  g.forEach((item, i) => {
+    const n = i + 1;
+    const body = `${IDENTITY}
+
+The item:
+${EN[item.name_ar]}
+`;
+    writeFileSync(join(root, "design", "prompts", `p${gi + 1}-${n}.txt`), body, "utf8");
+    all.push(
+      "".padEnd(60, "="),
+      `صورة ${n} من ${g.length}  ·  ${item.name_ar}  ·  احفظها باسم ${n}.png`,
+      "".padEnd(60, "="),
+      "",
+      body,
+      "",
+    );
+  });
+  writeFileSync(
+    join(root, "design", "prompts", `p${gi + 1}.txt`),
+    [
+      `# برومبت ${gi + 1} — ${[...new Set(g.map((i) => i.cat))].join(" | ")}`,
+      "",
+      `${g.length} برومبت مستقل. الصق واحداً ← صورة واحدة ← احفظها ← الصق التالي.`,
+      "لا تحتاج محادثة جديدة ولا خطوات تمهيدية — كل برومبت كامل بذاته.",
+      "",
+      ...all,
+    ].join("\n"),
+    "utf8",
+  );
 });
 
 const file = join(root, "design", "prompts-الصور.md");
 writeFileSync(file, out.join("\n"), "utf8");
-console.log(`OK ${file}`);
-console.log(`OK design/prompts/p1..p${groups.length}.txt  (${active.length} items)`);
+console.log(`OK design/prompts/pN.txt + pN-1..10.txt  (${active.length} items)`);
