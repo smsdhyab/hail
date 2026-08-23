@@ -256,12 +256,12 @@ export function TabletMenuClient({
           ) : (
           <>
           <h2 className="mb-3 px-1 text-xl font-extrabold text-[var(--accent)]">{cat?.name_ar}</h2>
-          <div className="grid grid-cols-2 gap-3 xl:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
             {(cat?.items ?? []).map((it) => {
               const s = imgSrcs(it.image_url);
               return (
                 <article key={it.id} className="overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--panelsoft)]">
-                  <div className="relative aspect-[4/5] bg-[var(--panel)]" style={effect === "pastry" ? { animation: "hail-float 4s ease-in-out infinite" } : undefined}>
+                  <div className="relative aspect-[4/3] bg-[var(--panel)]" style={effect === "pastry" ? { animation: "hail-float 4s ease-in-out infinite" } : undefined}>
                     <MenuIcon name={it.name_ar} category={cat?.name_ar} className="absolute inset-0 m-auto size-16 text-[var(--accent)] opacity-45" />
                     {s && (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -292,7 +292,7 @@ export function TabletMenuClient({
                     </button>
                   </div>
                   <div className="px-3 py-2.5 text-right">
-                    <p className="line-clamp-2 min-h-[2.4em] text-[15px] font-bold leading-tight">{it.name_ar}</p>
+                    <p className="line-clamp-2 min-h-[2.4em] text-sm font-bold leading-tight sm:text-[15px]">{it.name_ar}</p>
                     <p className="mt-1 whitespace-nowrap text-lg font-extrabold tabular-nums text-[var(--accent)]">
                       {formatIqdLabel(priceOf(it))}
                       {it.sold_by === "weight" && (
@@ -309,15 +309,15 @@ export function TabletMenuClient({
         </main>
 
         {/* category rail — RIGHT */}
-        <aside className="w-[132px] shrink-0 overflow-y-auto border-l border-[var(--line)] bg-[var(--panelsoft)]/60 py-2 sm:w-[184px]">
+        <aside className="w-[86px] shrink-0 overflow-y-auto border-l border-[var(--line)] bg-[var(--panelsoft)]/60 py-2 sm:w-[132px] lg:w-[172px]">
           {combos.length > 0 && (
             <button
               aria-label={OFFERS_CAT}
               onClick={() => selectCat(OFFERS_CAT)}
-              className={`flex w-full flex-col items-center gap-1.5 px-2 py-3.5 text-center text-[var(--activeink)] transition ${showOffers ? "bg-[var(--accent)]" : "hail-offers-pulse"}`}
+              className={`flex w-full flex-col items-center gap-1 px-1 py-3 text-center text-[var(--activeink)] transition sm:gap-1.5 sm:px-2 sm:py-3.5 ${showOffers ? "bg-[var(--accent)]" : "hail-offers-pulse"}`}
             >
-              <Sparkles className="size-8" />
-              <span className="text-[13px] font-extrabold leading-tight">
+              <Sparkles className="size-6 sm:size-8" />
+              <span className="text-[11px] font-extrabold leading-tight sm:text-[13px]">
                 <span className="block">عروض</span>
                 <span className="block">اليوم</span>
               </span>
@@ -326,9 +326,9 @@ export function TabletMenuClient({
           {menu.map((c) => {
             const on = c.name_ar === activeCat;
             return (
-              <button key={c.name_ar} aria-label={c.name_ar} onClick={() => selectCat(c.name_ar)} className={`flex w-full flex-col items-center gap-1.5 px-2 py-3.5 text-center transition ${on ? "bg-[var(--active)] text-[var(--activeink)]" : "text-[var(--muted)] hover:bg-[var(--panel)]"}`}>
-                <MenuIcon name={c.name_ar} category={c.name_ar} className={`size-8 ${on ? "text-[var(--activeink)]" : "text-[var(--accent)]"}`} />
-                <span className="text-[13px] font-bold leading-tight">
+              <button key={c.name_ar} aria-label={c.name_ar} onClick={() => selectCat(c.name_ar)} className={`flex w-full flex-col items-center gap-1 px-1 py-3 text-center transition sm:gap-1.5 sm:px-2 sm:py-3.5 ${on ? "bg-[var(--active)] text-[var(--activeink)]" : "text-[var(--muted)] hover:bg-[var(--panel)]"}`}>
+                <MenuIcon name={c.name_ar} category={c.name_ar} className={`size-6 sm:size-8 ${on ? "text-[var(--activeink)]" : "text-[var(--accent)]"}`} />
+                <span className="text-[11px] font-bold leading-tight sm:text-[13px]">
                   {c.name_ar.split(" ").map((w, i) => (
                     <span key={i} className="block">{w}</span>
                   ))}

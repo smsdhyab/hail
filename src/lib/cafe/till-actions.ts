@@ -25,7 +25,9 @@ export async function openTill(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const staff = await requireStaff();
 
-  if (staff.role !== "admin" && staff.station !== station) {
+  // حساب بلا قسم = كاشير موحّد يبيع القسمين من صندوق واحد. القفل يبقى سارياً
+  // على من له قسم محدّد: حساب المعجنات لا يفتح صندوق الكافيه.
+  if (staff.role !== "admin" && staff.station !== null && staff.station !== station) {
     return {
       ok: false,
       error: `هذا الحساب يعمل على ${stationName(staff.station)} فقط — لا يمكنه فتح ${stationName(station)}.`,

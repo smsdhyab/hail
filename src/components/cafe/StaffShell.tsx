@@ -238,7 +238,7 @@ export function StaffShell({
       <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur print:hidden">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2.5">
           <div className="flex min-w-0 items-center gap-4">
-            <Link href="/dashboard" className="flex shrink-0 items-center gap-2 whitespace-nowrap text-lg font-extrabold text-primary">
+            <Link href={role === "admin" ? "/dashboard" : "/cashier"} className="flex shrink-0 items-center gap-2 whitespace-nowrap text-lg font-extrabold text-primary">
               <HailMark className="size-9" />
               مخبز ومقهى هيل
             </Link>

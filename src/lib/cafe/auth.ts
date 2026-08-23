@@ -91,3 +91,17 @@ export async function requireAdmin(): Promise<Staff> {
 export function stationScope(staff: Staff): StationSlug | null {
   return staff.role === "admin" ? null : staff.station;
 }
+
+/**
+ * الصفحة التي يبدأ منها كل دور.
+ *
+ * المدير يبدأ من لوحة التحكم، والكاشير من شاشة البيع — لا من الأرقام. كانت
+ * الوجهة `/dashboard` للجميع، فكان أول ما يراه الكاشير عند الدخول مبيعات اليوم
+ * وعدد الطلبات، وهي أرقام لا تخصّه ولا يحتاجها ليبيع.
+ *
+ * مكتوبة هنا وحدها لأن ثلاثة مواضع كانت تقرّر الوجهة كلٌّ على حدة (صفحة
+ * الدخول، الجذر، وشعار الشريط العلوي) — فتغييرها في واحد يترك الآخرين.
+ */
+export function homeFor(role: StaffRole | null): string {
+  return role === "admin" ? "/dashboard" : "/cashier";
+}

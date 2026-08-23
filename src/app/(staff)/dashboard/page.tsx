@@ -5,7 +5,8 @@ import { lastNDays, businessDay } from "@/lib/cafe/time";
 import { DashboardClient } from "@/components/cafe/DashboardClient";
 import { SettingsCard } from "@/components/cafe/SettingsCard";
 import { getDeliveryFee } from "@/lib/cafe/pastry-actions";
-import { getStaff } from "@/lib/cafe/auth";
+import { getStaff, homeFor } from "@/lib/cafe/auth";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,10 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<{ days?: string }>;
 }) {
+  // الأرقام للمدير وحده. إخفاء الرابط من القائمة لا يكفي — العنوان يُكتب باليد.
+  const me = await getStaff().catch(() => null);
+  if (me && me.role !== "admin") redirect(homeFor(me.role));
+
   const sp = await searchParams;
   const days = sp.days === "30" ? 30 : sp.days === "1" ? 1 : 7;
 

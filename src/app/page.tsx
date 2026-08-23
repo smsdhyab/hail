@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { HailMark } from "@/components/cafe/Logo";
-import { getStaff } from "@/lib/cafe/auth";
+import { getStaff, homeFor } from "@/lib/cafe/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
  */
 export default async function Home() {
   const staff = await getStaff().catch(() => null);
-  if (staff) redirect("/dashboard");
+  if (staff) redirect(homeFor(staff.role));
   if (process.env.MODERN_ONLY === "1") redirect("/menu");
 
   return (

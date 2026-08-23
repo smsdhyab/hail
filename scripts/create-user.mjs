@@ -33,12 +33,12 @@ if (!login || !password || !name || !["admin", "cashier"].includes(roleName)) {
   console.error("usage: node scripts/create-user.mjs <login> <password> <name_ar> <admin|cashier> [pastry|cafe]");
   process.exit(1);
 }
-if (stationSlug && !["pastry", "cafe"].includes(stationSlug)) {
-  console.error("✗ station must be «pastry» or «cafe»");
+if (stationSlug && !["pastry", "cafe", "both"].includes(stationSlug)) {
+  console.error("✗ station must be «pastry», «cafe» or «both»");
   process.exit(1);
 }
 if (roleName === "cashier" && !stationSlug) {
-  console.error("✗ a cashier needs a register: add «pastry» or «cafe» as the 5th argument");
+  console.error("✗ a cashier needs a register: add «pastry», «cafe» or «both» as the 5th argument");
   process.exit(1);
 }
 const email = login.includes("@") ? login : `${login}@hail.iq`;
@@ -69,8 +69,10 @@ const { data: role } = await supabase.from("roles").select("id").eq("name_en", r
 if (!role) { console.error(`✗ role ${roleName} not found`); process.exit(1); }
 
 // 3) register (cashiers only)
+// «both» يُخزَّن قسماً فارغاً: كاشير موحَّد يبيع القسمين من صندوق واحد.
+// الدفتران يبقيان منفصلين لأن الفصل يتم بالصنف لا بالحساب.
 let stationId = null;
-if (stationSlug) {
+if (stationSlug && stationSlug !== "both") {
   const { data: st } = await supabase.from("stations").select("id").eq("slug", stationSlug).maybeSingle();
   if (!st) { console.error(`✗ station ${stationSlug} not found — apply 0021_stations.sql first`); process.exit(1); }
   stationId = st.id;

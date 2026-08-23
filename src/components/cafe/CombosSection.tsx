@@ -41,7 +41,7 @@ export function CombosSection({
       {combos.length === 0 ? (
         <p className="py-10 text-center text-sm text-[var(--muted)]">لا توجد عروض اليوم — تابعنا لاحقاً.</p>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
           {combos.map((combo) => {
             const parts = combo.item_ids.map((id) => byId.get(id)).filter(Boolean);
             // أسعار عروض التصميم أعلى من مجموع القائمة (حصص أكبر)، فالشطب
