@@ -4,6 +4,8 @@ import { getTotalOutstanding } from "@/lib/cafe/debt-actions";
 import { lastNDays, businessDay } from "@/lib/cafe/time";
 import { DashboardClient } from "@/components/cafe/DashboardClient";
 import { SettingsCard } from "@/components/cafe/SettingsCard";
+import { purchasesSpent } from "@/lib/cafe/purchase-actions";
+import { formatIqdLabel } from "@/lib/cafe/money";
 import { getDeliveryFee } from "@/lib/cafe/pastry-actions";
 import { getStaff, homeFor } from "@/lib/cafe/auth";
 import { redirect } from "next/navigation";
@@ -55,6 +57,7 @@ export default async function DashboardPage({
   // الإعدادات للمدير وحده — الكاشير لا يغيّر أجرة التوصيل
   const staff = await safe(getStaff(), null);
   const deliveryFee = staff?.role === "admin" ? await safe(getDeliveryFee(), 0) : 0;
+  const spent = staff?.role === "admin" ? await safe(purchasesSpent(days), { today: 0, range: 0 }) : { today: 0, range: 0 };
   summary = s;
   recent = r;
   monthlyCosts = mc.reduce((t, c) => t + c.amount, 0);
@@ -68,6 +71,26 @@ export default async function DashboardPage({
   return (
     <div className="space-y-4">
       <DashboardClient days={days} summary={summary} recent={recent} monthlyCosts={monthlyCosts} guestsToday={guestsToday} guestsRange={guestsRange} todayReset={todayReset} outstandingDebts={outstandingDebts} todayDate={today} yesterday={yesterday} yesterdaySummary={yesterdaySummary} scopeLabel={scopeLabel} />
+      {staff?.role === "admin" && (spent.today > 0 || spent.range > 0) && (
+        // نقد خرج على البضاعة — يُعرض منفصلاً عن «المصروفات» لأن كلفته مخصومة
+        // أصلاً مع كل بيعة. ضمّه إليها يخصمه مرتين ويُظهر خسارة وهمية.
+        <section className="rounded-2xl border border-border bg-card p-4">
+          <h2 className="mb-1 font-extrabold text-primary">المشتريات (بضاعة)</h2>
+          <p className="mb-3 text-xs text-muted-foreground">
+            نقد خرج على البضاعة وقيمته صارت مخزوناً. لا يُخصم من الربح هنا — كلفته تُخصم مع كل بيعة.
+          </p>
+          <div className="flex flex-wrap gap-6">
+            <div>
+              <p className="text-xs text-muted-foreground">اليوم</p>
+              <p className="text-lg font-extrabold tabular-nums">{formatIqdLabel(spent.today)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">آخر {days} يوم</p>
+              <p className="text-lg font-extrabold tabular-nums">{formatIqdLabel(spent.range)}</p>
+            </div>
+          </div>
+        </section>
+      )}
       {staff?.role === "admin" && <SettingsCard deliveryFee={deliveryFee} />}
     </div>
   );

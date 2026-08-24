@@ -24,6 +24,7 @@ import {
   Users,
   Wallet,
   X,
+  Boxes,
   Wrench,
   type LucideIcon,
 } from "lucide-react";
@@ -87,6 +88,7 @@ const NAV: NavItem[] = [
   { href: "/pastries", label: "المعجنات والعروض", short: "المعجنات", adminOnly: false, icon: Croissant },
   { href: "/debts", label: "سجل الديون", short: "الديون", adminOnly: false, icon: HandCoins },
   { href: "/menu-admin", label: "المنيو", short: "المنيو", adminOnly: true, icon: UtensilsCrossed },
+  { href: "/purchases", label: "المشتريات والمخزون", short: "المشتريات", adminOnly: true, icon: Boxes },
   { href: "/expenses", label: "المصروفات", short: "المصروفات", adminOnly: false, icon: Wallet },
   { href: "/employees", label: "الموظفون", short: "الموظفون", adminOnly: true, icon: Users },
   { href: "/qr", label: "رموز QR", short: "QR", adminOnly: true, icon: QrCode },

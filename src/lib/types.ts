@@ -151,6 +151,19 @@ export type Database = {
         Update: Partial<{ value: number; updated_at: string }>;
         Relationships: [];
       };
+      purchases: {
+        Row: {
+          id: string; business_day: string; item_id: string; qty: number; total_cost: number;
+          /** محسوب: المبلغ الكلي ÷ الكمية */
+          unit_cost: number; supplier: string | null; note: string | null; created_by: string | null; created_at: string;
+        };
+        Insert: {
+          id?: string; business_day?: string; item_id: string; qty: number; total_cost: number;
+          supplier?: string | null; note?: string | null; created_by?: string | null; created_at?: string;
+        };
+        Update: Partial<{ qty: number; total_cost: number; supplier: string | null; note: string | null }>;
+        Relationships: [];
+      };
       combos: {
         Row: Timestamped & { slug: string; title_ar: string; price: number; is_active: boolean; sort: number };
         Insert: { id?: string; slug: string; title_ar: string; price: number; is_active?: boolean; sort?: number; created_at?: string };
@@ -249,6 +262,14 @@ export type Database = {
       };
     };
     Views: {
+      item_margins: {
+        Row: {
+          item_id: string; name_ar: string; category: string; sold_by: "piece" | "weight"; unit: string;
+          price: number; cost: number; margin: number; margin_pct: number | null;
+          stock: number; low_at: number; is_low: boolean;
+        };
+        Relationships: [];
+      };
       menu_public: {
         Row: {
           id: string; category_id: string; name_ar: string; description_ar: string | null; image_url: string | null;
@@ -326,6 +347,13 @@ export type Database = {
         }[];
       };
       set_setting: { Args: { p_key: string; p_value: number }; Returns: number };
+      record_purchase: {
+        Args: { p_item: string; p_qty: number; p_total: number; p_supplier?: string | null; p_note?: string | null; p_day?: string | null };
+        Returns: { unit_cost: number; stock: number }[];
+      };
+      set_low_at: { Args: { p_item: string; p_low: number }; Returns: number };
+      adjust_stock: { Args: { p_item: string; p_delta?: number | null; p_set?: number | null }; Returns: number };
+      purchases_summary: { Args: { p_from: string; p_to: string }; Returns: { spent: number; lines: number }[] };
     };
     Enums: {
       order_channel: OrderChannel;
