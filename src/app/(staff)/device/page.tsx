@@ -12,9 +12,9 @@ const RAW = "https://raw.githubusercontent.com/smsdhyab/hail/main/scripts/setup-
 /**
  * صفحة التركيب والفحص داخل النظام — للمطوّر وحده.
  *
- * الصفحة العامة `/setup` تبقى: تُفتح على جهاز جديد **قبل** أن يملك أحد جلسة،
- * وهو ما يجعلها بلا تسجيل دخول وبلا كلمات مرور. أما هذه فتفحص الجهاز من داخل
- * النظام: تسأل وكيل الطباعة المحلي عن الطابعات وتعرض روابط الشاشات جاهزة.
+ * حلّت محلّ صفحة `/setup` العامة وحُذفت. تلك كانت مفتوحة لأي زائر تعرض عليه
+ * أمر التركيب وعنوان النظام بلا داعٍ — ومن يركّب جهازاً هو المطوّر نفسه،
+ * وبيده حساب يفتح به هذه الصفحة على الجهاز الذي يركّبه.
  */
 export default async function DevicePage() {
   const staff = await getStaff().catch(() => null);
@@ -29,7 +29,6 @@ export default async function DevicePage() {
     { label: "منيو الزبون", hint: "اللوحي على الطاولة أو ملصق QR", url: `${site}/menu` },
     { label: "صفحة التوصيل", hint: "الرابط المنشور على حسابات التواصل", url: `${site}/delivery` },
     { label: "شاشة الطلبات الواردة", hint: "شاشة العمل اليومية للكاشير", url: `${site}/orders` },
-    { label: "صفحة التركيب العامة", hint: "تُفتح على جهاز جديد قبل تسجيل الدخول", url: `${site}/setup` },
   ];
   const qr = await Promise.all(
     screens.map(async (s) => ({ ...s, png: await QRCode.toDataURL(s.url, { margin: 1, width: 256 }) })),
