@@ -24,6 +24,7 @@ import {
   Users,
   Wallet,
   X,
+  Wrench,
   type LucideIcon,
 } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -76,7 +77,7 @@ function chime() {
   }
 }
 
-type NavItem = { href: string; label: string; short: string; adminOnly: boolean; icon: LucideIcon };
+type NavItem = { href: string; label: string; short: string; adminOnly: boolean; devOnly?: boolean; icon: LucideIcon };
 const NAV: NavItem[] = [
   { href: "/dashboard", label: "لوحة التحكم", short: "التحكم", adminOnly: true, icon: LayoutDashboard },
   { href: "/cashier", label: "الكاشير", short: "الكاشير", adminOnly: false, icon: Calculator },
@@ -90,10 +91,12 @@ const NAV: NavItem[] = [
   { href: "/employees", label: "الموظفون", short: "الموظفون", adminOnly: true, icon: Users },
   { href: "/qr", label: "رموز QR", short: "QR", adminOnly: true, icon: QrCode },
   { href: "/help", label: "التعليمات", short: "تعليمات", adminOnly: false, icon: HelpCircle },
+  { href: "/device", label: "الأجهزة والفحص", short: "الأجهزة", adminOnly: true, devOnly: true, icon: Wrench },
 ];
 
 export function StaffShell({
   role,
+  isDeveloper = false,
   name,
   station = null,
   localMode = false,
@@ -102,6 +105,7 @@ export function StaffShell({
   children,
 }: {
   role: StaffRole | null;
+  isDeveloper?: boolean;
   name: string;
   /** the register this session is working — shown so nobody rings up on the wrong till */
   station?: string | null;
@@ -113,7 +117,7 @@ export function StaffShell({
   const pathname = usePathname();
   const router = useRouter();
   const { setTheme } = useCafeUI();
-  const links = NAV.filter((n) => !n.adminOnly || role === "admin");
+  const links = NAV.filter((n) => (!n.adminOnly || role === "admin") && (!n.devOnly || isDeveloper));
   const bottomTabs = links.filter((l) => l.href !== "/help").slice(0, 4); // first 4 as bottom tabs, rest in «المزيد»
   const [moreOpen, setMoreOpen] = useState(false);
 

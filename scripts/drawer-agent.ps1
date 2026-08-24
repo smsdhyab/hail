@@ -1,4 +1,4 @@
-# وكيل القاصة — HAIL cash-drawer agent
+﻿# وكيل القاصة — HAIL cash-drawer agent
 # يستمع محلياً على 127.0.0.1:9977؛ عند طلب /kick يرسل نبضة فتح الدرج (ESC p)
 # إلى طابعة الفواتير عبر اسم مشاركتها. يعمل بلا أي تثبيت (PowerShell فقط).
 #
@@ -31,6 +31,37 @@ while ($true) {
 
   if ($req.HttpMethod -eq "OPTIONS") {
     $res.StatusCode = 204
+    $res.Close()
+    continue
+  }
+
+  # صفحة «الأجهزة» داخل النظام تسأل هذا المسار: هل أنا على جهاز الكاشير؟
+  # وما الطابعات الموجودة عليه؟ — فيُختصر الفحص اليدوي في PowerShell.
+  if ($req.Url.AbsolutePath -eq "/status") {
+    $printers = @()
+    try {
+      $printers = Get-Printer | ForEach-Object {
+        [pscustomobject]@{
+          name    = $_.Name
+          port    = $_.PortName
+          shared  = [bool]$_.Shared
+          share   = $_.ShareName
+          default = $false
+        }
+      }
+      $def = (Get-CimInstance Win32_Printer -Filter "Default = TRUE" -ErrorAction SilentlyContinue).Name
+      foreach ($p in $printers) { if ($p.name -eq $def) { $p.default = $true } }
+    } catch { }
+    $payload = [pscustomobject]@{
+      agent    = "hail"
+      version  = 2
+      host     = $env:COMPUTERNAME
+      share    = $PrinterShare
+      printers = $printers
+    } | ConvertTo-Json -Depth 4 -Compress
+    $res.ContentType = "application/json; charset=utf-8"
+    $buf = [Text.Encoding]::UTF8.GetBytes($payload)
+    $res.OutputStream.Write($buf, 0, $buf.Length)
     $res.Close()
     continue
   }

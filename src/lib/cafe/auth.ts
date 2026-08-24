@@ -17,6 +17,9 @@ export type Staff = {
   station: StationSlug | null;
   /** ما فُتح فعلاً: قسم بعينه أو «الكل». null = لم يُفتح صندوق بعد */
   till: TillChoice | null;
+  /** المطوّر مديرٌ ومعه صفحة الأجهزة والفحص — علامة لا دور، فلا يتغيّر شيء
+   *  مما هو قائم من فحوص الأدوار */
+  isDeveloper: boolean;
 };
 
 /**
@@ -36,7 +39,7 @@ export const getStaff = cache(async function getStaff(): Promise<Staff | null> {
   const svc = createSupabaseServiceClient();
   const { data: emp } = await svc
     .from("employees")
-    .select("id, name_ar, roles(name_en), stations(slug)")
+    .select("id, name_ar, is_developer, roles(name_en), stations(slug)")
     .eq("auth_user_id", user.id)
     .eq("is_active", true)
     .maybeSingle();
@@ -55,7 +58,7 @@ export const getStaff = cache(async function getStaff(): Promise<Staff | null> {
   // بلا قسم، أي يرى القسمين ويبيعهما.
   const station = own ?? (till && till !== TILL_ALL ? till : null);
 
-  return { userId: user.id, employeeId: emp.id, name: emp.name_ar, email: user.email ?? null, role, station, till };
+  return { userId: user.id, employeeId: emp.id, name: emp.name_ar, email: user.email ?? null, role, station, till, isDeveloper: emp.is_developer === true };
 });
 
 /** Local (no-DB) session: an httpOnly cookie holding `<employeeId>:<station>`. */
@@ -74,6 +77,7 @@ async function getLocalStaff(): Promise<Staff | null> {
     // an admin works whichever register they signed into
     station: (emp.station ?? (station as StationSlug)) || null,
     till: isTillChoice(station) ? station : null,
+    isDeveloper: emp.role === "admin", // الوضع المحلي للتجربة — لا فصل فيه
   };
 }
 
@@ -108,6 +112,12 @@ export function stationScope(staff: Staff): StationSlug | null {
  * مكتوبة هنا وحدها لأن ثلاثة مواضع كانت تقرّر الوجهة كلٌّ على حدة (صفحة
  * الدخول، الجذر، وشعار الشريط العلوي) — فتغييرها في واحد يترك الآخرين.
  */
+export async function requireDeveloper(): Promise<Staff> {
+  const staff = await requireStaff();
+  if (!staff.isDeveloper) throw new Error("هذه الصفحة للمطوّر فقط.");
+  return staff;
+}
+
 export function homeFor(role: StaffRole | null): string {
   return role === "admin" ? "/dashboard" : "/cashier";
 }

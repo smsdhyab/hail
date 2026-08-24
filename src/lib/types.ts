@@ -34,14 +34,18 @@ export type Database = {
         Row: Timestamped & {
           name_ar: string; role_id: string | null; station_id: string | null; auth_user_id: string | null; is_active: boolean;
           wage_amount: number; wage_period: "daily" | "weekly" | "monthly" | null;
+          /** مديرٌ ومعه صفحة الأجهزة والفحص */
+          is_developer: boolean;
         };
         Insert: {
           id?: string; name_ar: string; role_id?: string | null; station_id?: string | null; auth_user_id?: string | null; is_active?: boolean;
           wage_amount?: number; wage_period?: "daily" | "weekly" | "monthly" | null; created_at?: string;
+          is_developer?: boolean;
         };
         Update: Partial<{
           name_ar: string; role_id: string | null; station_id: string | null; auth_user_id: string | null; is_active: boolean;
           wage_amount: number; wage_period: "daily" | "weekly" | "monthly" | null;
+          is_developer: boolean;
         }>;
         // Declared so `select("...,roles(name_en),stations(slug)")` type-checks —
         // one round trip instead of three, which matters a lot from Iraq.

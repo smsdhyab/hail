@@ -22,7 +22,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
     const staff = await getStaff();
     if (!staff) redirect("/sign-in");
     return (
-      <StaffShell role={staff.role} name={staff.name} station={stationName(staff.station)} localMode pushKey={pushKey}>
+      <StaffShell role={staff.role} isDeveloper={staff.isDeveloper} name={staff.name} station={stationName(staff.station)} localMode pushKey={pushKey}>
         {children}
       </StaffShell>
     );
@@ -39,7 +39,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
   if (!staff) redirect("/sign-in");
   const pastryAlert = await getPastryAlertCount().catch(() => 0);
   return (
-    <StaffShell role={staff.role} name={staff.name} station={stationName(staff.station)} pushKey={pushKey} pastryAlert={pastryAlert}>
+    <StaffShell role={staff.role} isDeveloper={staff.isDeveloper} name={staff.name} station={stationName(staff.station)} pushKey={pushKey} pastryAlert={pastryAlert}>
       {children}
     </StaffShell>
   );
