@@ -72,8 +72,11 @@ export function SignInForm({ redirectTo, localMode }: { redirectTo: string; loca
         return;
       }
 
-      // phone numbers & usernames map to <login>@hail.iq auth accounts
-      const email = login.includes("@") ? login.trim() : `${login.trim()}@hail.iq`;
+      // phone numbers & usernames map to <login>@hail.iq auth accounts.
+      // تُصغَّر حروفها: الحسابات مخزَّنة بالصغير، ومن يكتب «Admin» أو يدع الهاتف
+      // يبدأ بحرف كبير يُرفَض بلا سبب ظاهر — وهذا يحدث على اللوحي إذ يرفع أول حرف تلقائياً.
+      const id = login.trim().toLowerCase();
+      const email = id.includes("@") ? id : `${id}@hail.iq`;
       // Supabase enforces >=6-char passwords; short PINs (e.g. the cashier's
       // «123») are stored zero-padded to 6, so pad the same way on login.
       const realPassword = password.length < 6 ? password.padEnd(6, "0") : password;
@@ -183,6 +186,9 @@ export function SignInForm({ redirectTo, localMode }: { redirectTo: string; loca
           type="text"
           required
           autoComplete="username"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           placeholder={localMode ? "pastry" : "07XXXXXXXXX"}
           value={login}
           onChange={(e) => setLogin(e.target.value)}
