@@ -595,6 +595,7 @@ async function kbItems(catId: string) {
 function kbItem(it: Row) {
   return [
     [{ text: "💰 تعديل السعر", callback_data: `pset|${it.id}|price` }, { text: "🏷️ تعديل الكلفة", callback_data: `pset|${it.id}|cost` }],
+    [{ text: "✏️ تعديل الاسم", callback_data: `pset|${it.id}|name` }, { text: "🖼️ تغيير الصورة", callback_data: `pimg|${it.id}` }],
     [{ text: "📦 المخزون", callback_data: `pstock|${it.id}` }, { text: it.is_active ? "⛔ تعطيل" : "✅ تفعيل", callback_data: `ptog|${it.id}` }],
     [{ text: "🗑️ حذف", callback_data: `pdel|${it.id}` }],
     [{ text: "⬅️ رجوع", callback_data: `pcat|${it.category_id}` }, ...BACK],
@@ -616,6 +617,34 @@ async function itemText(it: Row) {
 // ── handlers ───────────────────────────────────────────────────────────────
 const authorized = (chatId: number | string) => !OWNERS.length || OWNERS.includes(String(chatId));
 
+/**
+ * صورة الصنف من تلغرام إلى مخزن الصور.
+ *
+ * تلغرام لا يعطي الملف مباشرةً: يُطلب مساره ثم يُنزَّل ثم يُرفع. وتُؤخذ أكبر
+ * نسخة أرسلها (آخر عنصر في المصفوفة) — تلغرام يرسل عدة أحجام، وأصغرها مصغّرة
+ * لا تصلح للمنيو.
+ */
+async function saveTelegramPhoto(fileId: string, itemId: string): Promise<string | null> {
+  const f = await tg("getFile", { file_id: fileId });
+  const path = f?.result?.file_path;
+  if (!path) return null;
+  const bin = await fetch(`https://api.telegram.org/file/bot${TOKEN}/${path}`);
+  if (!bin.ok) return null;
+  const bytes = new Uint8Array(await bin.arrayBuffer());
+  const ext = path.split(".").pop()?.toLowerCase() === "png" ? "png" : "jpg";
+  const key = `items/${crypto.randomUUID()}.${ext}`;
+  const up = await fetch(`${URL_}/storage/v1/object/menu/${key}`, {
+    method: "POST",
+    headers: { apikey: SVC, Authorization: `Bearer ${SVC}`, "Content-Type": ext === "png" ? "image/png" : "image/jpeg" },
+    body: bytes,
+  });
+  if (!up.ok) return null;
+  // بصمة زمنية: المسار الجديد يكفي، لكن الشاشات المفتوحة تحتفظ بالقديم في ذاكرتها
+  const url = `${URL_}/storage/v1/object/public/menu/${key}?v=${Date.now()}`;
+  await restWrite(`menu_items?id=eq.${itemId}`, "PATCH", { image_url: url });
+  return url;
+}
+
 async function onMessage(msg: Row) {
   const chatId = msg.chat.id;
   if (!authorized(chatId)) {
@@ -623,9 +652,32 @@ async function onMessage(msg: Row) {
     return;
   }
   const state = await getState(chatId);
+
+  // صورة وصلت وننتظرها لصنف
+  if (Array.isArray(msg.photo) && msg.photo.length) {
+    if (!state || state.action !== "photo") {
+      await say(chatId, "لتغيير صورة صنف: ⚙️ إدارة الأصناف ← اختر الصنف ← 🖼️ تغيير الصورة.", [BACK]);
+      return;
+    }
+    await clearState(chatId);
+    const biggest = msg.photo[msg.photo.length - 1];
+    const url = await saveTelegramPhoto(String(biggest.file_id), String(state.itemId));
+    const it = await oneItem(state.itemId);
+    if (!url) {
+      await say(chatId, "تعذّر حفظ الصورة — حاول مرة أخرى.", kbItem(it));
+      return;
+    }
+    await say(chatId, `✅ تم تحديث صورة <b>${esc(String(it.name_ar))}</b>.`, kbItem(it));
+    return;
+  }
+  // ملف صورة أُرسل مستنداً — تلغرام لا يضغطه، وحجمه يبطّئ المنيو
+  if (msg.document && state?.action === "photo") {
+    await say(chatId, "أرسلها <b>صورةً</b> لا ملفاً: اضغط 📎 ← معرض الصور، لا «ملف».", [BACK]);
+    return;
+  }
   if (state) {
     await clearState(chatId);
-    const text = normDigits(String(msg.text).trim());
+    const text = normDigits(String(msg.text ?? "").trim());
     // ملصق ميزان: يُفكّ الرمز ثم يُعرض الموزون ليُختار
     if (state.plu) {
       const parsed = parseScaleLabel(text);
@@ -686,12 +738,27 @@ async function onMessage(msg: Row) {
       await clearState(chatId);
       return say(chatId, `✅ مخزون <b>${esc(it.name_ar)}</b> صار <b>${fmt(qty)}</b>\n\n${await itemText(it)}`, kbItem(it));
     }
+    if (state.action === "name") {
+      const name = text.trim().slice(0, 60);
+      if (!name) { await say(chatId, "الاسم فارغ — أرسل الاسم الجديد.", [BACK]); return; }
+      // الاسم مفتاح ربط الصور بالأصناف في أدوات الاستيراد، فتكراره يجعل صورة
+      // واحدة تُلصق بصنفين
+      const clash = (await rest(`menu_items?name_ar=eq.${encodeURIComponent(name)}&select=id`)) as Row[];
+      if (clash.some((c) => String(c.id) !== String(state.itemId))) {
+        await say(chatId, `يوجد صنف آخر بهذا الاسم — اختر اسماً مختلفاً.`, [BACK]);
+        return;
+      }
+      await restWrite(`menu_items?id=eq.${state.itemId}`, "PATCH", { name_ar: name });
+      const it = await oneItem(state.itemId);
+      await say(chatId, `تم تغيير الاسم ✅\n\n${await itemText(it)}`, kbItem(it));
+      return;
+    }
     if (state.action === "price" || state.action === "cost") {
       const val = Math.round(Number(text.replace(/[^\d.]/g, "")));
       if (!Number.isFinite(val) || val < 0) { await say(chatId, "قيمة غير صالحة — أرسل رقماً مثل: 3500", [BACK]); return; }
       await restWrite(`menu_items?id=eq.${state.itemId}`, "PATCH", { [state.action]: val });
       const it = await oneItem(state.itemId);
-      await say(chatId, `تم التحديث ✅\n\n${itemText(it)}`, kbItem(it));
+      await say(chatId, `تم التحديث ✅\n\n${await itemText(it)}`, kbItem(it));
       return;
     }
     if (state.action === "expense") {
@@ -831,7 +898,20 @@ async function onCallback(cb: Row) {
   if (cmd === "pset") {
     await setState(chatId, { action: b, itemId: a });
     const it = await oneItem(a);
-    return say(chatId, `أرسل ${b === "price" ? "السعر الجديد" : "الكلفة الجديدة"} لـ<b>${esc(it.name_ar)}</b> (رقم فقط):`, [[{ text: "إلغاء", callback_data: `pitem|${a}` }]], mid);
+    const ask =
+      b === "price" ? "السعر الجديد (رقم فقط)" : b === "cost" ? "الكلفة الجديدة (رقم فقط)" : "الاسم الجديد";
+    return say(chatId, `أرسل ${ask} لـ<b>${esc(it.name_ar)}</b>:`, [[{ text: "إلغاء", callback_data: `pitem|${a}` }]], mid);
+  }
+  if (cmd === "pimg") {
+    await setState(chatId, { action: "photo", itemId: a });
+    const it = await oneItem(a);
+    return say(
+      chatId,
+      `🖼️ أرسل صورة <b>${esc(it.name_ar)}</b> الآن.\n\n` +
+        `<i>أرسلها صورةً لا ملفاً — تلغرام يضغطها فتصل بالحجم المناسب للمنيو.</i>`,
+      [[{ text: "إلغاء", callback_data: `pitem|${a}` }]],
+      mid,
+    );
   }
   if (cmd === "padd") {
     await setState(chatId, { action: "add", categoryId: a });
@@ -901,7 +981,7 @@ Deno.serve(async (req) => {
   try {
     const update = await req.json();
     if (update.callback_query) await onCallback(update.callback_query);
-    else if (update.message?.text) await onMessage(update.message);
+    else if (update.message?.text || update.message?.photo || update.message?.document) await onMessage(update.message);
   } catch (e) {
     console.error("update error:", (e as Error).message);
   }
