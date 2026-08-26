@@ -313,6 +313,7 @@ export type Database = {
           p_channel: OrderChannel; p_lines: Json; p_customer?: string | null;
           p_table?: string | null; p_note?: string | null; p_combos?: Json;
           p_address?: string | null; p_geo?: string | null; p_deliver_at?: string | null;
+          p_client_id?: string | null;
         };
         Returns: { order_id: string; order_seq: number; group_no: number; station_slug: StationSlug }[];
       };

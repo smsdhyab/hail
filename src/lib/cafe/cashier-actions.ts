@@ -175,6 +175,8 @@ export async function cashierCheckout(input: {
   customerId?: string | null;
   table?: string | null;
   note?: string | null;
+  /** معرّف يولّده الجهاز — يمنع تسجيل البيعة مرتين لو أُعيد إرسال طلب وصل وضاع ردّه */
+  clientId?: string | null;
 }): Promise<CheckoutResult> {
   const staff = await requireStaff();
   if (!input.lines?.length) return { ok: false, error: "لا توجد أصناف في الطلب." };
@@ -212,6 +214,7 @@ export async function cashierCheckout(input: {
     p_customer: input.customerId ?? null,
     p_table: input.table?.trim() || null,
     p_note: input.note?.trim() || null,
+    p_client_id: input.clientId ?? null,
   });
   if (error || !placed?.[0]) return { ok: false, error: error?.message ?? "تعذّر إنشاء الطلب." };
 

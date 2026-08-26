@@ -1,10 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
-import { Check, Minus, Plus, Printer, QrCode, Trash2 } from "lucide-react";
+import {
+  WifiOff,
+  RefreshCw, Check, Minus, Plus, Printer, QrCode, Trash2 } from "lucide-react";
 import type { MenuCategoryView, MenuItemView } from "@/lib/cafe/menu-data";
 import { formatIqdLabel } from "@/lib/cafe/money";
 import { lineTotal, qtyMin, qtyStep, roundQty, type SoldBy } from "@/lib/cafe/order";
+import { enqueue, flush, newClientId, pendingCount } from "@/lib/cafe/offline-queue";
 import { cashierCheckout } from "@/lib/cafe/cashier-actions";
 import { findCard, redeemReward, type Card } from "@/lib/cafe/loyalty-actions";
 import { QrScanner } from "./QrScanner";
@@ -166,6 +169,47 @@ export function CashierClient({ menu, tables }: { menu: MenuCategoryView[]; tabl
     setLoyaltyMsg(`تم استبدال مكافأة — خصم ${formatIqdLabel(res.discount)}`);
   }
 
+  // ── البيع بلا إنترنت ─────────────────────────────────────────────────────
+  const [offline, setOffline] = useState(false);
+  const [queued, setQueued] = useState(0);
+  const syncing = useRef(false);
+
+  const syncQueue = useCallback(async () => {
+    if (syncing.current) return;
+    syncing.current = true;
+    try {
+      await flush(async (payload, clientId) => {
+        const r = await cashierCheckout({ ...(payload as Parameters<typeof cashierCheckout>[0]), clientId });
+        return { ok: r.ok, error: r.ok ? undefined : r.error };
+      });
+    } finally {
+      syncing.current = false;
+      setQueued(pendingCount());
+    }
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reading browser state after mount
+    setQueued(pendingCount());
+     
+    setOffline(!navigator.onLine);
+    const up = () => {
+      setOffline(false);
+      void syncQueue();
+    };
+    const down = () => setOffline(true);
+    window.addEventListener("online", up);
+    window.addEventListener("offline", down);
+    // المتصفح قد يقول «متصل» والشبكة مقطوعة فعلاً، فتُعاد المحاولة دورياً أيضاً
+    const t = setInterval(() => void syncQueue(), 30000);
+    void syncQueue();
+    return () => {
+      window.removeEventListener("online", up);
+      window.removeEventListener("offline", down);
+      clearInterval(t);
+    };
+  }, [syncQueue]);
+
   async function checkout() {
     // checkoutBusyRef is synchronous — `busy` state updates a tick later, so a
     // rapid double-tap would otherwise submit twice (double order + double drawer).
@@ -183,7 +227,25 @@ export function CashierClient({ menu, tables }: { menu: MenuCategoryView[]; tabl
       const table = orderType === "dinein" ? tableNo : null;
       const extraNote = extras.map((x) => `${x.name} (${formatIqdLabel(x.price)})`).join("، ") || null;
       const payload = lines.map((l) => ({ item_id: l.itemId, variant_id: l.variantId, flavor: l.flavor, qty: l.qty }));
-      const res = await cashierCheckout({ lines: payload, discount, extra: extraTotal, extraNote, customerId: customer?.id ?? null, table, note: orderNote.trim() || null });
+      const clientId = newClientId();
+      const input = { lines: payload, discount, extra: extraTotal, extraNote, customerId: customer?.id ?? null, table, note: orderNote.trim() || null };
+
+      // الشبكة قد تنقطع في منتصف البيعة. لا يجوز أن يقف المحل: يُحفظ الطلب في
+      // الجهاز ويأخذ الزبون وصله فوراً برقم محلي، ويُرفع وحده حين تعود الشبكة.
+      let res: Awaited<ReturnType<typeof cashierCheckout>>;
+      try {
+        res = await cashierCheckout({ ...input, clientId });
+      } catch {
+        const row = enqueue(clientId, input);
+        setQueued(pendingCount());
+        res = {
+          ok: true,
+          orderNumber: `م${row.localNo}`,
+          total,
+          awarded: 0,
+          perStation: [],
+        };
+      }
       if (!res.ok) {
         setErr(res.error);
         return;
@@ -232,6 +294,31 @@ export function CashierClient({ menu, tables }: { menu: MenuCategoryView[]; tabl
     // width blows the grid past narrow POS screens (1024px) → horizontal cut.
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
       <FridayPrayerNotice />
+
+      {/* حالة الشبكة: الكاشير يجب أن يعرف أنه يبيع محلياً وأن بيعاته محفوظة —
+          وإلا ظنّ أن البيعة ضاعت فأعادها، أو ظنّها وصلت وهي في الجهاز */}
+      {(offline || queued > 0) && (
+        <div
+          className={`lg:col-span-2 flex flex-wrap items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-bold ${
+            offline ? "border-accent bg-accent/10 text-accent-foreground" : "border-emerald-500/60 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+          }`}
+        >
+          {offline ? (
+            <>
+              <WifiOff className="size-4 shrink-0" />
+              <span>لا يوجد إنترنت — البيع مستمر، والطلبات تُحفظ وترتفع وحدها عند عودة الشبكة.</span>
+            </>
+          ) : (
+            <>
+              <RefreshCw className="size-4 shrink-0 animate-spin" />
+              <span>جارٍ رفع الطلبات المحفوظة…</span>
+            </>
+          )}
+          {queued > 0 && (
+            <span className="rounded-full bg-background px-2.5 py-0.5 tabular-nums">{queued} بانتظار الرفع</span>
+          )}
+        </div>
+      )}
       {/* items */}
       <section className="min-w-0 space-y-4">
         <div className="flex gap-2 overflow-x-auto pb-1">
