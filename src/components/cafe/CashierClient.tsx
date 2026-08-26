@@ -6,7 +6,7 @@ import {
   RefreshCw, Check, Minus, Plus, Printer, QrCode, Trash2 } from "lucide-react";
 import type { MenuCategoryView, MenuItemView } from "@/lib/cafe/menu-data";
 import { formatIqdLabel } from "@/lib/cafe/money";
-import { lineTotal, qtyMin, qtyStep, roundQty, type SoldBy } from "@/lib/cafe/order";
+import { lineTotal, qtyMin, qtyStep, roundQty, roundTicket, type SoldBy } from "@/lib/cafe/order";
 import { enqueue, flush, newClientId, pendingCount } from "@/lib/cafe/offline-queue";
 import { cashierCheckout } from "@/lib/cafe/cashier-actions";
 import { findCard, redeemReward, type Card } from "@/lib/cafe/loyalty-actions";
@@ -126,7 +126,11 @@ export function CashierClient({ menu, tables }: { menu: MenuCategoryView[]; tabl
   const lines = Object.values(cart);
   const subtotal = useMemo(() => lines.reduce((s, l) => s + lineTotal(l.unitPrice, l.qty, l.soldBy), 0), [lines]);
   const extraTotal = useMemo(() => extras.reduce((s, x) => s + x.price, 0), [extras]);
-  const total = Math.max(0, subtotal - discount + extraTotal);
+  const rawTotal = Math.max(0, subtotal - discount + extraTotal);
+  // ما يدفعه الزبون فعلاً: أقرب مضاعف لـ٢٥٠. يُحسب هنا بنفس قاعدة القاعدة،
+  // فما يراه الكاشير على الشاشة هو ما يُقيَّد وما يُطبع.
+  const total = roundTicket(rawTotal);
+  const roundAdjust = total - rawTotal;
 
   function addExtra() {
     // description is verbal at the counter — the cashier only enters the amount
@@ -260,6 +264,7 @@ export function CashierClient({ menu, tables }: { menu: MenuCategoryView[]; tabl
         subtotal,
         discount,
         extras,
+        roundAdjust,
         total,
         dateTime: new Date().toLocaleString("en-GB", {
           timeZone: "Asia/Baghdad",

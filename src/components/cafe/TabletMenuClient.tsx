@@ -9,7 +9,7 @@ import { CombosSection, OFFERS_CAT } from "./CombosSection";
 import { DeliveryForm, deliveryError, emptyDelivery, type DeliveryDetails, type DeliveryField } from "./DeliveryForm";
 import { DELIVERY_AREA_AR } from "@/lib/cafe/branding";
 import { formatIqdLabel } from "@/lib/cafe/money";
-import { formatQty, lineTotal } from "@/lib/cafe/order";
+import { formatQty, lineTotal, roundTicket } from "@/lib/cafe/order";
 import { submitOrder, type OrderLineInput, type OrderSplitPart } from "@/lib/cafe/order-actions";
 import { useCart } from "./use-cart";
 import { MenuIcon } from "./MenuIcon";
@@ -169,7 +169,8 @@ export function TabletMenuClient({
   // الأجرة تُضاف لطلبات التوصيل وحدها، وتُعرض سطراً مستقلاً: مبلغ يظهر في
   // الإجمالي بلا اسم يقرؤه الزبون كزيادة مجهولة
   const fee = isDelivery ? Math.max(0, deliveryFee) : 0;
-  const dueTotal = Math.max(0, total + comboAdjust) + fee;
+  const rawDue = Math.max(0, total + comboAdjust) + fee;
+  const dueTotal = roundTicket(rawDue);
 
   const modalPrice = modalItem ? (modalItem.variants.find((v) => v.id === modalVariant)?.price ?? priceOf(modalItem)) : 0;
   const crossTotal = [...crossSel].reduce((s, id) => {

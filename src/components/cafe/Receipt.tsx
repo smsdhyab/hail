@@ -11,6 +11,9 @@ export type ReceiptData = {
   extras?: { name: string; price: number }[];
   /** أجرة التوصيل — تُطبع سطراً مستقلاً كي يرى الزبون سبب الفرق */
   deliveryFee?: number;
+  /** فرق تقريب الإجمالي إلى أقرب ٢٥٠ — يُكتب صراحةً، فرقمٌ لا يُفسَّر على وصل
+   *  هو أسرع ما يُفقد الثقة بالنظام */
+  roundAdjust?: number;
   total: number;
   dateTime: string;
   /** table number for incoming self-order tickets */
@@ -119,6 +122,15 @@ export function Receipt({ data }: { data: ReceiptData }) {
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px" }}>
           <span>الخصم</span>
           <span>-{formatIqd(data.discount)} د.ع</span>
+        </div>
+      )}
+      {(data.roundAdjust ?? 0) !== 0 && (
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px" }}>
+          <span>تقريب</span>
+          <span>
+            {data.roundAdjust! > 0 ? "+" : "-"}
+            {formatIqd(Math.abs(data.roundAdjust!))} د.ع
+          </span>
         </div>
       )}
       <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: "14px", marginTop: "2px" }}>

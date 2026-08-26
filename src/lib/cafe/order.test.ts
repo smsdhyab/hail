@@ -1,20 +1,36 @@
 import { describe, expect, it } from "vitest";
-import { formatQty, lineTotal, orderSubtotal, qtyStep, roundQty } from "./order";
+import { formatQty, lineTotal, orderSubtotal, qtyStep, roundQty, roundTicket } from "./order";
 
 describe("البيع بالوزن", () => {
   it("٣٥٠ غم بسعر ٢٥٬٠٠٠ للكيلو = ٨٬٧٥٠", () => {
     expect(lineTotal(25000, 0.35, "weight")).toBe(8750);
   });
 
-  it("الموزون يُقرَّب إلى أقرب ٢٥٠ — أصغر فئة عراقية", () => {
-    expect(lineTotal(25500, 0.333, "weight")).toBe(8500); // 8491.5 لا تُدفع
-    expect(lineTotal(25000, 0.999, "weight")).toBe(25000); // 24975
-    expect(lineTotal(25000, 0.35, "weight")).toBe(8750); // مضبوط أصلاً
+  it("السطر دقيق بلا تقريب — التقريب على الإجمالي وحده", () => {
+    expect(lineTotal(15000, 0.04, "weight")).toBe(600); // لا 500
+    expect(lineTotal(25500, 0.333, "weight")).toBe(8492);
+    expect(lineTotal(25000, 0.35, "weight")).toBe(8750);
   });
 
-  it("لا يخرج وزن ضئيل مجاناً بالتقريب", () => {
-    expect(lineTotal(25000, 0.001, "weight")).toBe(250); // 25 → أدنى فئة
-    expect(lineTotal(0, 0.5, "weight")).toBe(0); // صنف بلا سعر يبقى صفراً
+  it("إجمالي التذكرة يُقرَّب إلى أقرب ٢٥٠", () => {
+    expect(roundTicket(600)).toBe(500);
+    expect(roundTicket(3750)).toBe(3750);
+    expect(roundTicket(8492)).toBe(8500);
+    expect(roundTicket(4375)).toBe(4500);
+    expect(roundTicket(0)).toBe(0);
+  });
+
+  it("مبلغ ضئيل لا يخرج مجاناً بالتقريب", () => {
+    expect(roundTicket(25)).toBe(250);
+    expect(roundTicket(125)).toBe(250);
+  });
+
+  it("التقريب مرة واحدة يخسر أقلّ من التقريب سطراً سطراً", () => {
+    const qs = [0.04, 0.12, 0.09];
+    const lines = qs.map((q) => lineTotal(15000, q, "weight"));
+    expect(lines).toEqual([600, 1800, 1350]);
+    expect(roundTicket(lines.reduce((a, b) => a + b, 0))).toBe(3750);
+    // لو قُرّب كل سطر وحده: 500 + 1750 + 1250 = 3500 — أي ٢٥٠ أقلّ
   });
 
   it("أسطر القطعة لا تُقرَّب — سعر ١٬٣٠٠ يبقى ١٬٣٠٠", () => {

@@ -25,18 +25,25 @@ export function roundToStep(amount: number): number {
  * (`order_items.line_total`). أي اختلاف بينهما يعني رقماً في السلة غير الذي
  * يُطبع على الوصل.
  *
- * `qty` كسرية للأصناف الموزونة (٠٫٣٥ = ٣٥٠ غم) وصحيحة لغيرها، و`unitPrice`
- * صحيح دائماً — سعر القطعة أو سعر الكيلو.
- *
- * الموزون يُقرَّب إلى أقرب ٢٥٠ لأن ناتج الضرب مبلغ لا يمكن دفعه غالباً.
- * وأسطر القطعة تُترك بالضبط: أسعارها مضبوطة على ٢٥٠ أصلاً، وتقريبها
- * «احتياطاً» يخصم من سعر مثل ١٬٣٠٠ مئة دينار في كل بيعة بصمت.
+ * السطر **دقيق بلا تقريب**: ٤٠ غم × ١٥٬٠٠٠ للكيلو = ٦٠٠ ديناراً كما هي.
+ * التقريب على ٢٥٠ يقع مرة واحدة على إجمالي التذكرة (`roundTicket`) لا على كل
+ * سطر — تذكرة بثلاثة أصناف موزونة كانت تخسر ثلاث مرات.
  */
-export function lineTotal(unitPrice: number, qty: number, soldBy: SoldBy = "piece"): number {
-  const raw = Math.max(0, Math.round(unitPrice)) * Math.max(0, qty);
-  if (soldBy !== "weight") return Math.round(raw);
-  if (raw <= 0) return 0;
-  // وزن ضئيل جداً يُقرَّب إلى صفر — فيخرج الصنف مجاناً
+export function lineTotal(unitPrice: number, qty: number, _soldBy: SoldBy = "piece"): number {
+  void _soldBy; // يبقى في التوقيع: المنادون يمرّرونه، والتمييز قد يعود
+  return Math.round(Math.max(0, Math.round(unitPrice)) * Math.max(0, qty));
+}
+
+/**
+ * ما يدفعه الزبون فعلاً: أقرب مضاعف لـ٢٥٠.
+ *
+ * الأسطر تبقى بأرقامها الحقيقية على الوصل، والفرق يظهر سطراً صريحاً في آخره —
+ * رقمٌ لا يُفسَّر على وصل هو أسرع ما يُفقد الثقة بالنظام.
+ */
+export function roundTicket(amount: number): number {
+  const raw = Math.max(0, Math.round(amount));
+  if (raw === 0) return 0;
+  // مبلغ ضئيل لا يُقرَّب إلى صفر فتخرج البضاعة مجاناً
   return Math.max(IQD_STEP, roundToStep(raw));
 }
 
