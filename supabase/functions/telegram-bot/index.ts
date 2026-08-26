@@ -203,6 +203,8 @@ function mainMenu() {
     [{ text: "🪑 أكثر الطاولات طلباً", callback_data: "tabtop|29" }, { text: "📅 تقرير العدد اليومي", callback_data: "dcount|6" }],
     [{ text: "⚖️ مقارنة الكاشيرين", callback_data: "vs|6" }],
     [{ text: "🌙 التقرير اليومي النهائي", callback_data: "final" }, { text: "📉 إضافة مصروف", callback_data: "expadd" }],
+    [{ text: "🔼 تقرير الطابق العلوي", callback_data: "flr|cafe" }, { text: "🔽 تقرير الطابق الأرضي", callback_data: "flr|pastry" }],
+    [{ text: "🏷️ ربط رمز ميزان", callback_data: "plu" }],
     [{ text: "📊 الاستخدام وحالة النظام", callback_data: "usage" }],
   ];
 }
@@ -332,6 +334,78 @@ async function viewAvail() {
   lines.push(off ? `⛔ معطّل حالياً: ${off} منتج` : "كل المنتجات مفعّلة ✅");
   return lines.join("\n").slice(0, 4000);
 }
+
+/**
+ * تقرير طابق واحد.
+ *
+ * الطابق الأرضي للمعجنات والعلوي للكافيه، فتقرير الطابق هو تقرير قسمه. يُرسل
+ * منفصلاً لا مدمجاً: مسؤول كل طابق يقرأ أرقامه وحدها بلا أن يبحث عنها وسط
+ * أرقام الآخر، والمالك يرى الاثنين.
+ */
+async function viewFloorReport(station: string, floorName: string) {
+  const today = baghdadDay();
+  const t = sumRows(await summary(today, today, station));
+
+  // الأصناف المباعة في هذا القسم وحده
+  const rows = (await restAll(
+    // للطلب مفتاحان نحو الأقسام (قسمه، ومَن قبض)، فيجب تسمية المقصود صراحةً
+    // وإلا رفض PostgREST الاستعلام لالتباس العلاقة
+    `order_items?select=name_ar,qty,sold_by,orders!inner(status,business_day,stations!orders_station_id_fkey!inner(slug))` +
+      `&orders.status=eq.paid&orders.business_day=eq.${today}` +
+      `&orders.stations.slug=eq.${station}`,
+  )) as Row[];
+  const byName = new Map<string, number>();
+  for (const r of rows) {
+    const n = String(r.name_ar);
+    byName.set(n, (byName.get(n) ?? 0) + Number(r.qty));
+  }
+  const sold = [...byName.entries()].filter(([, q]) => q > 0).sort((a, b) => b[1] - a[1]);
+
+  const lines = [
+    `${floorName}`,
+    `<b>${today}</b>`,
+    "",
+    `🧾 الطلبات: <b>${t.c}</b>`,
+    `💰 المبيعات: <b>${fmt(t.s)} د.ع</b>`,
+    `📈 الأرباح: <b>${fmt(t.p)} د.ع</b>`,
+    `📉 المصروفات: <b>${fmt(t.e)} د.ع</b>`,
+    `✅ الصافي: <b>${fmt(t.n)} د.ع</b>`,
+    "",
+    `<b>الأصناف المباعة:</b>`,
+  ];
+  if (!sold.length) lines.push("لا مبيعات.");
+  else for (const [name, qty] of sold.slice(0, 40)) lines.push(`• ${esc(name)} — ${qty % 1 === 0 ? qty : qty.toFixed(3)}`);
+  return lines.join("\n");
+}
+
+/**
+ * فكّ ترميز ملصق الميزان.
+ *
+ * ملصق ACLAS في المحل: 2250007000406 = 22 | 50007 | 00040 | 6
+ *                                        بادئة  الرمز   الوزن  تحقّق
+ *
+ * يُقبل الباركود كاملاً (١٣ رقماً) فيُستخرج منه الرمز، أو الرمز وحده كما هو
+ * مطبوع في خانة Code. الاثنان مقبولان لأن من يمسك الملصق قد يقرأ أيّهما.
+ */
+function parseScaleLabel(raw: string): { plu: number; grams: number | null } | null {
+  const d = raw.replace(/[^0-9]/g, "");
+  if (!d) return null;
+  if (d.length === 13) {
+    // التحقّق من رقم EAN-13: يمنع رقماً كُتب خطأً من أن يُربط بصنف آخر
+    let sum = 0;
+    for (let i = 0; i < 12; i++) sum += Number(d[i]) * (i % 2 === 0 ? 1 : 3);
+    if ((10 - (sum % 10)) % 10 !== Number(d[12])) return null;
+    return { plu: Number(d.slice(2, 7)), grams: Number(d.slice(7, 12)) };
+  }
+  // الرمز وحده — من خانة Code على الملصق
+  if (d.length <= 6) return { plu: Number(d), grams: null };
+  return null;
+}
+
+const FLOOR_REPORTS: [string, string][] = [
+  ["cafe", "🔼 <b>الطابق العلوي — الكافيه</b>"],
+  ["pastry", "🔽 <b>الطابق الأرضي — المعجنات والمخبوزات</b>"],
+];
 
 async function viewDailyFinal() {
   const today = baghdadDay();
@@ -552,6 +626,36 @@ async function onMessage(msg: Row) {
   if (state) {
     await clearState(chatId);
     const text = normDigits(String(msg.text).trim());
+    // ملصق ميزان: يُفكّ الرمز ثم يُعرض الموزون ليُختار
+    if (state.plu) {
+      const parsed = parseScaleLabel(text);
+      if (!parsed || !parsed.plu) {
+        await say(chatId, "لم أفهم الرقم. أرسل الباركود كاملاً (١٣ رقماً) أو الرمز من خانة <b>Code</b>.", [[{ text: "🏷️ حاول مجدداً", callback_data: "plu" }], BACK]);
+        return;
+      }
+      const taken = (await rest(`menu_items?plu=eq.${parsed.plu}&select=name_ar`)) as Row[];
+      if (taken.length) {
+        await say(chatId, `الرمز <b>${parsed.plu}</b> مربوط أصلاً بصنف <b>${esc(String(taken[0].name_ar))}</b>.
+اختر صنفاً آخر أو غيّر رمز ذاك الصنف من لوحة التحكم.`, [[{ text: "🏷️ رمز آخر", callback_data: "plu" }], BACK]);
+        return;
+      }
+      // الموزون وحده: الرمز لا معنى له لصنف يُباع بالقطعة
+      const items = (await rest("menu_items?sold_by=eq.weight&select=id,name_ar,plu&order=name_ar.asc")) as Row[];
+      if (!items.length) {
+        await say(chatId, "لا توجد أصناف مضبوطة على البيع بالوزن بعد. اضبطها من لوحة التحكم ← المنيو.", [BACK]);
+        return;
+      }
+      const rows = items.map((i) => [{
+        text: `${i.plu ? "🔁 " : ""}${String(i.name_ar)}${i.plu ? ` (رمزه ${i.plu})` : ""}`,
+        callback_data: `plusave|${parsed.plu}|${i.id}`,
+      }]);
+      const weightLine = parsed.grams !== null ? `
+الوزن على الملصق: <b>${parsed.grams} غم</b>` : "";
+      await say(chatId, `🏷️ الرمز <b>${parsed.plu}</b>${weightLine}
+
+لأي صنف يعود؟`, [...rows.slice(0, 40), BACK]);
+      return;
+    }
     if (state.action === "searchdate") {
       const day = parseDate(text);
       if (!day) {
@@ -633,6 +737,32 @@ async function onCallback(cb: Row) {
   await clearState(chatId);
 
   const [cmd, a, b] = String(cb.data).split("|");
+  if (cmd === "flr") {
+    const st = a === "cafe" ? "cafe" : "pastry";
+    const name = FLOOR_REPORTS.find(([k]) => k === st)![1];
+    return say(chatId, await viewFloorReport(st, name), [[{ text: "🔄 تحديث", callback_data: `flr|${st}` }], BACK], mid);
+  }
+  if (cmd === "plu") {
+    await setState(chatId, { plu: true });
+    return say(
+      chatId,
+      "🏷️ <b>ربط رمز ميزان بصنف</b>\n\n" +
+        "أرسل رقم الباركود من الملصق (١٣ رقماً)، أو الرمز وحده من خانة <b>Code</b>.\n\n" +
+        "مثال: <code>2250007000406</code> أو <code>50007</code>",
+      [BACK],
+      mid,
+    );
+  }
+  if (cmd === "plusave") {
+    // a = الرمز، b = معرّف الصنف
+    const res = await restWrite(`menu_items?id=eq.${b}`, "PATCH", { plu: Number(a) });
+    void res;
+    const it = await oneItem(String(b));
+    return say(chatId, `✅ رُبط الرمز <b>${esc(String(a))}</b> بصنف <b>${esc(String(it?.name_ar ?? "؟"))}</b>.`, [
+      [{ text: "🏷️ ربط رمز آخر", callback_data: "plu" }],
+      BACK,
+    ], mid);
+  }
   if (cmd === "usage") {
     const rows = await measureUsage();
     const text = rows.length ? usageText(rows) : "تعذّر قياس الاستخدام الآن.";
@@ -729,8 +859,14 @@ Deno.serve(async (req) => {
       return new Response("forbidden", { status: 403 });
     }
     try {
-      const text = await viewDailyFinal();
-      for (const o of OWNERS) await say(o, text, [BACK]);
+      // تقرير لكل طابق ثم المجمّع: الأرقام المنفصلة تُقرأ أولاً وهي المطلوبة،
+      // والمجمّع بعدها لمن يريد الصورة الكاملة
+      const floors = await Promise.all(FLOOR_REPORTS.map(([st, name]) => viewFloorReport(st, name)));
+      const total = await viewDailyFinal();
+      for (const o of OWNERS) {
+        for (const f of floors) await say(o, f);
+        await say(o, total, [BACK]);
+      }
       return new Response("sent", { status: 200 });
     } catch (e) {
       return new Response(`error: ${(e as Error).message}`, { status: 500 });
