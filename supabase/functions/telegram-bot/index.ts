@@ -140,6 +140,53 @@ async function clearState(chatId: number | string) {
   await restWrite(`bot_state?chat_id=eq.${chatId}`, "DELETE");
 }
 
+// ── حارس الاستخدام ─────────────────────────────────────────────────────────
+//
+// الخطة المجانية لها حدود، وتجاوزها يوقف المحل بلا إنذار. هذا الحارس يقيس
+// الاستهلاك ويُنبّه **قبل** الوصول إلى الحدّ بوقت كافٍ للتصرّف.
+//
+// ولا يرسل شيئاً ما دام كل شيء سليماً: تنبيه كل نصف ساعة يقول «الوضع ممتاز»
+// يُدرِّب صاحبه على تجاهله، فحين يأتي التنبيه الحقيقي لا يقرؤه أحد.
+
+const LIMITS = {
+  db_mb: 500,      // حجم قاعدة البيانات — الخطة المجانية
+  storage_mb: 1024, // مساحة الصور
+  connections: 60,
+  warn_at: 0.75,   // يُنبّه عند ثلاثة أرباع الحدّ
+};
+
+type Usage = { label: string; used: number; limit: number; unit: string; pct: number };
+
+async function measureUsage(): Promise<Usage[]> {
+  const rows = (await rpc("usage_stats", {})) as
+    | { db_mb: string | number; connections: number; max_connections: number }[]
+    | null;
+  const r = Array.isArray(rows) ? rows[0] : null;
+  if (!r) return [];
+  const db = Number(r.db_mb) || 0;
+  return [
+    { label: "قاعدة البيانات", used: db, limit: LIMITS.db_mb, unit: "م.ب", pct: db / LIMITS.db_mb },
+    {
+      label: "الاتصالات",
+      used: r.connections,
+      limit: r.max_connections || LIMITS.connections,
+      unit: "",
+      pct: r.connections / (r.max_connections || LIMITS.connections),
+    },
+  ];
+}
+
+function usageText(rows: Usage[]): string {
+  const bar = (pct: number) => {
+    const n = Math.min(10, Math.max(0, Math.round(pct * 10)));
+    return "█".repeat(n) + "░".repeat(10 - n);
+  };
+  const lines = rows.map(
+    (u) => `${u.label}\n${bar(u.pct)} ${Math.round(u.pct * 100)}% — ${u.used}${u.unit ? " " + u.unit : ""} من ${u.limit}${u.unit ? " " + u.unit : ""}`,
+  );
+  return `📊 *الاستخدام*\n\n${lines.join("\n\n")}`;
+}
+
 // ── views ──────────────────────────────────────────────────────────────────
 const CHANNEL_AR: Record<string, string> = { qr: "موبايل", kiosk: "لوحي", cashier: "كاشير" };
 const BACK = [{ text: "⬅️ القائمة الرئيسية", callback_data: "menu" }];
@@ -156,6 +203,7 @@ function mainMenu() {
     [{ text: "🪑 أكثر الطاولات طلباً", callback_data: "tabtop|29" }, { text: "📅 تقرير العدد اليومي", callback_data: "dcount|6" }],
     [{ text: "⚖️ مقارنة الكاشيرين", callback_data: "vs|6" }],
     [{ text: "🌙 التقرير اليومي النهائي", callback_data: "final" }, { text: "📉 إضافة مصروف", callback_data: "expadd" }],
+    [{ text: "📊 الاستخدام وحالة النظام", callback_data: "usage" }],
   ];
 }
 
@@ -585,6 +633,11 @@ async function onCallback(cb: Row) {
   await clearState(chatId);
 
   const [cmd, a, b] = String(cb.data).split("|");
+  if (cmd === "usage") {
+    const rows = await measureUsage();
+    const text = rows.length ? usageText(rows) : "تعذّر قياس الاستخدام الآن.";
+    return say(chatId, text, [[{ text: "🔄 تحديث", callback_data: "usage" }], BACK], mid);
+  }
   if (cmd === "menu") return say(chatId, "☕️ <b>مخبز ومقهى هيل — لوحة التحكم</b>\nاختر من الأزرار:", mainMenu(), mid);
   if (cmd === "rpt") return say(chatId, await viewReport(Number(a)), [[{ text: "🔄 تحديث", callback_data: cb.data }], BACK], mid);
   if (cmd === "day") return say(chatId, await viewDaySummary(baghdadDay(-Number(a))), [[{ text: "🔄 تحديث", callback_data: cb.data }], BACK], mid);
@@ -679,6 +732,26 @@ Deno.serve(async (req) => {
       const text = await viewDailyFinal();
       for (const o of OWNERS) await say(o, text, [BACK]);
       return new Response("sent", { status: 200 });
+    } catch (e) {
+      return new Response(`error: ${(e as Error).message}`, { status: 500 });
+    }
+  }
+
+  // حارس الاستخدام — pg_cron ينادي كل نصف ساعة. صامت ما لم يُتجاوز الحدّ.
+  if (url.searchParams.get("job") === "health") {
+    if (HOOK_SECRET && req.headers.get("x-job-secret") !== HOOK_SECRET) {
+      return new Response("forbidden", { status: 403 });
+    }
+    try {
+      const rows = await measureUsage();
+      const hot = rows.filter((u) => u.pct >= LIMITS.warn_at);
+      if (!hot.length) return new Response("ok", { status: 200 });
+      const text =
+        `⚠️ *تنبيه استخدام*\n\n` +
+        hot.map((u) => `${u.label}: ${Math.round(u.pct * 100)}% من الحدّ (${u.used}${u.unit ? " " + u.unit : ""} من ${u.limit})`).join("\n") +
+        `\n\nتجاوز الحدّ يوقف النظام — راجع الخطة قبل ذلك.`;
+      for (const o of OWNERS) await say(o, text, [BACK]);
+      return new Response("warned", { status: 200 });
     } catch (e) {
       return new Response(`error: ${(e as Error).message}`, { status: 500 });
     }
