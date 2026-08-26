@@ -143,13 +143,19 @@ export function TabletMenuClient({
     setPickedCombos((c) => [...c, combo.slug]);
   }
 
+  /** يفتح بطاقة الصنف: الاسم كاملاً والمحتويات والأحجام وزرّ الإضافة. */
+  function openItem(it: MenuItemView) {
+    setModalItem(it);
+    setModalVariant(it.variants[0]?.id ?? null);
+    setCrossSel(new Set());
+    setModalGrams(500);
+  }
+
   function onPlus(it: MenuItemView) {
-    // size choice OR a drink we can pair a pastry with → open the modal
-    if (it.variants.length > 0 || crossSell || it.sold_by === "weight") {
-      setModalItem(it);
-      setModalVariant(it.variants[0]?.id ?? null);
-      setCrossSel(new Set());
-      setModalGrams(500);
+    // زرّ + للإضافة السريعة. لكن ما يحتاج اختياراً — حجم أو وزن أو إضافات —
+    // أو له تفاصيل لا تسعها البطاقة، يُفتح ليقرأه الزبون قبل أن يضيفه.
+    if (it.variants.length > 0 || crossSell || it.sold_by === "weight" || it.description) {
+      openItem(it);
     } else {
       add(it, null, priceOf(it));
     }
@@ -261,7 +267,11 @@ export function TabletMenuClient({
             {(cat?.items ?? []).map((it) => {
               const s = imgSrcs(it.image_url);
               return (
-                <article key={it.id} className="overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--panelsoft)]">
+                <article
+                  key={it.id}
+                  onClick={() => openItem(it)}
+                  className="cursor-pointer overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--panelsoft)] transition active:scale-[0.99]"
+                >
                   <div className="relative aspect-[4/3] bg-[var(--panel)]" style={effect === "pastry" ? { animation: "hail-float 4s ease-in-out infinite" } : undefined}>
                     <MenuIcon name={it.name_ar} category={cat?.name_ar} className="absolute inset-0 m-auto size-16 text-[var(--accent)] opacity-45" />
                     {s && (
@@ -285,7 +295,10 @@ export function TabletMenuClient({
                     )}
                     {/* add button floats on the image → keeps the footer clean + identical on all phones */}
                     <button
-                      onClick={() => onPlus(it)}
+                      onClick={(e) => {
+                        e.stopPropagation(); // البطاقة تفتح التفاصيل، والزرّ يضيف
+                        onPlus(it);
+                      }}
                       aria-label="أضف للسلة"
                       className="absolute bottom-2 left-2 z-10 flex size-10 items-center justify-center rounded-full bg-[var(--accent)] text-[var(--activeink)] shadow-lg transition active:scale-90"
                     >
@@ -294,6 +307,10 @@ export function TabletMenuClient({
                   </div>
                   <div className="px-3 py-2.5 text-right">
                     <p className="line-clamp-2 min-h-[2.4em] text-sm font-bold leading-tight sm:text-[15px]">{it.name_ar}</p>
+                    {it.description && (
+                      // سطر واحد فقط — وجوده يقول إن للصنف تفاصيل تُقرأ بالضغط
+                      <p className="line-clamp-1 text-[11px] leading-tight text-[var(--muted)]">{it.description}</p>
+                    )}
                     <p className="mt-1 whitespace-nowrap text-lg font-extrabold tabular-nums text-[var(--accent)]">
                       {formatIqdLabel(priceOf(it))}
                       {it.sold_by === "weight" && (
@@ -352,8 +369,8 @@ export function TabletMenuClient({
       {modalItem && (
         <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/60 sm:items-center" onClick={() => setModalItem(null)}>
           <div style={{ ...(VARS as CSSProperties) }} className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-[var(--panelsoft)] p-5 text-[var(--text)] sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-lg font-extrabold">{modalItem.name_ar}</h2>
+            <div className="mb-3 flex items-start justify-between gap-2">
+              <h2 className="text-lg font-extrabold leading-tight">{modalItem.name_ar}</h2>
               <div className="flex items-center gap-2">
                 {count > 0 && (
                   <span className="flex items-center gap-1 rounded-full bg-[var(--accent)]/15 px-2.5 py-1 text-sm font-bold text-[var(--accent)]">
@@ -363,6 +380,13 @@ export function TabletMenuClient({
                 <button onClick={() => setModalItem(null)} aria-label="إغلاق" className="rounded-full border border-[var(--line)] p-1.5"><X className="size-5" /></button>
               </div>
             </div>
+
+            {/* المحتويات والتفاصيل كاملةً — هذا سبب فتح البطاقة أصلاً */}
+            {modalItem.description && (
+              <p className="mb-4 whitespace-pre-line rounded-xl border border-[var(--line)] bg-[var(--panel)] p-3 text-sm leading-relaxed text-[var(--text)]">
+                {modalItem.description}
+              </p>
+            )}
 
             {modalIsWeight && (
               <div className="mb-4">
