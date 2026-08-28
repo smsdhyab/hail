@@ -331,3 +331,70 @@ export async function setDeliveryFee(fee: number) {
   revalidatePath("/dashboard");
   return { ok: true as const };
 }
+
+// ── شاشة استراحة المنيو ─────────────────────────────────────────────────────
+
+export type Screensaver = { url: string | null; afterSec: number; on: boolean };
+
+/** إعدادات الاستراحة. عامة — اللوحي يقرؤها بلا تسجيل دخول. */
+export async function getScreensaver(): Promise<Screensaver> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.from("public_settings").select("key, value, value_text");
+  const row = (k: string) => (data ?? []).find((r) => r.key === k);
+  const media = row("screensaver_media");
+  return {
+    url: media?.value_text || null,
+    afterSec: row("screensaver_after_sec")?.value ?? 120,
+    on: (media?.value ?? 1) === 1,
+  };
+}
+
+export async function setScreensaver(input: { url?: string | null; afterSec?: number; on?: boolean }) {
+  await requireStaff();
+  const svc = createSupabaseServiceClient();
+  if (input.url !== undefined) {
+    const { error } = await svc.rpc("set_setting_text", { p_key: "screensaver_media", p_value: input.url || null });
+    if (error) return { ok: false as const, error: error.message };
+  }
+  if (input.on !== undefined) {
+    const { error } = await svc.rpc("set_setting", { p_key: "screensaver_media", p_value: input.on ? 1 : 0 });
+    if (error) return { ok: false as const, error: error.message };
+  }
+  if (input.afterSec !== undefined) {
+    // صفر يعني «لا تظهر أبداً»، والحدّ الأعلى ساعة — أكثر منها يعني تعطيلها فعلياً
+    const sec = Math.max(0, Math.min(3600, Math.round(input.afterSec)));
+    const { error } = await svc.rpc("set_setting", { p_key: "screensaver_after_sec", p_value: sec });
+    if (error) return { ok: false as const, error: error.message };
+  }
+  revalidateMenus();
+  revalidatePath("/dashboard");
+  return { ok: true as const };
+}
+
+/** رفع صورة أو فيديو الاستراحة إلى مخزن الصور. */
+export async function uploadScreensaver(formData: FormData) {
+  await requireStaff();
+  const file = formData.get("file");
+  if (!(file instanceof File)) return { ok: false as const, error: "لا يوجد ملف." };
+  const isVideo = file.type.startsWith("video/");
+  if (!isVideo && !file.type.startsWith("image/")) return { ok: false as const, error: "الملف ليس صورة ولا فيديو." };
+  // الفيديو يُحمَّل على كل جهاز عند كل فتح — الكبير يبطّئ اللوحي ويستهلك الباقة
+  const max = isVideo ? 40 : 8;
+  if (file.size > max * 1024 * 1024) {
+    return { ok: false as const, error: `الملف كبير جداً — الحدّ ${max} م.ب.` };
+  }
+
+  const ext = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || (isVideo ? "mp4" : "jpg");
+  const svc = createSupabaseServiceClient();
+  const path = `screensaver/${crypto.randomUUID()}.${ext}`;
+  const { error } = await svc.storage
+    .from("menu")
+    .upload(path, new Uint8Array(await file.arrayBuffer()), { contentType: file.type, upsert: false });
+  if (error) return { ok: false as const, error: error.message };
+  const { data } = svc.storage.from("menu").getPublicUrl(path);
+  const url = data.publicUrl;
+
+  const res = await setScreensaver({ url });
+  if (!res.ok) return res;
+  return { ok: true as const, url };
+}

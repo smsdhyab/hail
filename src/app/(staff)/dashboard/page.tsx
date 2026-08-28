@@ -4,7 +4,9 @@ import { getTotalOutstanding } from "@/lib/cafe/debt-actions";
 import { lastNDays, businessDay } from "@/lib/cafe/time";
 import { DashboardClient } from "@/components/cafe/DashboardClient";
 import { SettingsCard } from "@/components/cafe/SettingsCard";
+import { ScreensaverCard } from "@/components/cafe/ScreensaverCard";
 import { purchasesSpent } from "@/lib/cafe/purchase-actions";
+import { getScreensaver } from "@/lib/cafe/pastry-actions";
 import { formatIqdLabel } from "@/lib/cafe/money";
 import { getDeliveryFee } from "@/lib/cafe/pastry-actions";
 import { getStaff, homeFor } from "@/lib/cafe/auth";
@@ -57,6 +59,7 @@ export default async function DashboardPage({
   // الإعدادات للمدير وحده — الكاشير لا يغيّر أجرة التوصيل
   const staff = await safe(getStaff(), null);
   const deliveryFee = staff?.role === "admin" ? await safe(getDeliveryFee(), 0) : 0;
+  const screensaver = staff?.role === "admin" ? await safe(getScreensaver(), { url: null, afterSec: 120, on: true }) : null;
   const spent = staff?.role === "admin" ? await safe(purchasesSpent(days), { today: 0, range: 0 }) : { today: 0, range: 0 };
   summary = s;
   recent = r;
@@ -92,6 +95,7 @@ export default async function DashboardPage({
         </section>
       )}
       {staff?.role === "admin" && <SettingsCard deliveryFee={deliveryFee} />}
+      {screensaver && <ScreensaverCard current={screensaver} />}
     </div>
   );
 }

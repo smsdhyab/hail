@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Check, LogIn, Minus, Plus, ShoppingCart, Sparkles, X } from "lucide-react";
 import type { ComboView, MenuCategoryView, MenuItemView } from "@/lib/cafe/menu-data";
 import { CombosSection, OFFERS_CAT } from "./CombosSection";
+import { Screensaver } from "./Screensaver";
 import { DeliveryForm, deliveryError, emptyDelivery, type DeliveryDetails, type DeliveryField } from "./DeliveryForm";
 import { DELIVERY_AREA_AR } from "@/lib/cafe/branding";
 import { formatIqdLabel } from "@/lib/cafe/money";
@@ -67,6 +68,7 @@ export function TabletMenuClient({
   table = null,
   channel = "qr",
   offers = {},
+  screensaver,
   deliveryFee = 0,
 }: {
   menu: MenuCategoryView[];
@@ -75,6 +77,8 @@ export function TabletMenuClient({
   channel?: "qr" | "kiosk" | "delivery";
   /** item_id → today's offer price (0 = مجاناً) set by management */
   offers?: Record<string, number>;
+  /** شاشة الاستراحة — تُعطَّل بوضع afterSec = 0 */
+  screensaver?: { url: string | null; afterSec: number; on: boolean };
   /** أجرة التوصيل السارية — يضبطها المدير من لوحة التحكم */
   deliveryFee?: number;
 }) {
@@ -228,6 +232,14 @@ export function TabletMenuClient({
 
   return (
     <div dir="rtl" style={{ ...(VARS as CSSProperties), background: GRAD }} className="flex h-dvh flex-col text-[var(--text)]">
+      {screensaver?.on && (
+        <Screensaver
+          mediaUrl={screensaver.url}
+          afterSec={screensaver.afterSec}
+          // لا تظهر وسلة الزبون مشغولة أو نافذة مفتوحة — توقُّفه ليفكّر ليس غياباً
+          idle={count === 0 && !cartOpen && !modalItem && !confirmed}
+        />
+      )}
       {/* top bar */}
       <header className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--line)] px-5 py-3 backdrop-blur">
         <div className="flex items-center gap-2.5">

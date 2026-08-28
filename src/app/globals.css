@@ -145,6 +145,10 @@ body {
   50%      { background-color: var(--accent2); box-shadow: 0 0 0 7px transparent; }
 }
 .hail-offers-pulse { animation: hail-glow 2.6s ease-in-out infinite; }
+
+/* شاشة استراحة المنيو */
+@keyframes hail-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes hail-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 @media (prefers-reduced-motion: reduce) {
   .hail-offers-pulse { animation: none; background-color: var(--accent); }
 }

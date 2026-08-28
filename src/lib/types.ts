@@ -146,9 +146,9 @@ export type Database = {
         Relationships: [];
       };
       app_settings: {
-        Row: { key: string; value: number; updated_at: string };
+        Row: { key: string; value: number; value_text: string | null; updated_at: string };
         Insert: { key: string; value?: number; updated_at?: string };
-        Update: Partial<{ value: number; updated_at: string }>;
+        Update: Partial<{ value: number; value_text: string | null; updated_at: string }>;
         Relationships: [];
       };
       purchases: {
@@ -262,6 +262,10 @@ export type Database = {
       };
     };
     Views: {
+      public_settings: {
+        Row: { key: string; value: number; value_text: string | null };
+        Relationships: [];
+      };
       item_margins: {
         Row: {
           item_id: string; name_ar: string; category: string; sold_by: "piece" | "weight"; unit: string;
@@ -348,6 +352,7 @@ export type Database = {
         }[];
       };
       set_setting: { Args: { p_key: string; p_value: number }; Returns: number };
+      set_setting_text: { Args: { p_key: string; p_value: string | null }; Returns: string | null };
       record_purchase: {
         Args: { p_item: string; p_qty: number; p_total: number; p_supplier?: string | null; p_note?: string | null; p_day?: string | null };
         Returns: { unit_cost: number; stock: number }[];
