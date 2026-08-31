@@ -212,6 +212,7 @@ function ItemForm({ editing, categories, onClose }: { editing: Editing; categori
   const [unitLabel, setUnitLabel] = useState(it?.unit_label ?? "");
   const [plu, setPlu] = useState(it?.plu ? String(it.plu) : "");
   const [barcode, setBarcode] = useState(it?.barcode ?? "");
+  const [suggest, setSuggest] = useState(it?.suggest ?? false);
   const [cost, setCost] = useState(String(it?.cost ?? ""));
   const [flavors, setFlavors] = useState((it?.flavors ?? []).join("، "));
   const [description, setDescription] = useState(it?.description_ar ?? "");
@@ -255,6 +256,7 @@ function ItemForm({ editing, categories, onClose }: { editing: Editing; categori
       unit_label: unitLabel,
       plu: plu.trim() ? Number(plu.replace(/[^\d]/g, "")) : null,
       barcode: barcode.trim() || null,
+      suggest,
       cost: Number(cost) || 0,
       flavors: flavors.split(/[،,]/).map((s) => s.trim()).filter(Boolean),
       is_active: it?.is_active ?? true,
@@ -380,6 +382,24 @@ function ItemForm({ editing, categories, onClose }: { editing: Editing; categori
               className="w-full rounded-lg border border-input bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring"
             />
           </label>
+          <div className="space-y-1 text-sm sm:col-span-2">
+            <span className="text-muted-foreground">الاقتراحات</span>
+            <button
+              type="button"
+              onClick={() => setSuggest(!suggest)}
+              className={`flex w-full items-center gap-2 rounded-lg border px-3 py-2.5 text-right font-bold transition ${
+                suggest ? "border-primary bg-primary/10 text-primary" : "border-input text-muted-foreground"
+              }`}
+            >
+              <span className={`flex size-5 shrink-0 items-center justify-center rounded border-2 ${suggest ? "border-primary bg-primary text-primary-foreground" : "border-input"}`}>
+                {suggest ? "✓" : ""}
+              </span>
+              يُقترح مع الأصناف الأخرى
+            </button>
+            <span className="block text-xs text-muted-foreground">
+              يظهر في «يناسبها مع…» داخل نافذة أي صنف. أشّر ما يُشترى معه عادةً فقط — كثرة الاقتراحات تُلغي أثرها.
+            </span>
+          </div>
           <label className="space-y-1 text-sm sm:col-span-2">
             <span className="text-muted-foreground">النكهات (افصل بفاصلة): كراميل، فانيلا…</span>
             <input value={flavors} onChange={(e) => setFlavors(e.target.value)} className="w-full rounded-lg border border-input bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring" />

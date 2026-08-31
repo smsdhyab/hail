@@ -79,18 +79,20 @@ export type Database = {
           sold_by: "piece" | "weight"; unit_label: string | null;
           /** رمز الصنف في الميزان — ملصق الميزان يحمله لا اسم الصنف */
           plu: number | null; barcode: string | null;
+          /** يظهر في اقتراحات نافذة الصنف */
+          suggest: boolean;
         };
         Insert: {
           id?: string; category_id: string; name_ar: string; description_ar?: string | null; image_url?: string | null;
           price?: number; cost?: number; flavors?: string[]; is_active?: boolean; sort?: number; created_at?: string;
           sold_by?: "piece" | "weight"; unit_label?: string | null;
-          plu?: number | null; barcode?: string | null;
+          plu?: number | null; barcode?: string | null; suggest?: boolean;
         };
         Update: Partial<{
           category_id: string; name_ar: string; description_ar: string | null; image_url: string | null;
           price: number; cost: number; flavors: string[]; is_active: boolean; sort: number;
           sold_by: "piece" | "weight"; unit_label: string | null;
-          plu: number | null; barcode: string | null;
+          plu: number | null; barcode: string | null; suggest: boolean;
         }>;
         Relationships: [];
       };
@@ -279,7 +281,7 @@ export type Database = {
           id: string; category_id: string; name_ar: string; description_ar: string | null; image_url: string | null;
           price: number; flavors: string[]; sort: number;
           sold_by: "piece" | "weight"; unit_label: string;
-          plu: number | null; barcode: string | null;
+          plu: number | null; barcode: string | null; suggest: boolean;
           category_name: string; category_image: string | null; category_sort: number;
           /** the register that owns this category — drives order routing */
           station_slug: "pastry" | "cafe" | null;

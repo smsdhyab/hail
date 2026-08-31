@@ -16,6 +16,8 @@ export type MenuItemView = {
   /** «كغم» / «قطعة» — ما يُكتب بعد السعر وفي السلة */
   unit_label: string;
   flavors: string[];
+  /** يظهر في «يناسبها مع…» داخل نافذة أي صنف — يؤشّره المدير */
+  suggest: boolean;
   variants: MenuVariantView[];
 };
 export type MenuCategoryView = {
@@ -68,6 +70,7 @@ export async function getPublicMenu(): Promise<MenuCategoryView[]> {
       sold_by: (r.sold_by ?? "piece") as SoldBy,
       unit_label: r.unit_label ?? "قطعة",
       flavors: r.flavors ?? [],
+      suggest: r.suggest === true,
       variants: varsByItem.get(r.id) ?? [],
     });
   }

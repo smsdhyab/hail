@@ -349,6 +349,23 @@ export async function getScreensaver(): Promise<Screensaver> {
   };
 }
 
+/** هل تُعرض الاقتراحات في نافذة الصنف؟ عام — المنيو يقرؤه بلا تسجيل دخول. */
+export async function getSuggestionsOn(): Promise<boolean> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.from("public_settings").select("value").eq("key", "suggestions_on").maybeSingle();
+  return (data?.value ?? 1) === 1;
+}
+
+export async function setSuggestionsOn(on: boolean) {
+  await requireStaff();
+  const svc = createSupabaseServiceClient();
+  const { error } = await svc.rpc("set_setting", { p_key: "suggestions_on", p_value: on ? 1 : 0 });
+  if (error) return { ok: false as const, error: error.message };
+  revalidateMenus();
+  revalidatePath("/dashboard");
+  return { ok: true as const };
+}
+
 export async function setScreensaver(input: { url?: string | null; afterSec?: number; on?: boolean }) {
   await requireStaff();
   const svc = createSupabaseServiceClient();

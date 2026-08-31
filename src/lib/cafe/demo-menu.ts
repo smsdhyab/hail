@@ -22,6 +22,7 @@ export const DEMO_MENU: MenuCategoryView[] = HAIL_MENU.map((c) => ({
       sold_by: i.sold_by ?? "piece",
       unit_label: i.unit_label ?? (i.sold_by === "weight" ? "كغم" : "قطعة"),
       flavors: i.flavors ?? [],
+      suggest: false,
       variants: (i.variants ?? []).map(([n, p]) => ({ id: `${i.id}-${p}`, name_ar: n, price: p })),
     })),
 })).filter((c) => c.items.length > 0);

@@ -24,6 +24,8 @@ export type AdminItem = {
   plu: number | null;
   /** باركود المصنع للمنتجات الجاهزة */
   barcode: string | null;
+  /** يظهر في «يناسبها مع…» داخل نافذة أي صنف */
+  suggest: boolean;
   variants: AdminVariant[];
 };
 export type AdminCategory = {
@@ -46,7 +48,7 @@ export async function listMenuAdmin(): Promise<AdminCategory[]> {
   const svc = createSupabaseServiceClient();
   const [{ data: cats }, { data: items }, { data: vars }] = await Promise.all([
     svc.from("categories").select("id, name_ar, sort, is_active, station_id").order("sort"),
-    svc.from("menu_items").select("id, category_id, name_ar, description_ar, image_url, price, cost, flavors, is_active, sort, sold_by, unit_label, plu, barcode").order("sort"),
+    svc.from("menu_items").select("id, category_id, name_ar, description_ar, image_url, price, cost, flavors, is_active, sort, sold_by, unit_label, plu, barcode, suggest").order("sort"),
     svc.from("item_variants").select("id, item_id, name_ar, price_override, kind, sort").order("sort"),
   ]);
 
@@ -96,6 +98,7 @@ export type ItemInput = {
   unit_label?: string | null;
   plu?: number | null;
   barcode?: string | null;
+  suggest?: boolean;
 };
 
 export async function upsertItem(input: ItemInput) {
@@ -119,6 +122,7 @@ export async function upsertItem(input: ItemInput) {
     // فارغ لا صفر: الصفر رمز صالح في الميزان، والفهرس الفريد يرفض تكراره
     plu: Number.isFinite(input.plu as number) && (input.plu as number) > 0 ? Math.round(input.plu as number) : null,
     barcode: input.barcode?.trim() || null,
+    suggest: input.suggest === true,
   };
   const { error } = input.id
     ? await svc.from("menu_items").update(row).eq("id", input.id)

@@ -69,6 +69,7 @@ export function TabletMenuClient({
   channel = "qr",
   offers = {},
   screensaver,
+  suggestionsOn = true,
   deliveryFee = 0,
 }: {
   menu: MenuCategoryView[];
@@ -79,6 +80,8 @@ export function TabletMenuClient({
   offers?: Record<string, number>;
   /** شاشة الاستراحة — تُعطَّل بوضع afterSec = 0 */
   screensaver?: { url: string | null; afterSec: number; on: boolean };
+  /** مفتاح عرض الاقتراحات — يضبطه المدير من لوحة التحكم */
+  suggestionsOn?: boolean;
   /** أجرة التوصيل السارية — يضبطها المدير من لوحة التحكم */
   deliveryFee?: number;
 }) {
@@ -104,7 +107,7 @@ export function TabletMenuClient({
   // product modal (size + cross-sell)
   const [modalItem, setModalItem] = useState<MenuItemView | null>(null);
   const [modalVariant, setModalVariant] = useState<string | null>(null);
-  const [crossSel, setCrossSel] = useState<Set<string>>(new Set()); // selected cross-sell pastries
+  const [crossSel, setCrossSel] = useState<Set<string>>(new Set()); // الاقتراحات المختارة
   // الأصناف الموزونة تُطلب بوزن مختار لا بعدد — نصف كيلو افتراضاً
   const [modalGrams, setModalGrams] = useState(500);
 
@@ -114,10 +117,12 @@ export function TabletMenuClient({
   // Cross-sell pulls from the OTHER register: order a drink, get offered
   // something from the bakery. Station-driven, so it keeps working when
   // categories are renamed or added.
-  const crossSell = cat?.station === "cafe";
-  const pastries = crossSell
-    ? menu.filter((c) => c.station === "pastry").flatMap((c) => c.items).slice(0, CROSS_SELL_LIMIT)
+  // الأصناف المؤشَّرة «تُقترح» في لوحة التحكم — لا أول ما يصادفه من قسم آخر.
+  // ومفتاح واحد يوقفها كلها.
+  const suggestions = suggestionsOn
+    ? menu.flatMap((c) => c.items).filter((i) => i.suggest).slice(0, CROSS_SELL_LIMIT)
     : [];
+  const crossSell = suggestions.length > 0;
 
   function selectCat(name: string) {
     setActiveCat(name);
@@ -184,7 +189,7 @@ export function TabletMenuClient({
 
   const modalPrice = modalItem ? (modalItem.variants.find((v) => v.id === modalVariant)?.price ?? priceOf(modalItem)) : 0;
   const crossTotal = [...crossSel].reduce((s, id) => {
-    const p = pastries.find((x) => x.id === id);
+    const p = suggestions.find((x) => x.id === id);
     return s + (p ? priceOf(p) : 0);
   }, 0);
   // للموزون، «السعر» هو سعر الكيلو — والمعروض يجب أن يكون ثمن الوزن المختار
@@ -381,15 +386,50 @@ export function TabletMenuClient({
       {modalItem && (
         <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/60 sm:items-center" onClick={() => setModalItem(null)}>
           <div style={{ ...(VARS as CSSProperties) }} className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-[var(--panelsoft)] p-5 text-[var(--text)] sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+            {/* الصورة أولاً: الزبون يشتري بعينه. النافذة كانت تفتح على نصّ،
+                فيقرأ وصفاً لصنف لم يره — والصورة موجودة في البطاقة خلفه. */}
+            {(() => {
+              const s = imgSrcs(modalItem.image_url);
+              return (
+                <div className="relative -mx-5 -mt-5 mb-4 aspect-[4/3] overflow-hidden bg-[var(--panel)]">
+                  <MenuIcon
+                    name={modalItem.name_ar}
+                    className="absolute inset-0 m-auto size-20 text-[var(--accent)] opacity-40"
+                  />
+                  {s && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={s.full}
+                      alt={modalItem.name_ar}
+                      onError={onImgError}
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                  )}
+                  <button
+                    onClick={() => setModalItem(null)}
+                    aria-label="إغلاق"
+                    className="absolute left-3 top-3 rounded-full bg-black/45 p-2 text-white backdrop-blur"
+                  >
+                    <X className="size-5" />
+                  </button>
+                  {count > 0 && (
+                    <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-black/45 px-2.5 py-1 text-sm font-bold text-white backdrop-blur">
+                      <ShoppingCart className="size-4" /> {count}
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
+
             <div className="mb-3 flex items-start justify-between gap-2">
               <h2 className="text-lg font-extrabold leading-tight">{modalItem.name_ar}</h2>
               <div className="flex items-center gap-2">
-                {count > 0 && (
-                  <span className="flex items-center gap-1 rounded-full bg-[var(--accent)]/15 px-2.5 py-1 text-sm font-bold text-[var(--accent)]">
-                    <ShoppingCart className="size-4" /> {count}
-                  </span>
-                )}
-                <button onClick={() => setModalItem(null)} aria-label="إغلاق" className="rounded-full border border-[var(--line)] p-1.5"><X className="size-5" /></button>
+                <span className="whitespace-nowrap text-lg font-extrabold tabular-nums text-[var(--accent)]">
+                  {formatIqdLabel(priceOf(modalItem))}
+                  {modalItem.sold_by === "weight" && (
+                    <span className="text-xs font-bold"> / {modalItem.unit_label || "كغم"}</span>
+                  )}
+                </span>
               </div>
             </div>
 
@@ -437,11 +477,11 @@ export function TabletMenuClient({
               </div>
             )}
 
-            {crossSell && pastries.length > 0 && (
+            {crossSell && suggestions.filter((x) => x.id !== modalItem.id).length > 0 && (
               <div className="mb-4">
                 <h3 className="mb-2 text-sm font-bold text-[var(--accent)]">🥐 يناسبها مع… (اختياري)</h3>
                 <div className="flex gap-2 overflow-x-auto pb-1">
-                  {pastries.map((p) => {
+                  {suggestions.filter((x) => x.id !== modalItem.id).map((p) => {
                     const ps = imgSrcs(p.image_url);
                     return (
                       <div key={p.id} className="w-28 shrink-0 overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--panel)]">
@@ -482,7 +522,7 @@ export function TabletMenuClient({
               onClick={() => {
                 add(modalItem, modalVariant, modalPrice, modalIsWeight ? modalGrams / 1000 : undefined);
                 crossSel.forEach((id) => {
-                  const p = pastries.find((x) => x.id === id);
+                  const p = suggestions.find((x) => x.id === id);
                   if (p) add(p, null, priceOf(p));
                 });
                 setModalItem(null);

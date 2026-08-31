@@ -1,5 +1,5 @@
 import { getPublicMenu } from "@/lib/cafe/menu-data";
-import { getActiveItemOffers, getScreensaver } from "@/lib/cafe/pastry-actions";
+import { getActiveItemOffers, getScreensaver, getSuggestionsOn } from "@/lib/cafe/pastry-actions";
 import { TabletMenuClient } from "@/components/cafe/TabletMenuClient";
 
 export const dynamic = "force-dynamic";
@@ -11,10 +11,11 @@ export default async function TabletMenuPage({
   searchParams: Promise<{ t?: string }>;
 }) {
   const sp = await searchParams;
-  const [menu, offers, screensaver] = await Promise.all([
+  const [menu, offers, screensaver, suggestionsOn] = await Promise.all([
     getPublicMenu(),
     getActiveItemOffers().catch(() => ({})),
     getScreensaver().catch(() => ({ url: null, afterSec: 120, on: true })),
+    getSuggestionsOn().catch(() => true),
   ]);
-  return <TabletMenuClient menu={menu} table={sp.t ?? null} channel="qr" offers={offers} screensaver={screensaver} />;
+  return <TabletMenuClient menu={menu} table={sp.t ?? null} channel="qr" offers={offers} screensaver={screensaver} suggestionsOn={suggestionsOn} />;
 }
