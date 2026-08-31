@@ -114,7 +114,18 @@ export async function submitOrder(input: SubmitOrderInput): Promise<SubmitOrderR
     p_geo: input.geo?.trim() || null,
     p_deliver_at: input.deliverAt?.trim() || null,
   });
-  if (error || !data?.[0]) return { ok: false, error: "تعذّر إرسال الطلب، حاول مجدداً." };
+  if (error || !data?.[0]) {
+    // القاعدة ترفع رموزاً إنجليزية لا نصّاً عربياً — بوستغرس يعامل % في الرسالة
+    // كعلامة استبدال، والترجمة مكانها هنا حيث تُعرض على الزبون
+    const code = error?.message ?? "";
+    if (code.includes("table_closed")) {
+      return { ok: false, error: "هذه الطاولة غير متاحة حالياً — تفضّل بالطلب من الكاشير." };
+    }
+    if (code.includes("table_unknown")) {
+      return { ok: false, error: "رقم الطاولة غير صحيح — تفضّل بالطلب من الكاشير." };
+    }
+    return { ok: false, error: "تعذّر إرسال الطلب، حاول مجدداً." };
+  }
   // alert subscribed staff devices even when the app is closed (never throws)
   await sendNewOrderPush({
     seq: data[0].group_no,

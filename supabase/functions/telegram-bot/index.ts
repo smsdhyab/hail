@@ -203,7 +203,7 @@ function mainMenu() {
     [{ text: "🪑 أكثر الطاولات طلباً", callback_data: "tabtop|29" }, { text: "📅 تقرير العدد اليومي", callback_data: "dcount|6" }],
     [{ text: "⚖️ مقارنة الكاشيرين", callback_data: "vs|6" }],
     [{ text: "🌙 التقرير اليومي النهائي", callback_data: "final" }, { text: "📉 إضافة مصروف", callback_data: "expadd" }],
-    [{ text: "🔼 تقرير الطابق العلوي", callback_data: "flr|cafe" }, { text: "🔽 تقرير الطابق الأرضي", callback_data: "flr|pastry" }],
+    [{ text: "☕️ تقرير الكافيه", callback_data: "flr|cafe" }, { text: "🥐 تقرير المعجنات", callback_data: "flr|pastry" }],
     [{ text: "🏷️ ربط رمز ميزان", callback_data: "plu" }],
     [{ text: "📊 الاستخدام وحالة النظام", callback_data: "usage" }],
   ];
@@ -342,7 +342,7 @@ async function viewAvail() {
  * منفصلاً لا مدمجاً: مسؤول كل طابق يقرأ أرقامه وحدها بلا أن يبحث عنها وسط
  * أرقام الآخر، والمالك يرى الاثنين.
  */
-async function viewFloorReport(station: string, floorName: string) {
+async function viewFloorReport(station: string, sectionName: string) {
   const today = baghdadDay();
   const t = sumRows(await summary(today, today, station));
 
@@ -362,7 +362,7 @@ async function viewFloorReport(station: string, floorName: string) {
   const sold = [...byName.entries()].filter(([, q]) => q > 0).sort((a, b) => b[1] - a[1]);
 
   const lines = [
-    `${floorName}`,
+    `${sectionName}`,
     `<b>${today}</b>`,
     "",
     `🧾 الطلبات: <b>${t.c}</b>`,
@@ -402,9 +402,16 @@ function parseScaleLabel(raw: string): { plu: number; grams: number | null } | n
   return null;
 }
 
+/**
+ * التقريران بالقسم لا بالطابق.
+ *
+ * كان كل طابق قسماً، ثم صار المحل يعمل في الأرضي وحده ويبيع فيه القسمين معاً.
+ * فالتسمية بالطابق تكذب: «تقرير الطابق العلوي» يعرض مبيعات كافيه تحدث في
+ * الأرضي. والدفتران يبقيان منفصلين كما هما — الفصل بالصنف لا بالمكان.
+ */
 const FLOOR_REPORTS: [string, string][] = [
-  ["cafe", "🔼 <b>الطابق العلوي — الكافيه</b>"],
-  ["pastry", "🔽 <b>الطابق الأرضي — المعجنات والمخبوزات</b>"],
+  ["cafe", "☕️ <b>تقرير الكافيه</b>"],
+  ["pastry", "🥐 <b>تقرير المعجنات والمخبوزات</b>"],
 ];
 
 async function viewDailyFinal() {
