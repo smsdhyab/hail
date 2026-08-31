@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Monitor, Printer, QrCode, RefreshCw, ClipboardCheck, Wrench } from "lucide-react";
 import { CopyBox } from "./CopyBox";
-import { STATIONS } from "@/lib/cafe/hail-menu";
 
 const AGENT = "http://127.0.0.1:9977";
 
@@ -164,30 +163,25 @@ export function DeviceSetupClient({
         )}
       </section>
 
-      {/* ٤ — ماذا يُطبع وأين */}
+      {/* ٤ — ماذا يُطبع */}
       <section className="rounded-2xl border border-border bg-card p-4">
-        <h2 className="mb-2 font-extrabold text-primary">٣ · ماذا يُطبع وأين</h2>
+        <h2 className="mb-2 font-extrabold text-primary">٣ · ماذا يُطبع</h2>
         <p className="mb-3 text-xs text-muted-foreground">
-          وصل التحضير يُطبع عند من يحضّر، ووصل الزبون عند من يطلب.
+          المحل صندوق واحد وطابعة واحدة، فكل شيء يخرج من طابعة الكاشير.
         </p>
         <ul className="space-y-2 text-sm">
-          {STATIONS.map((s) => (
-            <li key={s.slug} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border p-3">
-              <div>
-                <p className="font-bold">وصل تحضير {s.name_ar}</p>
-                <p className="text-xs text-muted-foreground">بلا أسعار — المُحضِّر لا يعنيه المبلغ</p>
-              </div>
-              <Tag tone="warn">لم تُربط بعد</Tag>
-            </li>
-          ))}
-          <li className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border p-3">
-            <div>
-              <p className="font-bold">وصل الزبون</p>
-              <p className="text-xs text-muted-foreground">يخرج في مكان الطلب — الطاولة من طابقها، والديلفري عند الكاشير</p>
-            </div>
-            <Tag tone="warn">لم تُربط بعد</Tag>
+          <li className="rounded-xl border border-border p-3">
+            <p className="font-bold">وصل الزبون</p>
+            <p className="text-xs text-muted-foreground">بالأسعار والإجمالي — يُسلَّم للزبون</p>
+          </li>
+          <li className="rounded-xl border border-border p-3">
+            <p className="font-bold">وصل التحضير</p>
+            <p className="text-xs text-muted-foreground">بالأصناف بلا أسعار — يذهب لمن يحضّر</p>
           </li>
         </ul>
+        <p className="mt-3 rounded-xl border border-dashed border-border p-3 text-xs leading-relaxed text-muted-foreground">
+          عند فتح الطابق الثاني وإضافة طابعة ثانية، يُوجَّه وصل كل قسم إلى طابعته — ولا يحتاج ذلك اليوم.
+        </p>
       </section>
 
       {/* ٥ — الشاشات */}

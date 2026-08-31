@@ -106,46 +106,53 @@ export function SignInForm({ redirectTo, localMode }: { redirectTo: string; loca
     }
   }
 
-  // step 1 — which register is this device?
+  // الخطوة الأولى: أي صندوق يفتح هذا الجهاز؟
+  //
+  // المحل صار صندوقاً واحداً يبيع القسمين، فسؤال الموظف كل صباح «أي كاشير؟»
+  // سؤال بلا خيار حقيقي — وزرّ واحد أسرع وأقلّ خطأً. والصندوقان المنفصلان
+  // يبقيان خلف «خيارات أخرى» ليوم التوسّع، لا يُحذفان ولا يعترضان الطريق.
   if (!station) {
     return (
       <div className="w-full max-w-md space-y-5 text-center">
         <HailMark className="mx-auto size-24" />
         <div>
           <h1 className="text-2xl font-bold text-primary">مخبز ومقهى هيل</h1>
-          <p className="mt-1 text-sm text-muted-foreground">اختر الكاشير الذي تعمل عليه</p>
+          <p className="mt-1 text-sm text-muted-foreground">{SYSTEM.name_ar}</p>
         </div>
-        <p className="-mt-3 text-xs text-muted-foreground">{SYSTEM.name_ar}</p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {STATIONS.map((s) => (
-            <button
-              key={s.slug}
-              type="button"
-              onClick={() => setStation(s.slug)}
-              className="flex flex-col items-center gap-2 rounded-2xl border-2 border-border bg-card p-6 transition hover:border-primary hover:bg-primary/5 active:scale-95"
-            >
-              <StationIcon station={s.slug} className="size-12 text-accent" />
-              <span className="text-lg font-extrabold text-primary">{s.name_ar}</span>
-            </button>
-          ))}
 
-          {/* صندوق واحد يبيع القسمين. الدفتران يبقيان منفصلين — الفصل بالصنف
-              لا بالصندوق. ومن له قسم محدَّد يُرفَض عند الدخول لا هنا، لأن الهوية
-              لم تُعرَف بعد في هذه الخطوة. */}
-          <button
-            type="button"
-            onClick={() => setStation(TILL_ALL)}
-            className="flex flex-col items-center gap-2 rounded-2xl border-2 border-primary/40 bg-primary/5 p-6 transition hover:border-primary hover:bg-primary/10 active:scale-95 sm:col-span-2"
-          >
-            <div className="flex items-center gap-2">
-              {STATIONS.map((s) => (
-                <StationIcon key={s.slug} station={s.slug} className="size-10 text-accent" />
-              ))}
-            </div>
-            <span className="text-lg font-extrabold text-primary">الكل — الكافيه والمعجنات</span>
-            <span className="text-xs text-muted-foreground">صندوق واحد يبيع القسمين — وحساباهما يبقيان منفصلين</span>
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => setStation(TILL_ALL)}
+          className="flex w-full flex-col items-center gap-2 rounded-2xl border-2 border-primary bg-primary/10 p-7 transition hover:bg-primary/15 active:scale-95"
+        >
+          <div className="flex items-center gap-2">
+            {STATIONS.map((s) => (
+              <StationIcon key={s.slug} station={s.slug} className="size-11 text-accent" />
+            ))}
+          </div>
+          <span className="text-xl font-extrabold text-primary">ابدأ العمل</span>
+          <span className="text-xs text-muted-foreground">صندوق واحد يبيع الكافيه والمعجنات</span>
+        </button>
+
+        <details className="text-right">
+          <summary className="cursor-pointer text-center text-xs text-muted-foreground">خيارات أخرى</summary>
+          <p className="mb-2 mt-3 text-center text-[11px] text-muted-foreground">
+            صندوق لقسم واحد — يُستعمل عند فصل الكاشيرين مستقبلاً.
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {STATIONS.map((s) => (
+              <button
+                key={s.slug}
+                type="button"
+                onClick={() => setStation(s.slug)}
+                className="flex flex-col items-center gap-1.5 rounded-xl border border-border bg-card p-4 transition hover:border-primary active:scale-95"
+              >
+                <StationIcon station={s.slug} className="size-8 text-accent" />
+                <span className="text-sm font-bold text-primary">{s.name_ar}</span>
+              </button>
+            ))}
+          </div>
+        </details>
       </div>
     );
   }

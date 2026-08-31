@@ -96,11 +96,11 @@ const summary = (from: string, to: string, station: string | null = null) =>
   }).then((r) => r.json());
 
 /** The two registers keep separate books; the manager sees the total AND the
- *  split. Returns the «حسب الكاشير» lines appended to every money report. */
+ *  split. Returns the «حسب القسم» lines appended to every money report. */
 async function stationLines(from: string, to: string) {
   const stations = (await rest("stations?select=slug,name_ar&order=sort.asc")) as Row[];
   const parts = await Promise.all(stations.map((st) => summary(from, to, String(st.slug))));
-  const out = ["", "🏷️ <b>حسب الكاشير</b>"];
+  const out = ["", "🏷️ <b>حسب القسم</b>"];
   stations.forEach((st, i) => {
     const t = sumRows(parts[i]);
     out.push(`• ${esc(st.name_ar)}: <b>${fmt(t.s)} د.ع</b> — ${t.c} طلب`);
@@ -201,7 +201,7 @@ function mainMenu() {
     [{ text: "📦 المخزون", callback_data: "stock" }, { text: "⚠️ النواقص", callback_data: "low" }],
     [{ text: "🎁 العروض", callback_data: "offers" }, { text: "🥐 المعجنات", callback_data: "pastry" }],
     [{ text: "🪑 أكثر الطاولات طلباً", callback_data: "tabtop|29" }, { text: "📅 تقرير العدد اليومي", callback_data: "dcount|6" }],
-    [{ text: "⚖️ مقارنة الكاشيرين", callback_data: "vs|6" }],
+    [{ text: "⚖️ مقارنة القسمين", callback_data: "vs|6" }],
     [{ text: "🌙 التقرير اليومي النهائي", callback_data: "final" }, { text: "📉 إضافة مصروف", callback_data: "expadd" }],
     [{ text: "☕️ تقرير الكافيه", callback_data: "flr|cafe" }, { text: "🥐 تقرير المعجنات", callback_data: "flr|pastry" }],
     [{ text: "🏷️ ربط رمز ميزان", callback_data: "plu" }],
@@ -550,7 +550,8 @@ async function viewDailyCounts(days: number) {
   return lines.join("\n").slice(0, 4000);
 }
 
-/** ⚖️ مقارنة الكاشيرين — من باع أكثر، وبأي نسبة، وأين ذهب الفرق. */
+/** ⚖️ مقارنة القسمين — أيّهما باع أكثر وبأي نسبة. صندوق واحد يبيعهما، لكن
+ *  دفتريهما منفصلان فالمقارنة بينهما لا بين كاشيرين. */
 async function viewVersus(days: number) {
   const from = baghdadDay(-days), to = baghdadDay();
   const stations = (await rest("stations?select=slug,name_ar&order=sort.asc")) as Row[];
@@ -559,7 +560,7 @@ async function viewVersus(days: number) {
   const grand = rows.reduce((a, r) => a + r.t.s, 0);
   const title = days === 0 ? "اليوم" : `آخر ${days + 1} يوم`;
 
-  const lines = [`⚖️ <b>مقارنة الكاشيرين — ${title}</b>`, ""];
+  const lines = [`⚖️ <b>مقارنة القسمين — ${title}</b>`, ""];
   for (const r of rows) {
     const share = grand ? Math.round((r.t.s * 100) / grand) : 0;
     // شريط بصري من ١٠ خانات ليُقرأ الفرق بلمحة
