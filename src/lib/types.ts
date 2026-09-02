@@ -362,6 +362,10 @@ export type Database = {
       set_low_at: { Args: { p_item: string; p_low: number }; Returns: number };
       adjust_stock: { Args: { p_item: string; p_delta?: number | null; p_set?: number | null }; Returns: number };
       purchases_summary: { Args: { p_from: string; p_to: string }; Returns: { spent: number; lines: number }[] };
+      cost_coverage: {
+        Args: { p_from: string; p_to: string };
+        Returns: { covered_value: number; total_value: number; pct: number; missing_items: number }[];
+      };
     };
     Enums: {
       order_channel: OrderChannel;

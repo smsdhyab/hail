@@ -1,4 +1,4 @@
-import { getRangeSummary, getRecentOrders, getGuestEstimate, getTodaySinceReset, getDaySummary, getScopeLabel, type DaySummary, type RecentOrder } from "@/lib/cafe/dashboard-actions";
+import { getRangeSummary, getRecentOrders, getGuestEstimate, getTodaySinceReset, getDaySummary, getScopeLabel, getCostCoverage, type DaySummary, type RecentOrder } from "@/lib/cafe/dashboard-actions";
 import { getMonthlyCosts } from "@/lib/cafe/expense-actions";
 import { getTotalOutstanding } from "@/lib/cafe/debt-actions";
 import { lastNDays, businessDay } from "@/lib/cafe/time";
@@ -61,6 +61,8 @@ export default async function DashboardPage({
   const deliveryFee = staff?.role === "admin" ? await safe(getDeliveryFee(), 0) : 0;
   const screensaver = staff?.role === "admin" ? await safe(getScreensaver(), { url: null, afterSec: 120, on: true }) : null;
   const suggestionsOn = staff?.role === "admin" ? await safe(getSuggestionsOn(), true) : true;
+  // نسبة المبيعات التي تُعرف كلفتها — دونها يُخفى رقم الربح لأنه يساوي المبيعات
+  const costCoverage = await safe(getCostCoverage(days), { pct: 100, missing: 0 });
   const spent = staff?.role === "admin" ? await safe(purchasesSpent(days), { today: 0, range: 0 }) : { today: 0, range: 0 };
   summary = s;
   recent = r;
@@ -74,7 +76,7 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-4">
-      <DashboardClient days={days} summary={summary} recent={recent} monthlyCosts={monthlyCosts} guestsToday={guestsToday} guestsRange={guestsRange} todayReset={todayReset} outstandingDebts={outstandingDebts} todayDate={today} yesterday={yesterday} yesterdaySummary={yesterdaySummary} scopeLabel={scopeLabel} />
+      <DashboardClient days={days} summary={summary} recent={recent} monthlyCosts={monthlyCosts} guestsToday={guestsToday} guestsRange={guestsRange} todayReset={todayReset} outstandingDebts={outstandingDebts} todayDate={today} yesterday={yesterday} yesterdaySummary={yesterdaySummary} scopeLabel={scopeLabel} costCoverage={costCoverage} />
       {staff?.role === "admin" && (spent.today > 0 || spent.range > 0) && (
         // نقد خرج على البضاعة — يُعرض منفصلاً عن «المصروفات» لأن كلفته مخصومة
         // أصلاً مع كل بيعة. ضمّه إليها يخصمه مرتين ويُظهر خسارة وهمية.

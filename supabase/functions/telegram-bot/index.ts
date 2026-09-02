@@ -89,6 +89,22 @@ async function restWrite(path: string, method: string, body?: unknown) {
   });
   if (!r.ok) throw new Error(`${method} ${r.status}: ${(await r.text()).slice(0, 160)}`);
 }
+/**
+ * سطر الربح — أو تنبيه بدله.
+ *
+ * الربح = المبيعات − كلفة البضاعة. وما لم تُعرف كلفة كل صنف مباع، يكون الرقم
+ * أقرب إلى المبيعات منه إلى الربح. رقمٌ خاطئ في تقرير يُقرأ كل ليلة أسوأ من
+ * رقم غائب — فيُستبدل بما يقول سببه، ويعود وحده حين تكتمل الكلف.
+ */
+async function profitLine(from: string, to: string, p: number) {
+  const rows = (await rpc("cost_coverage", { p_from: from, p_to: to })) as
+    | { pct: number; missing_items: number }[]
+    | null;
+  const c = Array.isArray(rows) ? rows[0] : null;
+  if (!c || Number(c.pct) >= 100) return `📈 الأرباح: <b>${fmt(p)} د.ع</b>`;
+  return `📈 الأرباح: <i>غير متاحة</i> — ${c.missing_items} صنفاً بلا كلفة (${c.pct}% محسوب)`;
+}
+
 /** p_station null = the whole shop (the manager's unified view). */
 const summary = (from: string, to: string, station: string | null = null) =>
   fetch(`${URL_}/rest/v1/rpc/range_summary`, {
@@ -225,7 +241,7 @@ async function viewReport(days: number) {
     `☕️ <b>مخبز ومقهى هيل — ${title}</b>`, "",
     `🧾 الطلبات: <b>${t.c}</b>`,
     `💰 المبيعات: <b>${fmt(t.s)} د.ع</b>`,
-    `📈 الأرباح: <b>${fmt(t.p)} د.ع</b>`,
+    await profitLine(from, to, t.p),
     `📉 المصروفات: <b>${fmt(t.e)} د.ع</b>`,
     `✅ الصافي: <b>${fmt(t.n)} د.ع</b>`,
   ].join("\n");
@@ -240,7 +256,7 @@ async function viewDaySummary(day: string) {
     `📆 <b>مبيعات يوم ${day}${suffix}</b>`, "",
     `🧾 الطلبات: <b>${t.c}</b>`,
     `💰 المبيعات: <b>${fmt(t.s)} د.ع</b>`,
-    `📈 الأرباح: <b>${fmt(t.p)} د.ع</b>`,
+    await profitLine(day, day, t.p),
     `📉 المصروفات: <b>${fmt(t.e)} د.ع</b>`,
     `✅ الصافي: <b>${fmt(t.n)} د.ع</b>`,
     ...per,
@@ -367,7 +383,7 @@ async function viewFloorReport(station: string, sectionName: string) {
     "",
     `🧾 الطلبات: <b>${t.c}</b>`,
     `💰 المبيعات: <b>${fmt(t.s)} د.ع</b>`,
-    `📈 الأرباح: <b>${fmt(t.p)} د.ع</b>`,
+    await profitLine(today, today, t.p),
     `📉 المصروفات: <b>${fmt(t.e)} د.ع</b>`,
     `✅ الصافي: <b>${fmt(t.n)} د.ع</b>`,
     "",
@@ -434,7 +450,7 @@ async function viewDailyFinal() {
     `🧾 عدد الطلبات: <b>${t.c}</b>`,
     `👥 عدد الزبائن (تقديري): <b>${guests}</b>`,
     `💰 المبيعات: <b>${fmt(t.s)} د.ع</b>`,
-    `📈 الأرباح: <b>${fmt(t.p)} د.ع</b>`,
+    await profitLine(today, today, t.p),
     `📉 المصروفات: <b>${fmt(t.e)} د.ع</b>`,
     `✅ الصافي: <b>${fmt(t.n)} د.ع</b>`,
     closure
@@ -561,6 +577,10 @@ async function viewVersus(days: number) {
   const title = days === 0 ? "اليوم" : `آخر ${days + 1} يوم`;
 
   const lines = [`⚖️ <b>مقارنة القسمين — ${title}</b>`, ""];
+  // المقارنة بالمبيعات لا بالربح: الربح هنا سطران متجاوران، وعرض رقمين
+  // غير محسوبين جنباً إلى جنب يوحي بمفاضلة بين قسمين على أساس لا وجود له
+  const cov = (await rpc("cost_coverage", { p_from: from, p_to: to })) as { pct: number }[] | null;
+  const profitReady = Array.isArray(cov) && cov[0] && Number(cov[0].pct) >= 100;
   for (const r of rows) {
     const share = grand ? Math.round((r.t.s * 100) / grand) : 0;
     // شريط بصري من ١٠ خانات ليُقرأ الفرق بلمحة
@@ -569,7 +589,9 @@ async function viewVersus(days: number) {
       `<b>${esc(r.name)}</b>`,
       `<code>${bar}</code> ${share}%`,
       `💰 المبيعات: <b>${fmt(r.t.s)} د.ع</b> · 🧾 ${fmt(r.t.c)} طلب`,
-      `📈 الأرباح: <b>${fmt(r.t.p)} د.ع</b> · 🧮 متوسط الطلب: <b>${fmt(r.t.c ? r.t.s / r.t.c : 0)} د.ع</b>`,
+      profitReady
+        ? `📈 الأرباح: <b>${fmt(r.t.p)} د.ع</b> · 🧮 متوسط الطلب: <b>${fmt(r.t.c ? r.t.s / r.t.c : 0)} د.ع</b>`
+        : `🧮 متوسط الطلب: <b>${fmt(r.t.c ? r.t.s / r.t.c : 0)} د.ع</b>`,
       "",
     );
   }

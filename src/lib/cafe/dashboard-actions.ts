@@ -5,7 +5,7 @@ import { createSupabaseServiceClient } from "@/lib/supabase/server";
 import { requireAdmin, requireStaff, stationScope, type Staff } from "./auth";
 import { stationName, type StationSlug } from "./hail-menu";
 import { isLocalDb, listOrdersLocal, orderItems, summaryLocal } from "./local-db";
-import { businessDay } from "./time";
+import { businessDay, lastNDays } from "./time";
 
 export type DaySummary = {
   day: string;
@@ -224,4 +224,20 @@ export async function getRecentOrders(limit = 15): Promise<RecentOrder[]> {
     created_at: o.created_at,
     items: byOrder.get(o.id) ?? [],
   }));
+}
+
+/**
+ * هل رقم الربح صادق؟
+ *
+ * الربح = المبيعات − كلفة البضاعة. وما لم تُعرف كلفة كل صنف مباع، يكون الرقم
+ * أقرب إلى المبيعات منه إلى الربح. هذا يقيس النسبة المحسوبة فعلاً، وتُخفي
+ * اللوحة الرقم دونها بدل أن تعرض ما يُبنى عليه قرار خاطئ.
+ */
+export async function getCostCoverage(days = 7): Promise<{ pct: number; missing: number }> {
+  await requireAdmin();
+  const svc = createSupabaseServiceClient();
+  const [from, to] = lastNDays(days);
+  const { data } = await svc.rpc("cost_coverage", { p_from: from, p_to: to });
+  const row = Array.isArray(data) ? data[0] : null;
+  return { pct: row?.pct ?? 100, missing: Number(row?.missing_items ?? 0) };
 }

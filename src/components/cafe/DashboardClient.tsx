@@ -38,6 +38,7 @@ export function DashboardClient({
   yesterday,
   yesterdaySummary = null,
   scopeLabel = "",
+  costCoverage,
 }: {
   days: number;
   summary: DaySummary[];
@@ -52,6 +53,8 @@ export function DashboardClient({
   yesterdaySummary?: DaySummary | null;
   /** which register these figures cover — «كل الأقسام» for the manager */
   scopeLabel?: string;
+  /** نسبة قيمة المبيعات التي تُعرف كلفتها — دونها يكون «الربح» مبيعاتٍ لا ربحاً */
+  costCoverage?: { pct: number; missing: number };
 }) {
   const router = useRouter();
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -141,7 +144,7 @@ export function DashboardClient({
               <Kpi label="المبيعات" value={formatIqdLabel(today?.sales ?? 0)} />
               <Kpi label="عدد الطلبات" value={String(today?.orders_count ?? 0)} />
               <Kpi label="عدد الزبائن" value={String(guestsToday)} />
-              <Kpi label="الأرباح" value={formatIqdLabel(today?.profit ?? 0)} />
+              <ProfitKpi value={formatIqdLabel(today?.profit ?? 0)} coverage={costCoverage} />
               <Kpi label="المصروفات" value={formatIqdLabel(today?.expenses ?? 0)} />
               <Kpi label="الصافي" value={formatIqdLabel(today?.net ?? 0)} highlight />
             </div>
@@ -175,7 +178,7 @@ export function DashboardClient({
             <div className={`grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 ${loadingDay ? "opacity-50" : ""}`}>
               <Kpi label="المبيعات" value={formatIqdLabel(dayLookup?.sales ?? 0)} />
               <Kpi label="عدد الطلبات" value={String(dayLookup?.orders_count ?? 0)} />
-              <Kpi label="الأرباح" value={formatIqdLabel(dayLookup?.profit ?? 0)} />
+              <ProfitKpi value={formatIqdLabel(dayLookup?.profit ?? 0)} coverage={costCoverage} />
               <Kpi label="المصروفات" value={formatIqdLabel(dayLookup?.expenses ?? 0)} />
               <Kpi label="الصافي" value={formatIqdLabel(dayLookup?.net ?? 0)} highlight />
             </div>
@@ -205,7 +208,7 @@ export function DashboardClient({
                 <Kpi label="المبيعات" value={formatIqdLabel(totals.sales)} />
                 <Kpi label="عدد الطلبات" value={String(totals.orders)} />
                 <Kpi label="عدد الزبائن" value={String(guestsRange)} />
-                <Kpi label="الأرباح" value={formatIqdLabel(totals.profit)} />
+                <ProfitKpi value={formatIqdLabel(totals.profit)} coverage={costCoverage} />
                 <Kpi label="المصروفات" value={formatIqdLabel(totals.expenses)} />
                 <Kpi label="الصافي" value={formatIqdLabel(totals.net)} highlight />
               </div>
@@ -238,7 +241,7 @@ export function DashboardClient({
             <section className="space-y-2">
               <h2 className="text-sm font-semibold text-muted-foreground">الملخص الشهري (بعد المصاريف الثابتة)</h2>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <Kpi label="أرباح التشغيل" value={formatIqdLabel(totals.profit)} />
+                <ProfitKpi value={formatIqdLabel(totals.profit)} coverage={costCoverage} />
                 <Kpi label="المصاريف المتغيرة" value={formatIqdLabel(totals.expenses)} />
                 <Kpi label="المصاريف الشهرية الثابتة" value={formatIqdLabel(monthlyCosts)} />
                 <Kpi label="الصافي بعد الثابتة" value={formatIqdLabel(totals.net - monthlyCosts)} highlight />
@@ -325,6 +328,32 @@ export function DashboardClient({
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * الربح — أو تنبيه بدله.
+ *
+ * الربح = المبيعات − كلفة البضاعة. وكلفة أغلب الأصناف صفر، فالرقم يساوي
+ * المبيعات لا الربح. ورقم خاطئ أسوأ من رقم غائب: قرار تسعير يُبنى عليه يكون
+ * مبنياً على وهم. يعود الرقم وحده حين تكتمل الكلف — بلا إعداد يدوي.
+ */
+function ProfitKpi({ value, coverage }: { value: string; coverage?: { pct: number; missing: number } }) {
+  if (!coverage || coverage.pct >= 100) return <Kpi label="الأرباح" value={value} />;
+  return (
+    <Link
+      href="/purchases"
+      className="rounded-xl border border-accent/60 bg-accent/5 p-4 transition hover:bg-accent/10"
+      title={`${coverage.pct}% فقط من قيمة المبيعات تُعرف كلفتها`}
+    >
+      <p className="text-xs text-muted-foreground">الأرباح</p>
+      <p className="mt-1 text-sm font-bold leading-tight text-accent">
+        غير متاح — أدخل الكلف
+      </p>
+      <p className="mt-0.5 text-[11px] text-muted-foreground">
+        {coverage.missing} صنفاً بلا كلفة · {coverage.pct}% محسوب
+      </p>
+    </Link>
   );
 }
 

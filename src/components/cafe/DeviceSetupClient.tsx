@@ -60,7 +60,6 @@ export function DeviceSetupClient({
   }, [probe]);
 
   const printers = status?.printers ?? [];
-  const unnamed = printers.filter((p) => !/pastry|cafe|هيل/i.test(p.name));
 
   return (
     <div className="space-y-5">
@@ -153,10 +152,13 @@ export function DeviceSetupClient({
                 </li>
               ))}
             </ul>
-            {unnamed.length > 1 && (
-              <p className="mt-3 rounded-xl border border-accent/50 bg-accent/5 p-3 text-xs leading-relaxed">
-                ⚠ يوجد أكثر من طابعة بأسماء متشابهة. أعد تسميتهما ليتميّزا (لوحة التحكم ← الأجهزة والطابعات ← كليك يمين
-                ← Printer properties) إلى <code dir="ltr">HAIL-Pastry</code> و<code dir="ltr">HAIL-Cafe</code>.
+            {printers.length > 1 && (
+              // المحل طابعة واحدة اليوم. والثانية — إن أُضيفت — نفس الموديل
+              // ونفس الاسم، فستتعارض حتماً وتحتاج تمييزاً حينها لا الآن.
+              <p className="mt-3 rounded-xl border border-dashed border-border p-3 text-xs leading-relaxed text-muted-foreground">
+                يوجد أكثر من طابعة على هذا الجهاز. المحل يستعمل <b className="text-foreground">الافتراضية</b> وحدها،
+                فتأكّد أنها طابعة الفواتير. وعند فصل الطابعتين بين قسمين لاحقاً يلزم تمييز اسميهما — لوحة التحكم ←
+                الأجهزة والطابعات ← كليك يمين ← Printer properties.
               </p>
             )}
           </>
