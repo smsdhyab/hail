@@ -8,8 +8,6 @@ import { DeviceSetupClient } from "@/components/cafe/DeviceSetupClient";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "الأجهزة والفحص — مخبز ومقهى هيل" };
 
-const RAW = "https://raw.githubusercontent.com/smsdhyab/hail/main/scripts/setup-pos.ps1";
-
 /**
  * صفحة التركيب والفحص داخل النظام — للمطوّر وحده.
  *
@@ -35,7 +33,9 @@ export default async function DevicePage() {
     screens.map(async (s) => ({ ...s, png: await QRCode.toDataURL(s.url, { margin: 1, width: 256 }) })),
   );
 
-  const installCmd = `irm ${RAW} -OutFile "$env:TEMP/hail-setup.ps1"; powershell -ExecutionPolicy Bypass -File "$env:TEMP/hail-setup.ps1" -Station both`;
+  // السكربت يُقدَّم من النظام نفسه لا من GitHub: النسخة التي تُنزَّل هي نسخة
+  // النظام المنشور بالضبط، وتتبع نطاقه — لا نسخة قد تتأخر عن النشر.
+  const installCmd = `irm ${site}/setup-pos.ps1 -OutFile "$env:TEMP/hail-setup.ps1"; powershell -ExecutionPolicy Bypass -File "$env:TEMP/hail-setup.ps1" -Station both`;
 
   return <DeviceSetupClient site={site} installCmd={installCmd} qr={qr} />;
 }

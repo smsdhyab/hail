@@ -1,4 +1,4 @@
-import { SITE_URL } from "./src/lib/cafe/branding";
+import { SITE_DOMAIN, SITE_URL } from "./src/lib/cafe/branding";
 import type { NextConfig } from "next";
 
 // Managed hosts (Netlify / Vercel) emit their own serverless output, so we must
@@ -27,6 +27,15 @@ const nextConfig: NextConfig = {
       {
         source: "/:path*",
         has: [{ type: "host", value: ".*\\.workers\\.dev" }],
+        destination: `${SITE_URL}/:path*`,
+        permanent: true,
+      },
+      // و«www» يقود إلى المجرّد لسبب عملي لا جمالي: المتصفّح يربط جلسة الدخول
+      // بالاسم الذي فُتح عليه، فمن يدخل على www ثم يفتح المجرّد يجد نفسه خارج
+      // حسابه بلا سبب ظاهر. اسم واحد رسمي ⇒ جلسة واحدة.
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: `www\\.${SITE_DOMAIN.replace(/\./g, "\\.")}` }],
         destination: `${SITE_URL}/:path*`,
         permanent: true,
       },
