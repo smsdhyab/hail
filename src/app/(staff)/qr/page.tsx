@@ -4,11 +4,12 @@ import { PrintButton } from "@/components/cafe/PrintButton";
 import { NfcWriter } from "@/components/cafe/NfcWriter";
 import { tableLabel, DEFAULT_TABLES } from "@/lib/cafe/tables";
 import { getTables } from "@/lib/cafe/table-actions";
+import { SITE_DOMAIN } from "@/lib/cafe/branding";
 
 export const dynamic = "force-dynamic";
 
 /** Printable QR stickers: the general menu QR + one per table (?t=N).
- *  Defaults to the current origin; pass ?base=https://your-domain after deploy. */
+ *  الرموز تُبنى من النطاق المفتوح عليه — و`?base=` يتجاوزه عند الحاجة. */
 export default async function QrPage({
   searchParams,
 }: {
@@ -17,7 +18,10 @@ export default async function QrPage({
   const sp = await searchParams;
   const h = await headers();
   const host = h.get("host") ?? "localhost:3000";
-  const proto = h.get("x-forwarded-proto") ?? "http";
+  // الملصق يُطبع ويُلصق على الطاولة، فخطأ فيه يُصلَّح بإعادة طباعة لا بنشرة.
+  // وغياب الترويسة كان يعني `http` فيُطبع رابط غير آمن على كل طاولة — ولا شيء
+  // خارج التطوير المحلي يُخدَم على http.
+  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") || host.startsWith("127.") ? "http" : "https");
   const base = typeof sp.base === "string" && sp.base.startsWith("http") ? sp.base.replace(/\/$/, "") : `${proto}://${host}`;
   // المودرن هو الأساسي على /menu — ?path=classic لملصقات الكلاسيكي.
   const menuPath = sp.path === "classic" ? "/menu/classic" : "/menu";
@@ -45,7 +49,9 @@ export default async function QrPage({
             {base}/menu
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            بعد النشر أضف <code dir="ltr">?base=https://رابطك</code> للرابط النهائي. لكتابة NFC: افتح هذه الصفحة من هاتف أندرويد (Chrome)، اضغط «اكتب NFC» وقرّب البطاقة. على الآيفون انسخ الرابط واكتبه بتطبيق «NFC Tools».
+            الرموز تحمل النطاق الذي فُتحت عليه هذه الصفحة — فافتحها على{" "}
+            <code dir="ltr">{SITE_DOMAIN}</code> قبل الطباعة. لكتابة NFC: افتح هذه الصفحة من هاتف أندرويد (Chrome)، اضغط
+            «اكتب NFC» وقرّب البطاقة. على الآيفون انسخ الرابط واكتبه بتطبيق «NFC Tools».
           </p>
         </div>
         <PrintButton label="طباعة الملصقات" />
