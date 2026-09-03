@@ -20,12 +20,13 @@ function ageMinutes(iso: string) {
 
 const STATION_AR: Record<string, string> = { pastry: "قسم المعجنات والمخبوزات", cafe: "قسم الكافيه" };
 
-function ticketFor(t: Ticket, heading?: string): ReceiptData {
+function ticketFor(t: Ticket, heading?: string, mode: "customer" | "prep" = "customer"): ReceiptData {
   const rows = t.rows;
   const o = rows[0];
   return {
     orderNumber: String(o.group_no).padStart(3, "0"),
     heading,
+    mode,
     // تذكرة مشتركة لا تخصّ قسماً بعينه، فلا يُكتب اسم قسم عليها
     station: rows.length > 1 ? null : (STATION_AR[o.station] ?? null),
     table: o.table_no,
@@ -142,7 +143,7 @@ export function IncomingOrdersClient() {
         const seen = seenIds.current;
         const fresh = groupTickets(orders).filter((t) => t.rows.some((r) => !seen.has(r.id)));
         if (fresh.length) {
-          setTickets((q) => [...q, ...fresh.map((t) => ticketFor(t, "طلب جديد — غير مدفوع"))]);
+          setTickets((q) => [...q, ...fresh.map((t) => ticketFor(t, "طلب جديد — غير مدفوع", "prep"))]);
         }
       }
       seenIds.current = new Set(orders.map((o) => o.id));
@@ -304,8 +305,14 @@ export function IncomingOrdersClient() {
         </div>
       )}
 
-      {/* print-only ticket */}
-      {tickets[0] && <Receipt data={tickets[0]} />}
+      {/* print-only: وصل الزبون المدفوع يخرج ومعه نسخة تحضير؛ تنبيه الطلب
+          الجديد (mode=prep) يخرج قصاصةً واحدة للمطبخ */}
+      {tickets[0] && (
+        <>
+          <Receipt data={tickets[0]} />
+          {tickets[0].mode !== "prep" && <Receipt data={{ ...tickets[0], mode: "prep" }} />}
+        </>
+      )}
     </div>
   );
 }

@@ -32,17 +32,28 @@ export type ReceiptData = {
   heading?: string;
   /** free-text order note («سكر قليل…») */
   note?: string | null;
+  /** «customer» وصل بالأسعار للزبون · «prep» وصل تحضير بلا أسعار لمن يحضّر */
+  mode?: "customer" | "prep";
 };
 
 /** 80mm thermal receipt. Hidden on screen; the only thing visible when printing
  *  (see the @media print rules in globals.css). */
 export function Receipt({ data }: { data: ReceiptData }) {
+  // وصل التحضير: نسخة المطبخ — الأصناف والكميات بخطّ كبير، بلا أي أسعار أو
+  // إجماليات، فمن يحضّر لا يعنيه المبلغ ولا يُربك بأرقام الزبون.
+  const isPrep = data.mode === "prep";
   return (
     <div className="receipt-print hidden print:block" dir="rtl">
       {/* 80mm roll — applies only while a receipt is mounted (this style unmounts with it) */}
       <style>{`@media print { @page { size: 80mm auto; margin: 0; } }`}</style>
       <div style={{ textAlign: "center", fontWeight: 800, fontSize: "16px" }}>مخبز ومقهى هيل</div>
-      <div style={{ textAlign: "center", fontSize: "11px", marginBottom: "6px" }}>الرمادي — العراق</div>
+      {isPrep ? (
+        <div style={{ textAlign: "center", fontWeight: 800, fontSize: "15px", margin: "3px 0", border: "2px solid #000", padding: "3px" }}>
+          تحضير — لا يُسلَّم للزبون
+        </div>
+      ) : (
+        <div style={{ textAlign: "center", fontSize: "11px", marginBottom: "6px" }}>الرمادي — العراق</div>
+      )}
       <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }} />
       {data.heading && (
         <div style={{ textAlign: "center", fontWeight: 800, fontSize: "13px", margin: "2px 0" }}>{data.heading}</div>
@@ -70,23 +81,28 @@ export function Receipt({ data }: { data: ReceiptData }) {
         </div>
       )}
       <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }} />
-      <table style={{ width: "100%", fontSize: "12px", borderCollapse: "collapse" }}>
+      <table style={{ width: "100%", fontSize: isPrep ? "15px" : "12px", borderCollapse: "collapse" }}>
         <tbody>
           {data.lines.map((l, i) => (
             <tr key={i}>
-              <td style={{ padding: "2px 0" }}>
+              <td style={{ padding: isPrep ? "5px 0" : "2px 0", fontWeight: isPrep ? 800 : 400 }}>
                 {l.name}
                 {l.flavor ? ` (${l.flavor})` : ""}{" "}
                 {l.soldBy === "weight" ? (
-                  // الوزن وسعر الكيلو معاً: بلا سعر الكيلو يبدو المبلغ اعتباطياً
-                  <>
-                    {formatQty(l.qty, "weight")} × {formatIqd(l.unitPrice)}/كغم
-                  </>
+                  // الوزن وسعر الكيلو معاً: بلا سعر الكيلو يبدو المبلغ اعتباطياً.
+                  // وفي وصل التحضير الوزن وحده يكفي من يزن.
+                  isPrep ? (
+                    <>{formatQty(l.qty, "weight")}</>
+                  ) : (
+                    <>{formatQty(l.qty, "weight")} × {formatIqd(l.unitPrice)}/كغم</>
+                  )
                 ) : (
                   <>×{l.qty}</>
                 )}
               </td>
-              <td style={{ textAlign: "left", whiteSpace: "nowrap" }}>{formatIqd(lineTotal(l.unitPrice, l.qty, l.soldBy))}</td>
+              {!isPrep && (
+                <td style={{ textAlign: "left", whiteSpace: "nowrap" }}>{formatIqd(lineTotal(l.unitPrice, l.qty, l.soldBy))}</td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -96,6 +112,15 @@ export function Receipt({ data }: { data: ReceiptData }) {
           📝 {data.note}
         </div>
       )}
+      {isPrep && (
+        // وصل التحضير ينتهي هنا: لا مجموع ولا إجمالي ولا شكر — أصنافٌ فقط.
+        <>
+          <div style={{ borderTop: "1px dashed #000", margin: "6px 0 4px" }} />
+          <div style={{ textAlign: "center", fontSize: "11px" }}>{data.dateTime}</div>
+        </>
+      )}
+      {!isPrep && (
+      <>
       <div style={{ borderTop: "1px dashed #000", margin: "4px 0" }} />
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px" }}>
         <span>المجموع</span>
@@ -152,6 +177,8 @@ export function Receipt({ data }: { data: ReceiptData }) {
       <div style={{ borderTop: "1px dashed #000", margin: "6px 0 4px" }} />
       <div style={{ textAlign: "center", fontSize: "11px" }}>شكراً لزيارتكم ❤</div>
       <div style={{ textAlign: "center", fontSize: "9px", marginTop: "2px" }}>{SYSTEM.vendor_ar}</div>
+      </>
+      )}
     </div>
   );
 }

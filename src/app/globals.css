@@ -171,12 +171,16 @@ body {
     visibility: visible;
   }
   .receipt-print {
-    position: absolute;
-    inset-block-start: 0;
-    inset-inline-start: 0;
+    /* تدفّق عادي لا مطلق: عند طباعة وصلين معاً (زبون + تحضير) يتكدّسان
+     * بدل أن يتراكبا على نفس الموضع. */
+    position: static;
     width: 80mm;
     padding: 4mm;
     color: #000;
     background: #fff;
+  }
+  /* قطع بين كل وصل والذي يليه — فيخرج كلٌّ على قصاصته */
+  .receipt-print + .receipt-print {
+    break-before: page;
   }
 }

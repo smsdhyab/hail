@@ -585,8 +585,13 @@ export function CashierClient({ menu, tables }: { menu: MenuCategoryView[]; tabl
         </div>
       )}
 
-      {/* print-only checkout receipt */}
-      {receipt && <Receipt data={receipt} />}
+      {/* print-only: وصل الزبون + وصل التحضير — يخرجان قصاصتين في طباعة واحدة */}
+      {receipt && (
+        <>
+          <Receipt data={receipt} />
+          <Receipt data={{ ...receipt, mode: "prep" }} />
+        </>
+      )}
     </div>
   );
 }

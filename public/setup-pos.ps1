@@ -222,7 +222,13 @@ if ($browser) {
   $lnk.TargetPath = $browser
   # نافذة تطبيق مستقلة بلا أشرطة متصفح (--app) + طباعة صامتة + ملء الشاشة.
   # تفتح على شاشة الطلبات الواردة — وهي شاشة العمل اليومية لكل كاشير.
-  $lnk.Arguments = "--app=$Url/orders --kiosk-printing --start-maximized --no-first-run"
+  #
+  # ‎--disable-features=PrivateNetworkAccess…‎ : بلا هذا يحجب Chrome الحديث
+  # مناداة صفحة hail.cafe (عامّة) لوكيل الدرج على 127.0.0.1 (محلي)، فلا يفتح
+  # الدرج رغم أن الوكيل يعمل. هذه الأعلام تُلغي فحص الشبكة المحلية — آمنة على
+  # جهاز كاشير مخصّص يفتح نطاق النظام وحده.
+  $chromeFlags = "--kiosk-printing --start-maximized --no-first-run --disable-features=PrivateNetworkAccessSendPreflights,PrivateNetworkAccessRespectPreflightResults,LocalNetworkAccessChecks,BlockInsecurePrivateNetworkRequests"
+  $lnk.Arguments = "--app=$Url/orders $chromeFlags"
   if ($ico -and (Test-Path $ico)) { $lnk.IconLocation = "$ico,0" } else { $lnk.IconLocation = "$browser,0" }
   $lnk.Save()
   Say "Desktop shortcut created (clean app window, HAIL icon, silent printing)"
