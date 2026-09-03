@@ -3,12 +3,12 @@
 import { useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import Link from "next/link";
-import { Check, LogIn, Minus, Plus, ShoppingCart, Sparkles, X } from "lucide-react";
+import { AtSign, Check, Globe, LogIn, MessageCircle, Minus, Plus, ShoppingCart, Sparkles, X } from "lucide-react";
 import type { ComboView, MenuCategoryView, MenuItemView } from "@/lib/cafe/menu-data";
 import { CombosSection, OFFERS_CAT } from "./CombosSection";
 import { Screensaver } from "./Screensaver";
 import { DeliveryForm, deliveryError, emptyDelivery, type DeliveryDetails, type DeliveryField } from "./DeliveryForm";
-import { DELIVERY_AREA_AR } from "@/lib/cafe/branding";
+import { DELIVERY_AREA_AR, SYSTEM } from "@/lib/cafe/branding";
 import { formatIqdLabel } from "@/lib/cafe/money";
 import { formatQty, lineTotal, roundTicket } from "@/lib/cafe/order";
 import { submitOrder, type OrderLineInput, type OrderSplitPart } from "@/lib/cafe/order-actions";
@@ -341,6 +341,42 @@ export function TabletMenuClient({
           </div>
           </>
           )}
+
+          {/* حقوق النظام — تُذيّل المنيو وصفحة التوصيل معاً لأن كليهما TabletMenuClient */}
+          <footer className="mt-8 border-t border-[var(--line)] pt-6 text-center">
+            <p className="text-[11px] text-[var(--muted)]">{SYSTEM.name_ar}</p>
+            <p className="text-[11px] text-[var(--muted)]">تصميم وتطوير</p>
+            <p className="mb-3 text-sm font-bold text-[var(--accent)]">{SYSTEM.vendor_ar}</p>
+            <div className="flex flex-wrap items-center justify-center gap-2 pb-4">
+              <a
+                href={SYSTEM.whatsapp}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 rounded-full bg-[#25D366] px-4 py-2 text-sm font-bold text-white transition active:scale-95"
+              >
+                <MessageCircle className="size-4" />
+                واتساب
+              </a>
+              <a
+                href={SYSTEM.instagram}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#f58529] via-[#dd2a7b] to-[#8134af] px-4 py-2 text-sm font-bold text-white transition active:scale-95"
+              >
+                <AtSign className="size-4" />
+                انستغرام
+              </a>
+              <a
+                href={SYSTEM.site}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 rounded-full border border-[var(--accent)]/50 px-4 py-2 text-sm font-bold text-[var(--accent)] transition active:scale-95"
+              >
+                <Globe className="size-4" />
+                الموقع
+              </a>
+            </div>
+          </footer>
         </main>
 
         {/* category rail — RIGHT */}

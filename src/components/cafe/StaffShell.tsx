@@ -219,8 +219,9 @@ export function StaffShell({
   const [pushState, setPushState] = useState<"unsupported" | "off" | "on" | "denied">("unsupported");
   useEffect(() => {
     if (!pushKey || !("serviceWorker" in navigator) || !("PushManager" in window)) return;
-    navigator.serviceWorker
-      .register("/sw.js")
+    // التسجيل صار في `ServiceWorker` بالجذر — هنا ننتظره فقط. وإلا صار عمل
+    // الكاشير بلا إنترنت معلّقاً بإعداد الإشعارات.
+    navigator.serviceWorker.ready
       .then(async (reg) => {
         const sub = await reg.pushManager.getSubscription();
         setPushState(sub ? "on" : Notification.permission === "denied" ? "denied" : "off");

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Tajawal } from "next/font/google";
 import "./globals.css";
 import { CafeUIProvider } from "@/components/CafeUIProvider";
+import { ServiceWorker } from "@/components/ServiceWorker";
 import { getPublicSupabaseConfig } from "@/lib/supabase/constants";
 
 const tajawal = Tajawal({
@@ -51,6 +52,7 @@ export default async function RootLayout({
             })}`,
           }}
         />
+        <ServiceWorker />
         <CafeUIProvider>{children}</CafeUIProvider>
       </body>
     </html>
