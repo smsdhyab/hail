@@ -1,6 +1,7 @@
 import QRCode from "qrcode";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { SITE_DOMAIN } from "@/lib/cafe/branding";
 import { getStaff, homeFor } from "@/lib/cafe/auth";
 import { DeviceSetupClient } from "@/components/cafe/DeviceSetupClient";
 
@@ -22,7 +23,7 @@ export default async function DevicePage() {
   if (!staff.isDeveloper) redirect(homeFor(staff.role));
 
   const h = await headers();
-  const host = h.get("host") ?? "hail.sms-dhyab.workers.dev";
+  const host = h.get("host") ?? SITE_DOMAIN;
   const site = `${h.get("x-forwarded-proto") ?? "https"}://${host}`;
 
   const screens = [
@@ -34,7 +35,7 @@ export default async function DevicePage() {
     screens.map(async (s) => ({ ...s, png: await QRCode.toDataURL(s.url, { margin: 1, width: 256 }) })),
   );
 
-  const installCmd = `irm ${RAW} -OutFile "$env:TEMP\hail-setup.ps1"; powershell -ExecutionPolicy Bypass -File "$env:TEMP\hail-setup.ps1" -Station both`;
+  const installCmd = `irm ${RAW} -OutFile "$env:TEMP/hail-setup.ps1"; powershell -ExecutionPolicy Bypass -File "$env:TEMP/hail-setup.ps1" -Station both`;
 
   return <DeviceSetupClient site={site} installCmd={installCmd} qr={qr} />;
 }

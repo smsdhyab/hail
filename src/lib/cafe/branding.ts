@@ -44,5 +44,16 @@ export const CHANNEL_AR: Record<string, string> = {
 
 export const channelName = (c: string) => CHANNEL_AR[c] ?? c;
 
+/**
+ * نطاق المحل.
+ *
+ * النظام يبني روابطه من ترويسة الطلب فيتبع النطاق الذي يُفتح عليه — وهذا ما
+ * جعل نقله من `workers.dev` إلى `hail.cafe` يمسّ ثلاثة مواضع لا ثلاثين.
+ * وهذه الثابتة لما لا ترويسة له: قيمة احتياطية، ونصّ يُعرض للمنصِّب، وتحويل
+ * الرابط القديم. مكان واحد يُغيَّر إن تغيّر النطاق ثانيةً.
+ */
+export const SITE_DOMAIN = "hail.cafe";
+export const SITE_URL = `https://${SITE_DOMAIN}`;
+
 /** التوصيل داخل الرمادي فقط — يظهر أعلى صفحة الطلب. */
 export const DELIVERY_AREA_AR = "التوصيل متاح داخل مدينة الرمادي";

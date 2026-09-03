@@ -45,8 +45,10 @@ if (-not $Station) {
 $StationName  = switch ($Station) { "cafe" { "كاشير الكافيه" } "pastry" { "كاشير المعجنات" } default { "كاشير هيل" } }
 $StationLatin = switch ($Station) { "cafe" { "CAFE register" } "pastry" { "PASTRY register" } default { "HAIL register (cafe + bakery)" } }
 
+# المحل نطاق واحد، فالسؤال فرصة خطأ إملائي لا أكثر — Enter يقبل الافتراضي.
 if (-not $Url) {
-  $Url = Read-Host "Paste the system link (https://hail.sms-dhyab.workers.dev)"
+  $Url = Read-Host "System link - press Enter for https://hail.cafe"
+  if (-not $Url) { $Url = "https://hail.cafe" }
 }
 $Url = $Url.Trim().TrimEnd("/")
 if (-not $Url.StartsWith("http")) { $Url = "https://$Url" }

@@ -8,6 +8,7 @@ import {
   Bell,
   BellOff,
   BellRing,
+  BookOpen,
   Calculator,
   ClipboardList,
   CreditCard,
@@ -78,7 +79,16 @@ function chime() {
   }
 }
 
-type NavItem = { href: string; label: string; short: string; adminOnly: boolean; devOnly?: boolean; icon: LucideIcon };
+type NavItem = {
+  href: string;
+  label: string;
+  short: string;
+  adminOnly: boolean;
+  devOnly?: boolean;
+  /** صفحة الزبون لا تحمل شريط الطاقم، ففتحها في نفس اللسان يحبس الكاشير بلا رجوع. */
+  newTab?: boolean;
+  icon: LucideIcon;
+};
 const NAV: NavItem[] = [
   { href: "/dashboard", label: "لوحة التحكم", short: "التحكم", adminOnly: true, icon: LayoutDashboard },
   { href: "/cashier", label: "الكاشير", short: "الكاشير", adminOnly: false, icon: Calculator },
@@ -87,7 +97,8 @@ const NAV: NavItem[] = [
   { href: "/loyalty", label: "الولاء", short: "الولاء", adminOnly: false, icon: CreditCard },
   { href: "/pastries", label: "المعجنات والعروض", short: "المعجنات", adminOnly: false, icon: Croissant },
   { href: "/debts", label: "سجل الديون", short: "الديون", adminOnly: false, icon: HandCoins },
-  { href: "/menu-admin", label: "المنيو", short: "المنيو", adminOnly: true, icon: UtensilsCrossed },
+  { href: "/menu", label: "المنيو", short: "المنيو", adminOnly: false, newTab: true, icon: BookOpen },
+  { href: "/menu-admin", label: "إدارة المنيو", short: "إدارة", adminOnly: true, icon: UtensilsCrossed },
   { href: "/purchases", label: "المشتريات والمخزون", short: "المشتريات", adminOnly: true, icon: Boxes },
   { href: "/expenses", label: "المصروفات", short: "المصروفات", adminOnly: false, icon: Wallet },
   { href: "/employees", label: "الموظفون", short: "الموظفون", adminOnly: true, icon: Users },
@@ -95,6 +106,22 @@ const NAV: NavItem[] = [
   { href: "/help", label: "التعليمات", short: "تعليمات", adminOnly: false, icon: HelpCircle },
   { href: "/device", label: "الأجهزة والفحص", short: "الأجهزة", adminOnly: true, devOnly: true, icon: Wrench },
 ];
+
+/**
+ * الأزرار الأربعة التي تبقى في الشريط — والبقية في «المزيد».
+ *
+ * الشريط كان يعرض كل الأقسام فيمتدّ ويحتاج سحباً أفقياً، والكاشير في زحمة
+ * الصباح لا يسحب شريطاً ليصل إلى «الطاولات». الأربعة هنا هي عمل اليوم كله:
+ * يبيع، ويستقبل، ويدير الطاولات، ويفتح المنيو أمام الزبون. وما عداها يُفتح
+ * مرة في اليوم فيكفيه زرّ «المزيد».
+ */
+const PRIMARY: Record<string, string[]> = {
+  admin: ["/dashboard", "/cashier", "/orders", "/tables"],
+  cashier: ["/cashier", "/orders", "/tables", "/menu"],
+};
+
+/** `/menu` و`/menu-admin` يشتركان في البادئة، فالمطابقة بالبادئة وحدها تُضيء الاثنين. */
+const isActivePath = (pathname: string, href: string) => pathname === href || pathname.startsWith(href + "/");
 
 export function StaffShell({
   role,
@@ -120,7 +147,9 @@ export function StaffShell({
   const router = useRouter();
   const { setTheme } = useCafeUI();
   const links = NAV.filter((n) => (!n.adminOnly || role === "admin") && (!n.devOnly || isDeveloper));
-  const bottomTabs = links.filter((l) => l.href !== "/help").slice(0, 4); // first 4 as bottom tabs, rest in «المزيد»
+  const primaryHrefs = PRIMARY[role ?? "cashier"] ?? PRIMARY.cashier;
+  const bottomTabs = primaryHrefs.map((h) => links.find((l) => l.href === h)).filter((l) => !!l);
+  const restLinks = links.filter((l) => !primaryHrefs.includes(l.href));
   const [moreOpen, setMoreOpen] = useState(false);
 
   // Keep the session alive on staff screens: instantiating the browser client
@@ -248,25 +277,40 @@ export function StaffShell({
               <HailMark className="size-9" />
               مخبز ومقهى هيل
             </Link>
-            <nav className="hidden gap-1 overflow-x-auto md:flex">
-              {links.map((l) => (
+            <nav className="hidden gap-1 md:flex">
+              {bottomTabs.map((l) => (
                 <Link
                   key={l.href}
                   href={l.href}
+                  target={l.newTab ? "_blank" : undefined}
                   className={`relative whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition ${
-                    pathname.startsWith(l.href)
+                    isActivePath(pathname, l.href)
                       ? "bg-primary text-primary-foreground"
                       : "text-foreground/80 hover:bg-secondary"
                   }`}
                 >
                   {l.label}
-                  {((l.href === "/orders" && pendingCount > 0) || (l.href === "/pastries" && pastryAlert > 0)) && (
+                  {l.href === "/orders" && pendingCount > 0 && (
                     <span className="absolute -left-1 -top-1 flex size-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                      {l.href === "/orders" ? pendingCount : pastryAlert}
+                      {pendingCount}
                     </span>
                   )}
                 </Link>
               ))}
+              {restLinks.length > 0 && (
+                <button
+                  onClick={() => setMoreOpen(true)}
+                  className="relative flex items-center gap-1 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium text-foreground/80 transition hover:bg-secondary"
+                >
+                  <MoreHorizontal className="size-4" />
+                  المزيد
+                  {pastryAlert > 0 && (
+                    <span className="absolute -left-1 -top-1 flex size-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                      {pastryAlert}
+                    </span>
+                  )}
+                </button>
+              )}
             </nav>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -331,12 +375,13 @@ export function StaffShell({
       {/* app-like bottom tab bar (mobile only) */}
       <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border bg-background/95 backdrop-blur md:hidden print:hidden">
         {bottomTabs.map((l) => {
-          const active = pathname.startsWith(l.href);
+          const active = isActivePath(pathname, l.href);
           const Icon = l.icon;
           return (
             <Link
               key={l.href}
               href={l.href}
+                  target={l.newTab ? "_blank" : undefined}
               className={`relative flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-semibold transition ${
                 active ? "text-primary" : "text-muted-foreground"
               }`}
@@ -367,7 +412,7 @@ export function StaffShell({
 
       {/* «المزيد» sheet — the full menu */}
       {moreOpen && (
-        <div className="fixed inset-0 z-40 md:hidden print:hidden" onClick={() => setMoreOpen(false)}>
+        <div className="fixed inset-0 z-40 print:hidden" onClick={() => setMoreOpen(false)}>
           <div className="absolute inset-0 bg-black/40" />
           <div className="absolute inset-x-0 bottom-0 rounded-t-3xl bg-card p-4 pb-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 flex items-center justify-between">
@@ -376,14 +421,15 @@ export function StaffShell({
                 <X className="size-4" />
               </button>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              {links.map((l) => {
+            <div className="mx-auto grid max-w-2xl grid-cols-3 gap-2 sm:grid-cols-4">
+              {restLinks.map((l) => {
                 const Icon = l.icon;
-                const active = pathname.startsWith(l.href);
+                const active = isActivePath(pathname, l.href);
                 return (
                   <Link
                     key={l.href}
                     href={l.href}
+                  target={l.newTab ? "_blank" : undefined}
                     onClick={() => setMoreOpen(false)}
                     className={`relative flex flex-col items-center gap-1.5 rounded-2xl border p-3 text-xs font-semibold transition ${
                       active ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-secondary"
