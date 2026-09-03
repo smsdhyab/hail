@@ -18,6 +18,8 @@ export type MenuItemView = {
   flavors: string[];
   /** يظهر في «يناسبها مع…» داخل نافذة أي صنف — يؤشّره المدير */
   suggest: boolean;
+  /** رمز الميزان الثابت — يُقرأ من باركود الملصق لإضافة الصنف بوزنه */
+  plu: number | null;
   variants: MenuVariantView[];
 };
 export type MenuCategoryView = {
@@ -71,6 +73,7 @@ export async function getPublicMenu(): Promise<MenuCategoryView[]> {
       unit_label: r.unit_label ?? "قطعة",
       flavors: r.flavors ?? [],
       suggest: r.suggest === true,
+      plu: r.plu ?? null,
       variants: varsByItem.get(r.id) ?? [],
     });
   }

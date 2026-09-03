@@ -10,6 +10,7 @@ import { lineTotal, qtyMin, qtyStep, roundQty, roundTicket, type SoldBy } from "
 import { enqueue, flush, newClientId, pendingCount } from "@/lib/cafe/offline-queue";
 import { cashierCheckout } from "@/lib/cafe/cashier-actions";
 import { findCard, redeemReward, type Card } from "@/lib/cafe/loyalty-actions";
+import { parseScaleBarcode } from "@/lib/cafe/scale";
 import { QrScanner } from "./QrScanner";
 import { Receipt, type ReceiptData } from "./Receipt";
 import { MenuIcon } from "./MenuIcon";
@@ -153,10 +154,72 @@ export function CashierClient({ menu, tables }: { menu: MenuCategoryView[]; tabl
     setCustomer(card);
   }
 
+  // خريطة PLU → صنف: يُبنى من المنيو المحمَّل، فالقراءة فورية وتعمل بلا إنترنت.
+  const byPlu = useMemo(() => {
+    const m = new Map<number, { item: MenuItemView; category?: string }>();
+    for (const c of menu) for (const it of c.items) if (it.plu) m.set(it.plu, { item: it, category: c.name_ar });
+    return m;
+  }, [menu]);
+
+  // مسحٌ واحد لكل المصادر (قارئ، كاميرا، إدخال يدوي): باركود ميزان أولاً، فإن
+  // لم يكن كذلك فهو رمز بطاقة ولاء.
+  const handleScan = useCallback(
+    (code: string) => {
+      const scan = parseScaleBarcode(code);
+      if (scan) {
+        const hit = byPlu.get(scan.plu);
+        if (!hit) {
+          setLoyaltyMsg(`رمز ميزان ${scan.plu} غير مربوط بصنف — اربطه من لوحة التحكم.`);
+          return;
+        }
+        const { item } = hit;
+        dispatch({
+          type: "add",
+          line: {
+            key: `${item.id}||`,
+            itemId: item.id,
+            name: item.name_ar,
+            variantId: null,
+            flavor: null,
+            unitPrice: item.price,
+            soldBy: item.sold_by,
+          },
+          qty: scan.kg,
+        });
+        setLoyaltyMsg(`أُضيف ${item.name_ar} — ${scan.kg} كغم`);
+        return;
+      }
+      void lookup(code);
+    },
+    [byPlu],
+  );
+
   const onScanned = useCallback((text: string) => {
     setScanOpen(false);
-    void lookup(text);
-  }, []);
+    handleScan(text);
+  }, [handleScan]);
+
+  // قارئ الباركود يُدخِل الرقم كأنه لوحة مفاتيح: أرقام متلاحقة تنتهي بـEnter.
+  // نلتقطها على مستوى النافذة ما لم يكن التركيز في حقل كتابة (فيتكفّل الحقل).
+  const scanBuf = useRef<{ s: string; t: number }>({ s: "", t: 0 });
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
+      const now = Date.now();
+      if (now - scanBuf.current.t > 100) scanBuf.current.s = ""; // فجوة = كتابة بشرية، نبدأ من جديد
+      scanBuf.current.t = now;
+      if (e.key === "Enter") {
+        const code = scanBuf.current.s;
+        scanBuf.current.s = "";
+        if (code.length >= 6) handleScan(code);
+        return;
+      }
+      if (/^[0-9]$/.test(e.key)) scanBuf.current.s += e.key;
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [handleScan]);
 
   async function redeem() {
     if (!customer) return;
@@ -420,11 +483,15 @@ export function CashierClient({ menu, tables }: { menu: MenuCategoryView[]; tabl
               <input
                 value={serialInput}
                 onChange={(e) => setSerialInput(e.target.value)}
+                onKeyDown={(e) => {
+                  // لو وقع تركيز القارئ هنا، فباركود الميزان يُلتقط أيضاً
+                  if (e.key === "Enter") { handleScan(serialInput); setSerialInput(""); }
+                }}
                 placeholder="رقم البطاقة أو الهاتف"
                 dir="ltr"
                 className="w-full rounded-lg border border-input bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
               />
-              <button onClick={() => lookup(serialInput)} className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium hover:bg-background">
+              <button onClick={() => handleScan(serialInput)} className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium hover:bg-background">
                 بحث
               </button>
               <button onClick={() => setScanOpen(true)} aria-label="مسح QR" className="rounded-lg bg-primary p-2 text-primary-foreground hover:opacity-90">
