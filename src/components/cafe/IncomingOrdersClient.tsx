@@ -306,12 +306,13 @@ export function IncomingOrdersClient() {
       )}
 
       {/* print-only: وصل الزبون المدفوع يخرج ومعه نسخة تحضير؛ تنبيه الطلب
-          الجديد (mode=prep) يخرج قصاصةً واحدة للمطبخ */}
+          الجديد (mode=prep) يخرج قصاصةً واحدة للمطبخ. الغلاف يرفعها خارج
+          التدفّق فلا يدفعها المحتوى المخفي أسفل الصفحات فتضيع أصنافها. */}
       {tickets[0] && (
-        <>
+        <div className="receipt-sheet hidden print:block">
           <Receipt data={tickets[0]} />
           {tickets[0].mode !== "prep" && <Receipt data={{ ...tickets[0], mode: "prep" }} />}
-        </>
+        </div>
       )}
     </div>
   );

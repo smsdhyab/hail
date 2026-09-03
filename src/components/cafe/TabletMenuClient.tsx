@@ -235,6 +235,39 @@ export function TabletMenuClient({
     setConfirmed(res.orderNumber);
   }
 
+  // رَيل الأقسام — يُرسم مرّتين، على كلا طرفَي شبكة المنتجات. `border` يحدّد
+  // الحافة الملاصقة للمنتصف. كلاهما ينادي `selectCat` نفسه.
+  const rail = (key: string, border: string) => (
+    <aside key={key} className={`w-[86px] shrink-0 overflow-y-auto ${border} border-[var(--line)] bg-[var(--panelsoft)]/60 py-2 sm:w-[132px] lg:w-[172px]`}>
+      {combos.length > 0 && (
+        <button
+          aria-label={OFFERS_CAT}
+          onClick={() => selectCat(OFFERS_CAT)}
+          className={`flex w-full flex-col items-center gap-1 px-1 py-3 text-center text-[var(--activeink)] transition sm:gap-1.5 sm:px-2 sm:py-3.5 ${showOffers ? "bg-[var(--accent)]" : "hail-offers-pulse"}`}
+        >
+          <Sparkles className="size-6 sm:size-8" />
+          <span className="text-[11px] font-extrabold leading-tight sm:text-[13px]">
+            <span className="block">عروض</span>
+            <span className="block">اليوم</span>
+          </span>
+        </button>
+      )}
+      {menu.map((c) => {
+        const on = c.name_ar === activeCat;
+        return (
+          <button key={c.name_ar} aria-label={c.name_ar} onClick={() => selectCat(c.name_ar)} className={`flex w-full flex-col items-center gap-1 px-1 py-3 text-center transition sm:gap-1.5 sm:px-2 sm:py-3.5 ${on ? "bg-[var(--active)] text-[var(--activeink)]" : "text-[var(--muted)] hover:bg-[var(--panel)]"}`}>
+            <MenuIcon name={c.name_ar} category={c.name_ar} className={`size-6 sm:size-8 ${on ? "text-[var(--activeink)]" : "text-[var(--accent)]"}`} />
+            <span className="text-[11px] font-bold leading-tight sm:text-[13px]">
+              {c.name_ar.split(" ").map((w, i) => (
+                <span key={i} className="block">{w}</span>
+              ))}
+            </span>
+          </button>
+        );
+      })}
+    </aside>
+  );
+
   return (
     <div dir="rtl" style={{ ...(VARS as CSSProperties), background: GRAD }} className="flex h-dvh flex-col text-[var(--text)]">
       {screensaver?.on && (
@@ -273,7 +306,10 @@ export function TabletMenuClient({
       </header>
 
       <div className="flex min-h-0 flex-1 flex-row-reverse">
-        {/* product grid — LEFT */}
+        {/* category rail — رَيلان على الطرفين: حافة الآيباد يصعب الوصول إليها،
+            فوجود رَيل على كل جانب يجعل التنقّل ممكناً من الطرف الأسهل. */}
+        {rail("end", "border-s")}
+        {/* product grid — CENTER */}
         <main ref={mainRef} className="min-w-0 flex-1 overflow-y-auto p-4 pb-24">
           {showOffers ? (
             <CombosSection combos={combos} menu={menu} onPick={pickCombo} />
@@ -379,35 +415,8 @@ export function TabletMenuClient({
           </footer>
         </main>
 
-        {/* category rail — RIGHT */}
-        <aside className="w-[86px] shrink-0 overflow-y-auto border-l border-[var(--line)] bg-[var(--panelsoft)]/60 py-2 sm:w-[132px] lg:w-[172px]">
-          {combos.length > 0 && (
-            <button
-              aria-label={OFFERS_CAT}
-              onClick={() => selectCat(OFFERS_CAT)}
-              className={`flex w-full flex-col items-center gap-1 px-1 py-3 text-center text-[var(--activeink)] transition sm:gap-1.5 sm:px-2 sm:py-3.5 ${showOffers ? "bg-[var(--accent)]" : "hail-offers-pulse"}`}
-            >
-              <Sparkles className="size-6 sm:size-8" />
-              <span className="text-[11px] font-extrabold leading-tight sm:text-[13px]">
-                <span className="block">عروض</span>
-                <span className="block">اليوم</span>
-              </span>
-            </button>
-          )}
-          {menu.map((c) => {
-            const on = c.name_ar === activeCat;
-            return (
-              <button key={c.name_ar} aria-label={c.name_ar} onClick={() => selectCat(c.name_ar)} className={`flex w-full flex-col items-center gap-1 px-1 py-3 text-center transition sm:gap-1.5 sm:px-2 sm:py-3.5 ${on ? "bg-[var(--active)] text-[var(--activeink)]" : "text-[var(--muted)] hover:bg-[var(--panel)]"}`}>
-                <MenuIcon name={c.name_ar} category={c.name_ar} className={`size-6 sm:size-8 ${on ? "text-[var(--activeink)]" : "text-[var(--accent)]"}`} />
-                <span className="text-[11px] font-bold leading-tight sm:text-[13px]">
-                  {c.name_ar.split(" ").map((w, i) => (
-                    <span key={i} className="block">{w}</span>
-                  ))}
-                </span>
-              </button>
-            );
-          })}
-        </aside>
+        {/* category rail — على الطرف المقابل أيضاً */}
+        {rail("start", "border-e")}
       </div>
 
       {/* cart bar */}

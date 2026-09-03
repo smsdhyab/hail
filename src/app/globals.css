@@ -157,25 +157,32 @@ body {
    Scoped with :has() so ONLY pages that render a receipt hijack printing —
    other pages (e.g. the QR-sticker sheet) print normally. */
 @media print {
-  body:has(.receipt-print) {
-    /* 80mm roll */
-  }
+  /* الورق ٨٠مم لكن المساحة المطبوعة فعلاً ~٧٢مم؛ عرضٌ أكبر يُقصّ من الأطراف.
+     وبلا هامش صفحة كي لا يتكرّر مع حشو الوصل. */
   @page {
-    margin: 8mm;
+    size: 72mm auto;
+    margin: 0;
   }
   body:has(.receipt-print) * {
     visibility: hidden;
   }
-  body:has(.receipt-print) .receipt-print,
-  body:has(.receipt-print) .receipt-print * {
+  body:has(.receipt-sheet) .receipt-sheet,
+  body:has(.receipt-sheet) .receipt-sheet * {
     visibility: visible;
   }
+  /* الغلاف يُرفع خارج التدفّق: محتوى التطبيق المخفي يبقى شاغلاً حيّزه، فلو بقي
+     الوصل في التدفّق العادي لدُفع أسفل الصفحات وضاع وسطه (الأصناف). */
+  .receipt-sheet {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    width: 72mm;
+  }
+  /* داخل الغلاف تتدفّق الوصول عادياً فتتكدّس (زبون ثم تحضير) بلا تراكب. */
   .receipt-print {
-    /* تدفّق عادي لا مطلق: عند طباعة وصلين معاً (زبون + تحضير) يتكدّسان
-     * بدل أن يتراكبا على نفس الموضع. */
     position: static;
-    width: 80mm;
-    padding: 4mm;
+    width: 72mm;
+    padding: 3mm;
     color: #000;
     background: #fff;
   }

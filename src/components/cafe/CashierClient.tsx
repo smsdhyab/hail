@@ -585,12 +585,13 @@ export function CashierClient({ menu, tables }: { menu: MenuCategoryView[]; tabl
         </div>
       )}
 
-      {/* print-only: وصل الزبون + وصل التحضير — يخرجان قصاصتين في طباعة واحدة */}
+      {/* print-only: وصل الزبون + وصل التحضير — يخرجان قصاصتين في طباعة واحدة.
+          الغلاف يرفعهما خارج التدفّق فلا يدفعهما المحتوى المخفي أسفل الصفحات. */}
       {receipt && (
-        <>
+        <div className="receipt-sheet hidden print:block">
           <Receipt data={receipt} />
           <Receipt data={{ ...receipt, mode: "prep" }} />
-        </>
+        </div>
       )}
     </div>
   );

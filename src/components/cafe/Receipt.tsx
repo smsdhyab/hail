@@ -44,8 +44,7 @@ export function Receipt({ data }: { data: ReceiptData }) {
   const isPrep = data.mode === "prep";
   return (
     <div className="receipt-print hidden print:block" dir="rtl">
-      {/* 80mm roll — applies only while a receipt is mounted (this style unmounts with it) */}
-      <style>{`@media print { @page { size: 80mm auto; margin: 0; } }`}</style>
+      {/* رول ٨٠مم لكن مساحته المطبوعة ~٧٢مم — القاعدة الموحّدة في globals.css */}
       <div style={{ textAlign: "center", fontWeight: 800, fontSize: "16px" }}>مخبز ومقهى هيل</div>
       {isPrep ? (
         <div style={{ textAlign: "center", fontWeight: 800, fontSize: "15px", margin: "3px 0", border: "2px solid #000", padding: "3px" }}>
