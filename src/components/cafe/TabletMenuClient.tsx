@@ -235,37 +235,31 @@ export function TabletMenuClient({
     setConfirmed(res.orderNumber);
   }
 
-  // رَيل الأقسام — يُرسم مرّتين، على كلا طرفَي شبكة المنتجات. `border` يحدّد
-  // الحافة الملاصقة للمنتصف. كلاهما ينادي `selectCat` نفسه.
-  const rail = (key: string, border: string) => (
-    <aside key={key} className={`w-[86px] shrink-0 overflow-y-auto ${border} border-[var(--line)] bg-[var(--panelsoft)]/60 py-2 sm:w-[132px] lg:w-[172px]`}>
+  // شريط الأقسام الأفقي — أسفل الترويسة مباشرةً، يُمسح أفقياً. حلَّ محلّ الرَّيل
+  // الجانبي: حافة اللوحي يصعب الوصول إليها، ورَيلان على الطرفين يؤطّران الشاشة
+  // ويضيّقانها. الشريط العلوي في متناول الإبهام دائماً ولا يزاحم المنتجات.
+  const chip = (on: boolean) =>
+    `flex shrink-0 flex-col items-center gap-1 rounded-2xl border px-4 py-2 text-center transition active:scale-95 ${
+      on ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--activeink)]" : "border-[var(--line)] bg-[var(--panelsoft)] text-[var(--muted)]"
+    }`;
+  const categoryBar = (
+    <nav className="flex shrink-0 gap-2 overflow-x-auto border-b border-[var(--line)] bg-[var(--panelsoft)]/70 px-3 py-2.5 backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {combos.length > 0 && (
-        <button
-          aria-label={OFFERS_CAT}
-          onClick={() => selectCat(OFFERS_CAT)}
-          className={`flex w-full flex-col items-center gap-1 px-1 py-3 text-center text-[var(--activeink)] transition sm:gap-1.5 sm:px-2 sm:py-3.5 ${showOffers ? "bg-[var(--accent)]" : "hail-offers-pulse"}`}
-        >
-          <Sparkles className="size-6 sm:size-8" />
-          <span className="text-[11px] font-extrabold leading-tight sm:text-[13px]">
-            <span className="block">عروض</span>
-            <span className="block">اليوم</span>
-          </span>
+        <button aria-label={OFFERS_CAT} onClick={() => selectCat(OFFERS_CAT)} className={`${chip(showOffers)} ${showOffers ? "" : "hail-offers-pulse !border-[var(--accent2)]"}`}>
+          <Sparkles className={`size-5 ${showOffers ? "" : "text-[var(--accent2)]"}`} />
+          <span className="whitespace-nowrap text-xs font-extrabold">عروض اليوم</span>
         </button>
       )}
       {menu.map((c) => {
         const on = c.name_ar === activeCat;
         return (
-          <button key={c.name_ar} aria-label={c.name_ar} onClick={() => selectCat(c.name_ar)} className={`flex w-full flex-col items-center gap-1 px-1 py-3 text-center transition sm:gap-1.5 sm:px-2 sm:py-3.5 ${on ? "bg-[var(--active)] text-[var(--activeink)]" : "text-[var(--muted)] hover:bg-[var(--panel)]"}`}>
-            <MenuIcon name={c.name_ar} category={c.name_ar} className={`size-6 sm:size-8 ${on ? "text-[var(--activeink)]" : "text-[var(--accent)]"}`} />
-            <span className="text-[11px] font-bold leading-tight sm:text-[13px]">
-              {c.name_ar.split(" ").map((w, i) => (
-                <span key={i} className="block">{w}</span>
-              ))}
-            </span>
+          <button key={c.name_ar} aria-label={c.name_ar} onClick={() => selectCat(c.name_ar)} className={chip(on)}>
+            <MenuIcon name={c.name_ar} category={c.name_ar} className={`size-5 ${on ? "text-[var(--activeink)]" : "text-[var(--accent)]"}`} />
+            <span className="whitespace-nowrap text-xs font-bold">{c.name_ar}</span>
           </button>
         );
       })}
-    </aside>
+    </nav>
   );
 
   return (
@@ -305,11 +299,10 @@ export function TabletMenuClient({
         </Link>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-row-reverse">
-        {/* category rail — رَيلان على الطرفين: حافة الآيباد يصعب الوصول إليها،
-            فوجود رَيل على كل جانب يجعل التنقّل ممكناً من الطرف الأسهل. */}
-        {rail("end", "border-s")}
-        {/* product grid — CENTER */}
+      {/* شريط الأقسام الأفقي — في متناول الإبهام، بلا تأطير جانبي */}
+      {categoryBar}
+
+      <div className="flex min-h-0 flex-1">
         <main ref={mainRef} className="min-w-0 flex-1 overflow-y-auto p-4 pb-24">
           {showOffers ? (
             <CombosSection combos={combos} menu={menu} onPick={pickCombo} />
@@ -414,9 +407,6 @@ export function TabletMenuClient({
             </div>
           </footer>
         </main>
-
-        {/* category rail — على الطرف المقابل أيضاً */}
-        {rail("start", "border-e")}
       </div>
 
       {/* cart bar */}
